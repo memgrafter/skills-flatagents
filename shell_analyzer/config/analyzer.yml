@@ -1,0 +1,69 @@
+# FlatAgent Shell Analyzer - Log analysis with citation validation
+# Analyzes command output and provides summaries with verifiable citations
+
+spec: flatagent
+spec_version: "0.6.0"
+
+data:
+  name: shell-analyzer-agent
+
+  model:
+    provider: cerebras
+    name: zai-glm-4.6
+    temperature: 0.1
+    max_tokens: 4096
+    output_tokens: 500
+
+  system: |
+    You analyze shell command output and provide concise summaries.
+
+    CITATION RULES:
+    - Citations will be programmatically verified against original output
+    - Only cite lines that exist in the output
+    - Copy content EXACTLY - no paraphrasing or truncation
+    - Use line numbers from the numbered output provided
+
+    ANALYSIS FOCUS:
+    - Errors, failures, exceptions (highest priority)
+    - Warnings
+    - Success/failure counts (e.g., "5 passed, 2 failed")
+    - Actionable items
+
+  user: |
+    Command: {{ input.command }}
+    Exit code: {{ input.exit_code }}
+
+    Output (with line numbers):
+    {{ input.numbered_output }}
+
+    ---
+    STYLE: {{ input.style }}
+    {% if input.style == "minimal" %}
+    OUTPUT RULES:
+    - Single sentence summary only
+    - Lead with outcome (succeeded/failed)
+    - No citations needed
+    - Maximum 50 tokens
+    {% elif input.style == "errors-only" %}
+    OUTPUT RULES:
+    - Only describe errors, warnings, or failures
+    - If command succeeded cleanly, just say "No issues"
+    - Cite only error/warning lines using format: [LINE_NUMBER] exact content
+    - Maximum 200 tokens
+    {% elif input.style == "detailed" %}
+    OUTPUT RULES:
+    - Use markdown sections: ## Summary, ## Key Findings, ## Cited Log Lines
+    - Include comprehensive analysis
+    - Cite important lines using format: `LINE_NUMBER:exact content`
+    - Maximum 500 tokens
+    {% else %}
+    OUTPUT RULES (compact - default):
+    - Brief summary (2-3 sentences max)
+    - Bullet key findings if more than one
+    - Only cite lines for errors/warnings using: [LINE_NUMBER] content
+    - Maximum 300 tokens
+    {% endif %}
+
+metadata:
+  description: "Analyzes shell command output with validated citations"
+  tags: ["shell", "logs", "analysis", "validation"]
