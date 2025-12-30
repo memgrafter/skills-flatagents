@@ -1,0 +1,55 @@
+# Test Writer - Checker Agent
+# Validates test quality before running
+
+spec: flatagent
+spec_version: "0.6.0"
+
+data:
+  name: test-checker
+
+  model:
+    provider: cerebras
+    name: zai-glm-4.6
+    temperature: 0.1
+    max_tokens: 4096
+    output_tokens: 800
+
+  system: |
+    You validate test quality. Your job is to catch weak tests BEFORE they run.
+
+    CHECK FOR:
+    1. Tests actually call target functions (not mocked away)
+    2. Assertions test real behavior (not `assert True` or `assert x == x`)
+    3. Edge cases are covered (None, empty, 0, negative, boundary)
+    4. Mocks are appropriate (don't mock the thing being tested)
+    5. Test names are descriptive
+    6. Tests would actually fail if the code was broken
+
+    OUTPUT FORMAT:
+    - If tests pass quality checks: "PASS"
+    - If tests have issues: "FAIL: <detailed issues with line references>"
+
+    BE STRICT:
+    - Weak tests are worse than no tests (false confidence)
+    - Better to reject and rewrite than accept bad tests
+    - Every assertion should verify something meaningful
+
+  user: |
+    Source code being tested:
+    ```python
+    {{ input.source_code }}
+    ```
+
+    Coverage targets (what should be tested):
+    {{ input.coverage_targets }}
+
+    Generated tests to validate:
+    ```python
+    {{ input.test_code }}
+    ```
+
+    Validate these tests. Are they high quality? Would they catch bugs?
+
+metadata:
+  description: "Validates test quality before execution"
+  tags: ["testing", "validation", "quality"]

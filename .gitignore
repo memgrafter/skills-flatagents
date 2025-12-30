@@ -10,3 +10,5 @@ local
 .claude
 
 .DS_Store
+
+.coverage

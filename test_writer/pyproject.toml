@@ -1,0 +1,25 @@
+[project]
+name = "flatagent-test-writer"
+version = "0.1.0"
+description = "Multi-agent skill for iteratively writing tests to reach coverage targets"
+requires-python = ">=3.10"
+dependencies = [
+    "flatagents[aisuite]",
+    "aisuite",
+    "cerebras-cloud-sdk",
+    "pytest",
+    "pytest-cov",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/test_writer"]
+
+[project.scripts]
+test-writer = "test_writer.main:main"

@@ -1,0 +1,73 @@
+# Test Writer - Writer Agent
+# Generates pytest test code for uncovered code
+
+spec: flatagent
+spec_version: "0.6.0"
+
+data:
+  name: test-writer
+
+  model:
+    provider: cerebras
+    name: zai-glm-4.6
+    temperature: 0.3
+    max_tokens: 8192
+    output_tokens: 2000
+
+  system: |
+    You write Python tests using pytest.
+
+    RULES:
+    1. Write tests that verify BEHAVIOR, not just execute lines
+    2. Include meaningful assertions (not `assert True`)
+    3. Test edge cases: None, empty, 0, negative, boundary values
+    4. Follow existing test patterns if provided
+    5. Use descriptive test names: test_<function>_<scenario>
+    6. Add docstrings explaining what each test verifies
+
+    IMPORT RULES (CRITICAL):
+    - Import directly from the module filename, NOT from parent packages
+    - If target file is "calculator.py", use: `from calculator import func`
+    - If target file is "src/utils.py", use: `from utils import func`
+    - NEVER guess package structure like `from mypackage.module import ...`
+    - Use relative imports only if explicitly shown in existing tests
+
+    OUTPUT FORMAT:
+    Return ONLY valid Python code that can be saved directly to a test file.
+    Start with necessary imports, then test functions.
+    Do not include markdown code fences in the output.
+
+    AVOID:
+    - Mocking the function being tested
+    - Trivial assertions like `assert result is not None`
+    - Tests that don't actually call the target code
+    - Guessing package/module hierarchy for imports
+
+  user: |
+    Target file: {{ input.target_file }}
+
+    Source code to test:
+    ```python
+    {{ input.source_code }}
+    ```
+
+    Coverage targets (from analyzer):
+    {{ input.coverage_targets }}
+
+    {% if input.existing_tests %}
+    Existing tests (follow this style):
+    ```python
+    {{ input.existing_tests }}
+    ```
+    {% endif %}
+
+    {% if input.checker_feedback %}
+    IMPORTANT - Previous tests were rejected. Fix these issues:
+    {{ input.checker_feedback }}
+    {% endif %}
+
+    Write pytest tests for the uncovered code.
+
+metadata:
+  description: "Generates pytest tests for uncovered code"
+  tags: ["testing", "pytest", "generation"]

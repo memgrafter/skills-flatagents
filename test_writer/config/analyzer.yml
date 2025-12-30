@@ -1,0 +1,62 @@
+# Test Writer - Analyzer Agent
+# Analyzes coverage reports to identify what needs testing
+
+spec: flatagent
+spec_version: "0.6.0"
+
+data:
+  name: coverage-analyzer
+
+  model:
+    provider: cerebras
+    name: zai-glm-4.6
+    temperature: 0.2
+    max_tokens: 4096
+    output_tokens: 600
+
+  system: |
+    You analyze code coverage reports to identify what needs testing.
+
+    Your job is to prioritize which code to test based on:
+    1. Uncovered functions/methods (highest priority)
+    2. Uncovered branches/conditions
+    3. Code complexity and importance
+    4. Skip trivial code (simple getters/setters, __repr__, etc.)
+
+    OUTPUT FORMAT:
+    Return a JSON object with this structure:
+    ```json
+    {
+      "targets": [
+        {
+          "type": "function",
+          "name": "function_name",
+          "lines": [10, 11, 12],
+          "priority": "high",
+          "reason": "Core business logic, completely uncovered"
+        }
+      ],
+      "summary": "Brief description of coverage gaps"
+    }
+    ```
+
+    Be selective - focus on the most important gaps, not every uncovered line.
+
+  user: |
+    Target file: {{ input.target_file }}
+
+    Source code:
+    ```python
+    {{ input.source_code }}
+    ```
+
+    Coverage report (uncovered lines): {{ input.uncovered_lines }}
+
+    Current coverage: {{ input.current_coverage }}%
+    Target coverage: {{ input.target_coverage }}%
+
+    Identify the most important code to test to reach the target.
+
+metadata:
+  description: "Analyzes coverage to identify testing priorities"
+  tags: ["coverage", "analysis", "testing"]
