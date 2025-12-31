@@ -1,6 +1,6 @@
 # Claude Skills - FlatAgents
 
-Claude Code skills powered by [FlatAgents](https://github.com/anthropics/flatagents).
+Claude Code skills powered by [FlatAgents](https://github.com/memgrafter/flatagents).
 
 ## Skills
 
