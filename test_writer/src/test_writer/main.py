@@ -22,6 +22,7 @@ import sys
 from pathlib import Path
 
 from flatagents import FlatAgent, AgentResponse
+from shared.diff_utils import apply_search_replace, DiffError
 
 
 # =============================================================================
@@ -122,6 +123,7 @@ def parse_function_names_from_analysis(analysis: str) -> list[str]:
 
     return list(names)
 
+
 from .coverage import (
     run_coverage,
     run_tests,
@@ -217,17 +219,33 @@ async def fix_tests(
 
 
 def write_test_file(test_code: str, test_file: str) -> None:
-    """Write test code to file."""
-    # Clean up any markdown code fences
+    """
+    Write test code using Aider SEARCH/REPLACE format when detected.
+
+    Supports:
+    - Full file replacement (raw or markdown-fenced code)
+    - Incremental SEARCH/REPLACE blocks for token efficiency
+
+    Raises:
+        DiffError: If SEARCH block not found in existing file
+    """
     code = test_code.strip()
+
+    # Strip markdown fences
     if code.startswith("```python"):
         code = code[9:]
-    if code.startswith("```"):
+    elif code.startswith("```"):
         code = code[3:]
     if code.endswith("```"):
         code = code[:-3]
+    code = code.strip()
 
-    Path(test_file).write_text(code.strip() + "\n")
+    path = Path(test_file)
+    original = path.read_text() if path.exists() else ""
+
+    # Apply diff (or use as full content if no SEARCH blocks)
+    result = apply_search_replace(code, original)
+    path.write_text(result.strip() + "\n")
 
 
 async def run(

@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "claude-skills-flatagents"
+version = "0.1.0"
+description = "Collection of Claude AI skills"
+dependencies = [
+    "flatagents[aisuite]",
+    "aisuite",
+    "cerebras-cloud-sdk",
+]
+
+[project.optional-dependencies]
+search-refiner = ["aisuite[mcp]"]
+test-writer = ["pytest", "pytest-cov"]
+all = ["aisuite[mcp]", "pytest", "pytest-cov"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["shared*", "search_refiner*", "shell_analyzer*", "test_writer*"]

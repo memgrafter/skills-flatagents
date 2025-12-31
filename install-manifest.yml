@@ -1,0 +1,8 @@
+# Install manifest: which skills to install
+# Run: ./install.sh to install all skills below
+# Or: ./install.sh --skill=<name> to install specific skill
+
+skills:
+  - search-refiner
+  - shell-analyzer
+  - test-writer
