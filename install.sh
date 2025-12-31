@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Global installation only for now
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VENV="$SCRIPT_DIR/.venv"
 MANIFEST="$SCRIPT_DIR/install-manifest.yml"
@@ -82,24 +84,19 @@ SKILLS_DIR="$HOME/.claude/skills"
 mkdir -p "$SKILLS_DIR"
 
 for skill in $SKILLS; do
-    SKILL_RUN_SH="$SCRIPT_DIR/$skill/run.sh"
-    if [[ -f "$SKILL_RUN_SH" ]]; then
+    # Normalize skill name (convert - to _)
+    skill_normalized=$(echo "$skill" | tr '-' '_')
+
+    SKILL_RUN_SH="$SCRIPT_DIR/$skill_normalized"
+    if [[ -d "$SKILL_RUN_SH" ]]; then
         SKILL_LINK="$SKILLS_DIR/$skill"
 
         # Remove old link if exists
         [[ -L "$SKILL_LINK" ]] && rm "$SKILL_LINK"
 
-        # Create symlink to run.sh
+        # Create symlink to skill
         ln -s "$SKILL_RUN_SH" "$SKILL_LINK"
         echo "  ✓ Symlinked: $skill -> $SKILL_LINK"
-
-        # Update SKILL.md if it exists
-        SKILL_MD="$SCRIPT_DIR/$skill/SKILL.md"
-        if [[ -f "$SKILL_MD" ]]; then
-            # Update the command section with absolute path
-            sed -i.bak "s|^Command: .*|Command: $SKILL_RUN_SH|g" "$SKILL_MD" || true
-            rm -f "$SKILL_MD.bak"
-        fi
     fi
 done
 
