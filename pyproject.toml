@@ -7,7 +7,7 @@ name = "claude-skills-flatagents"
 version = "0.1.0"
 description = "Collection of Claude AI skills"
 dependencies = [
-    "flatagents[aisuite]",
+    "flatagents[aisuite]>=0.1.6",
     "aisuite",
     "cerebras-cloud-sdk",
 ]

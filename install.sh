@@ -9,14 +9,19 @@ MANIFEST="$SCRIPT_DIR/install-manifest.yml"
 
 # Parse arguments
 SKILL_FILTER=""
+UPGRADE=false
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --skill=*)
             SKILL_FILTER="${1#*=}"
             shift
             ;;
+        --upgrade)
+            UPGRADE=true
+            shift
+            ;;
         *)
-            echo "Usage: $0 [--skill=<skill-name>]" >&2
+            echo "Usage: $0 [--skill=<skill-name>] [--upgrade]" >&2
             exit 1
             ;;
     esac
@@ -24,27 +29,46 @@ done
 
 # Detect package manager
 if command -v uv &>/dev/null; then
-    PIP_CMD="uv pip"
+    USE_UV=true
 else
-    PIP_CMD="pip"
+    USE_UV=false
 fi
+
+# Helper function to run pip with correct target
+pip_install() {
+    if [[ "$USE_UV" = true ]]; then
+        uv pip install -p "$VENV/bin/python" "$@"
+    else
+        pip install "$@"
+    fi
+}
 
 # Create virtualenv if needed
 if [[ ! -d "$VENV" ]]; then
     echo "Creating shared virtualenv at $VENV..."
-    if command -v uv &>/dev/null; then
+    if [[ "$USE_UV" = true ]]; then
         uv venv "$VENV"
     else
         python3 -m venv "$VENV"
     fi
 fi
 
-# Activate venv
+# Activate venv (needed for non-uv commands and PATH)
 source "$VENV/bin/activate"
+
+# Upgrade mode: force reinstall flatagents to latest version
+if [[ "$UPGRADE" = true ]]; then
+    echo "Upgrading flatagents to latest version..."
+    pip_install --upgrade flatagents
+fi
 
 # Install project in editable mode with base dependencies
 echo "Installing base dependencies..."
-$PIP_CMD install -e "$SCRIPT_DIR"
+pip_install -e "$SCRIPT_DIR"
+
+# Ensure flatagents >= 0.1.6 (required for FlatMachine support)
+echo "Ensuring flatagents >= 0.1.6..."
+pip_install "flatagents>=0.1.6"
 
 # Parse manifest to get skill list
 if [[ -z "$SKILL_FILTER" ]]; then
@@ -64,7 +88,7 @@ fi
 # Install optional dependencies for selected skills
 for skill in $SKILLS; do
     echo "Installing dependencies for $skill..."
-    $PIP_CMD install -e "$SCRIPT_DIR"["$skill"] || {
+    pip_install -e "$SCRIPT_DIR"["$skill"] || {
         # Fallback if the group doesn't exist, just install base
         echo "  (no skill-specific dependencies for $skill)"
     }
@@ -72,7 +96,7 @@ for skill in $SKILLS; do
     # Install skill src if it has its own directory
     if [[ -d "$SCRIPT_DIR/$skill" ]]; then
         echo "Installing editable package: $skill"
-        $PIP_CMD install -e "$SCRIPT_DIR/$skill" 2>/dev/null || true
+        pip_install -e "$SCRIPT_DIR/$skill" 2>/dev/null || true
     fi
 done
 

@@ -16,6 +16,16 @@ All skill use flatagents, returning limited context to claude to preserve the co
 ./install.sh
 ```
 
+## Upgrade
+
+To upgrade flatagents and dependencies to the latest versions:
+
+```bash
+./install.sh --upgrade
+```
+
+This ensures you have the latest FlatMachine features (requires flatagents >= 0.1.6).
+
 ## Requirements
 
 - Python 3.10+
