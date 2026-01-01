@@ -1,0 +1,208 @@
+spec: flatmachine
+spec_version: "0.1.0"
+
+data:
+  name: test-writer
+
+  context:
+    # Inputs
+    target_file: "{{ input.target }}"
+    coverage_target: "{{ input.coverage_target }}"
+    max_rounds: "{{ input.max_rounds }}"
+    # Working state
+    source_code: ""
+    focused_source: ""
+    test_file: ""
+    test_code: ""
+    coverage_targets: ""
+    current_coverage: 0
+    uncovered_lines: []
+    # Loop counters
+    round: 0
+    check_attempt: 0
+    fix_attempt: 0
+    # Feedback
+    checker_feedback: ""
+    error_output: ""
+    tests_passed: false
+    check_passed: false
+    is_production_bug: false
+    existing_tests_sample: ""
+    existing_test_names: ""
+
+  agents:
+    analyzer: ./agents/analyzer.yml
+    writer: ./agents/writer.yml
+    checker: ./agents/checker.yml
+    fixer: ./agents/fixer.yml
+
+  settings:
+    hooks: test_writer.hooks
+    max_steps: 100
+
+  states:
+    # === INITIALIZATION ===
+    start:
+      type: initial
+      action: init_coverage
+      transitions:
+        - condition: "context.current_coverage >= context.coverage_target"
+          to: success_early
+        - to: analyze
+
+    # === MAIN LOOP: ANALYZE → WRITE → CHECK → RUN → FIX ===
+    analyze:
+      agent: analyzer
+      execution:
+        type: retry
+        backoffs: [2, 8, 16]
+        jitter: 0.1
+      input:
+        target_file: "{{ context.target_file }}"
+        source_code: "{{ context.source_code }}"
+        uncovered_lines: "{{ context.uncovered_lines }}"
+        current_coverage: "{{ context.current_coverage }}"
+        target_coverage: "{{ context.coverage_target }}"
+      output_to_context:
+        coverage_targets: "{{ output.content }}"
+      on_error: failed
+      transitions:
+        - to: prepare_write
+
+    prepare_write:
+      action: prepare_write
+      transitions:
+        - to: write
+
+    write:
+      agent: writer
+      execution:
+        type: retry
+        backoffs: [2, 8, 16]
+        jitter: 0.1
+      input:
+        target_file: "{{ context.target_file }}"
+        source_code: "{{ context.focused_source }}"
+        coverage_targets: "{{ context.coverage_targets }}"
+        existing_tests_sample: "{{ context.existing_tests_sample }}"
+        existing_test_names: "{{ context.existing_test_names }}"
+        checker_feedback: "{{ context.checker_feedback }}"
+      output_to_context:
+        test_code: "{{ output.content }}"
+      on_error: failed
+      transitions:
+        - to: check
+
+    check:
+      agent: checker
+      execution:
+        type: retry
+        backoffs: [2, 8]
+        jitter: 0.1
+      input:
+        source_code: "{{ context.source_code }}"
+        coverage_targets: "{{ context.coverage_targets }}"
+        test_code: "{{ context.test_code }}"
+      output_to_context:
+        check_result: "{{ output.content }}"
+      on_error: failed
+      transitions:
+        - to: evaluate_check
+
+    evaluate_check:
+      action: evaluate_check
+      transitions:
+        - condition: "context.check_passed"
+          to: run_tests
+        - condition: "context.check_attempt >= 2"
+          to: run_tests
+        - to: write
+
+    # === TEST EXECUTION & FIX LOOP ===
+    run_tests:
+      action: write_and_run_tests
+      transitions:
+        - condition: "context.tests_passed"
+          to: check_coverage
+        - condition: "context.fix_attempt >= 3"
+          to: failed_max_fixes
+        - to: fix
+
+    fix:
+      agent: fixer
+      execution:
+        type: retry
+        backoffs: [2, 8, 16]
+        jitter: 0.1
+      input:
+        source_code: "{{ context.focused_source }}"
+        test_code: "{{ context.test_code }}"
+        error_output: "{{ context.error_output }}"
+        attempt: "{{ context.fix_attempt }}"
+        max_attempts: 3
+      output_to_context:
+        fix_result: "{{ output.content }}"
+      on_error: failed
+      transitions:
+        - to: evaluate_fix
+
+    evaluate_fix:
+      action: evaluate_fix
+      transitions:
+        - condition: "context.is_production_bug"
+          to: production_bug
+        - to: run_tests
+
+    # === COVERAGE CHECK & ROUND LOOP ===
+    check_coverage:
+      action: check_coverage
+      transitions:
+        - condition: "context.current_coverage >= context.coverage_target"
+          to: success
+        - condition: "context.round >= context.max_rounds"
+          to: incomplete
+        - to: analyze
+
+    # === FINAL STATES ===
+    success_early:
+      type: final
+      output:
+        exit_code: 0
+        coverage: "{{ context.current_coverage }}"
+        message: "Coverage already at target"
+
+    success:
+      type: final
+      output:
+        exit_code: 0
+        coverage: "{{ context.current_coverage }}"
+        message: "Coverage target reached"
+
+    production_bug:
+      type: final
+      output:
+        exit_code: 1
+        message: "{{ context.fix_result }}"
+
+    failed:
+      type: final
+      output:
+        exit_code: 2
+        message: "{{ context.last_error }}"
+
+    failed_max_fixes:
+      type: final
+      output:
+        exit_code: 2
+        message: "Max fix attempts reached"
+        error_output: "{{ context.error_output }}"
+
+    incomplete:
+      type: final
+      output:
+        exit_code: 2
+        coverage: "{{ context.current_coverage }}"
+        message: "Max rounds reached"
+
+metadata:
+  description: "Write tests to reach a coverage target using iterative generation and fixing"

@@ -1,0 +1,63 @@
+spec: flatmachine
+spec_version: "0.1.0"
+
+data:
+  name: shell-analyzer
+
+  context:
+    command: "{{ input.command }}"
+    style: "{{ input.style }}"
+    numbered_output: ""
+    exit_code: 0
+    original_lines: []
+    analysis: ""
+    formatted_output: ""
+
+  agents:
+    analyzer: ./agents/analyzer.yml
+
+  settings:
+    hooks: shell_analyzer.hooks
+    max_steps: 10
+
+  states:
+    start:
+      type: initial
+      action: run_command
+      transitions:
+        - to: analyze
+
+    analyze:
+      agent: analyzer
+      execution:
+        type: retry
+        backoffs: [2, 8]
+        jitter: 0.1
+      input:
+        command: "{{ context.command }}"
+        exit_code: "{{ context.exit_code }}"
+        numbered_output: "{{ context.numbered_output }}"
+        style: "{{ context.style }}"
+      output_to_context:
+        analysis: "{{ output.content }}"
+      on_error: error
+      transitions:
+        - to: validate
+
+    validate:
+      action: validate_citations
+      transitions:
+        - to: done
+
+    done:
+      type: final
+      output:
+        result: "{{ context.formatted_output }}"
+
+    error:
+      type: final
+      output:
+        error: "{{ context.last_error }}"
+
+metadata:
+  description: "Execute commands and analyze output with validated citations"

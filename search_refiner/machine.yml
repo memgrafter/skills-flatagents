@@ -1,0 +1,61 @@
+spec: flatmachine
+spec_version: "0.1.0"
+
+data:
+  name: search-refiner
+
+  context:
+    query: "{{ input.query }}"
+    search_results: ""
+
+  agents:
+    search: ./agents/search.yml
+    refiner: ./agents/refiner.yml
+
+  states:
+    start:
+      type: initial
+      transitions:
+        - to: search
+
+    search:
+      agent: search
+      execution:
+        type: retry
+        backoffs: [2, 8, 16]
+        jitter: 0.1
+      input:
+        query: "{{ context.query }}"
+      output_to_context:
+        search_results: "{{ output.content }}"
+      on_error: error
+      transitions:
+        - to: refine
+
+    refine:
+      agent: refiner
+      execution:
+        type: retry
+        backoffs: [2, 8]
+        jitter: 0.1
+      input:
+        query: "{{ context.query }}"
+        search_results: "{{ context.search_results }}"
+      output_to_context:
+        summary: "{{ output.content }}"
+      on_error: error
+      transitions:
+        - to: done
+
+    done:
+      type: final
+      output:
+        summary: "{{ context.summary }}"
+
+    error:
+      type: final
+      output:
+        error: "{{ context.last_error }}"
+
+metadata:
+  description: "Search web and refine results to key findings"
