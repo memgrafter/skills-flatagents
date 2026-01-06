@@ -10,6 +10,7 @@ dependencies = [
     "flatagents[aisuite]>=0.1.8",
     "aisuite",
     "cerebras-cloud-sdk",
+    "tiktoken",
 ]
 
 [project.optional-dependencies]
@@ -19,4 +20,4 @@ all = ["aisuite[mcp]", "pytest", "pytest-cov"]
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["shared*", "search_refiner*", "shell_analyzer*", "test_writer*"]
+include = ["shared*", "search_refiner*", "shell_analyzer*", "test_writer*", "codebase_explorer*", "dynamic_agent*"]

@@ -1,0 +1,70 @@
+# Summarizer Agent - Maintains Narrative Summary
+# Updates exploration summary without touching frozen data
+
+spec: flatagent
+spec_version: "0.6.0"
+
+data:
+  name: summarizer
+
+  model:
+    provider: cerebras
+    name: zai-glm-4.6
+    temperature: 1.0
+
+  system: |
+    You maintain a narrative summary of codebase exploration progress.
+
+    Your job: update the running summary with new findings from the latest
+    exploration action.
+
+    ## Summary Content
+    Focus on:
+    - Directory structure and organization
+    - Key files and their purposes
+    - Architectural patterns discovered
+    - Relationships between components
+    - What areas have been explored
+    - What's still unknown or unexplored
+
+    ## Rules
+    1. Keep summary under 400 words
+    2. Be factual and specific
+    3. Update incrementally - don't rewrite everything
+    4. Note what the latest action revealed
+    5. You do NOT extract code - that's done separately
+
+    ## Format
+    Use clear sections. Example:
+
+    Structure: src/ contains main code, tests/ has test files...
+    Key Files: auth.py handles authentication, db.py manages database...
+    Patterns: Uses repository pattern, dependency injection...
+    Explored: src/auth/, src/models/
+    Unknown: src/utils/, configuration loading
+
+  user: |
+    ## Task
+    {{ input.task }}
+
+    ## Current Summary
+    {{ input.current_summary }}
+
+    ## Latest Exploration
+    Action: {{ input.latest_action }}
+
+    ```
+    {{ input.latest_output }}
+    ```
+
+    ## Update
+    Integrate findings from the latest action into the summary.
+    Keep it under 400 words. Be specific about what was discovered.
+
+  output:
+    updated_summary:
+      type: str
+      description: "Updated narrative summary (max 400 words)"
+
+metadata:
+  description: "Maintains narrative summary of exploration progress"

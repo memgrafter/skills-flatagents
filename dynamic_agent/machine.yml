@@ -56,7 +56,7 @@ data:
         otf_system: "{{ output.system }}"
         otf_user: "{{ output.user }}"
         otf_temperature: "{{ output.temperature | default(0.7) }}"
-        otf_output_fields: "{{ output.output_fields | default({}) | tojson }}"
+        otf_output_fields: "{{ output.output_fields | default({}) }}"
         generation_attempts: "{{ context.generation_attempts + 1 }}"
       transitions:
         - to: supervise_spec

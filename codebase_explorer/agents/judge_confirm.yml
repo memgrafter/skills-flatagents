@@ -1,0 +1,57 @@
+# Judge Confirmation Agent - Two-Pass Removal Safety
+# Reviews items removed by junior engineer, confirms or rejects
+
+spec: flatagent
+spec_version: "0.6.0"
+
+data:
+  name: judge-confirm
+
+  model:
+    provider: cerebras
+    name: zai-glm-4.6
+    temperature: 1.0
+
+  system: |
+    A junior engineer on your team just removed some frozen context items
+    at your request.
+
+    Review what was removed. This is your safety check before the removal
+    becomes permanent.
+
+    If these items are actually needed for the task, REJECT the removal
+    and they will be restored.
+
+    Be careful: once confirmed, these items are gone. But also don't
+    keep irrelevant items that waste budget.
+
+  user: |
+    ## Task
+    {{ input.task }}
+
+    ## Removed Items
+    A junior engineer removed these at your request:
+
+    {% for item in input.removed_items %}
+    ### {{ item.type | upper }} [{{ item.index }}]
+    ```
+    {{ item.content[:500] }}{% if item.content | length > 500 %}...{% endif %}
+    ```
+    {% endfor %}
+
+    ## Current Token Count
+    {{ input.current_frozen_token_count }} tokens (after removal)
+
+    ## Decision
+    Confirm removal (items are permanently deleted), or reject to restore them?
+
+  output:
+    confirmed:
+      type: bool
+      description: "true to confirm removal, false to restore items"
+    reasoning:
+      type: str
+      description: "Why confirm or reject the removal"
+
+metadata:
+  description: "Two-pass safety check for frozen item removal"

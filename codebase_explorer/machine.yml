@@ -1,0 +1,217 @@
+# Codebase Explorer Machine
+# Explores a codebase with budget-aware frozen state management
+
+spec: flatmachine
+spec_version: "0.3.0"
+
+data:
+  name: codebase-explorer
+
+  context:
+    # Input
+    task: "{{ input.task }}"
+    working_dir: "{{ input.working_dir | default('.') }}"
+
+    # Mutable state (summarizer can update)
+    summary: "No exploration done yet. Starting fresh."
+
+    # Frozen state (append-only, never re-processed by LLM)
+    frozen_imports: []
+    frozen_signatures: []
+    frozen_segments: []
+    frozen_files: {}
+
+    # Raw exploration outputs (for final output)
+    tree_outputs: []
+    rg_results: []
+    file_contents: {}
+
+    # Latest action state
+    latest_action: null
+    latest_output: null
+    action_command: null
+
+    # Removal state (two-pass)
+    pending_removals: []
+    has_pending_removals: false
+    stashed_items: []
+    removal_pending: false
+    removal_confirmed: false
+
+    # Token tracking
+    frozen_token_count: 0
+    summary_token_count: 0
+    token_budget: "{{ input.token_budget | default(40000) }}"
+    budget_burn_rate: 0
+    projected_overage: 0
+
+    # Control
+    iteration: 0
+    max_iterations: "{{ input.max_iterations | default(10) }}"
+    next_action: null
+
+  agents:
+    judge: ./agents/judge.yml
+    judge_confirm: ./agents/judge_confirm.yml
+    extractor: ./agents/extractor.yml
+    summarizer: ./agents/summarizer.yml
+
+  states:
+    # ========== INITIAL STATE ==========
+    start:
+      type: initial
+      transitions:
+        - to: judge
+
+    # ========== JUDGE DECISION ==========
+    judge:
+      agent: judge
+      input:
+        task: "{{ context.task }}"
+        frozen_token_count: "{{ context.frozen_token_count }}"
+        token_budget: "{{ context.token_budget }}"
+        budget_burn_rate: "{{ context.budget_burn_rate }}"
+        projected_overage: "{{ context.projected_overage }}"
+        iteration: "{{ context.iteration }}"
+        max_iterations: "{{ context.max_iterations }}"
+        frozen_imports: "{{ context.frozen_imports }}"
+        frozen_signatures: "{{ context.frozen_signatures }}"
+        frozen_segments: "{{ context.frozen_segments }}"
+        summary: "{{ context.summary }}"
+        latest_action: "{{ context.latest_action }}"
+        latest_output_preview: "{{ context.latest_output[:500] if context.latest_output else '' }}"
+      output_to_context:
+        next_action: "{{ output.action }}"
+        action_command: "{{ output.command }}"
+      transitions:
+        - to: route_action
+
+    # ========== ACTION ROUTING ==========
+    route_action:
+      transitions:
+        # Terminal conditions
+        - condition: "context.next_action == 'done'"
+          to: finalize
+        - condition: "context.iteration >= context.max_iterations"
+          to: finalize
+        - condition: "context.frozen_token_count >= context.token_budget"
+          to: finalize
+
+        # Exploration actions
+        - condition: "context.next_action == 'tree'"
+          to: exec_tree
+        - condition: "context.next_action == 'rg'"
+          to: exec_rg
+        - condition: "context.next_action == 'read'"
+          to: exec_read
+
+        # Fallback
+        - to: finalize
+
+    # ========== EXPLORATION ACTIONS ==========
+    exec_tree:
+      action: run_tree
+      transitions:
+        - to: extract
+
+    exec_rg:
+      action: run_ripgrep
+      transitions:
+        - to: extract
+
+    exec_read:
+      action: read_file
+      transitions:
+        - to: extract
+
+    # ========== EXTRACTION & SUMMARIZATION ==========
+    extract:
+      agent: extractor
+      input:
+        task: "{{ context.task }}"
+        latest_action: "{{ context.latest_action }}"
+        latest_output: "{{ context.latest_output }}"
+        existing_imports: "{{ context.frozen_imports }}"
+        existing_signatures: "{{ context.frozen_signatures }}"
+        existing_segments: "{{ context.frozen_segments }}"
+      output_to_context:
+        frozen_imports: "{{ (context.frozen_imports | default([])) + (output.imports | default([])) }}"
+        frozen_signatures: "{{ (context.frozen_signatures | default([])) + (output.signatures | default([])) }}"
+        frozen_segments: "{{ (context.frozen_segments | default([])) + (output.segments | default([])) }}"
+      transitions:
+        - to: summarize
+
+    summarize:
+      agent: summarizer
+      input:
+        task: "{{ context.task }}"
+        current_summary: "{{ context.summary }}"
+        latest_action: "{{ context.latest_action }}"
+        latest_output: "{{ context.latest_output }}"
+      output_to_context:
+        summary: "{{ output.updated_summary }}"
+        iteration: "{{ context.iteration + 1 }}"
+      transitions:
+        - to: update_tokens
+
+    update_tokens:
+      action: update_token_counts
+      transitions:
+        - to: judge
+
+    # ========== TWO-PASS REMOVAL ==========
+    remove_frozen:
+      action: remove_frozen_items
+      transitions:
+        - to: confirm_removal
+
+    confirm_removal:
+      agent: judge_confirm
+      input:
+        task: "{{ context.task }}"
+        removed_items: "{{ context.stashed_items }}"
+        current_frozen_token_count: "{{ context.frozen_token_count }}"
+      output_to_context:
+        removal_confirmed: "{{ output.confirmed }}"
+      transitions:
+        - condition: "context.removal_confirmed"
+          to: removal_accepted
+        - to: restore_frozen
+
+    removal_accepted:
+      action: clear_stash
+      output_to_context:
+        has_pending_removals: false
+      transitions:
+        - to: update_tokens_after_removal
+
+    restore_frozen:
+      action: restore_frozen_items
+      output_to_context:
+        has_pending_removals: false
+      transitions:
+        - to: update_tokens_after_removal
+
+    update_tokens_after_removal:
+      action: update_token_counts
+      transitions:
+        - to: judge
+
+    # ========== FINAL STATE ==========
+    finalize:
+      type: final
+      output:
+        summary: "{{ context.summary }}"
+        frozen_imports: "{{ context.frozen_imports }}"
+        frozen_signatures: "{{ context.frozen_signatures }}"
+        frozen_segments: "{{ context.frozen_segments }}"
+        tree_outputs: "{{ context.tree_outputs }}"
+        file_contents: "{{ context.file_contents }}"
+        iterations: "{{ context.iteration }}"
+        tokens_used: "{{ context.frozen_token_count }}"
+        token_budget: "{{ context.token_budget }}"
+        api_calls: "{{ context.api_call_count }}"
+
+metadata:
+  description: "Budget-aware codebase exploration with frozen state management"
+  tags: ["exploration", "context-discovery", "budget-aware"]

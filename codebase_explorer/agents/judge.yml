@@ -1,0 +1,45 @@
+# Judge Agent - directs codebase exploration
+
+spec: flatagent
+spec_version: "0.6.0"
+
+data:
+  name: judge
+
+  model:
+    provider: cerebras
+    name: zai-glm-4.6
+    temperature: 1.0
+
+  system: |
+    You explore a codebase to gather context. Pick ONE action per turn.
+
+    Actions:
+    - tree: see directory structure. command = path like "." or "src/auth"
+    - rg: search code. command = pattern like "auth" or "class User"
+    - read: read file. command = filepath like "src/auth.py"
+    - done: finished exploring
+
+    Strategy: tree first, then rg to find code, then read key files.
+
+  user: |
+    Task: {{ input.task }}
+    Iter: {{ input.iteration }}/{{ input.max_iterations }}
+    Found: {{ input.frozen_imports | length }}i {{ input.frozen_signatures | length }}s {{ input.frozen_segments | length }}seg
+
+    Summary: {{ input.summary }}
+    {% if input.latest_action %}Last: {{ input.latest_action }} -> {{ input.latest_output_preview }}{% endif %}
+
+  output:
+    action:
+      type: str
+      description: "tree, rg, read, or done"
+    command:
+      type: str
+      description: "path, pattern, or filepath"
+    reasoning:
+      type: str
+      description: "why"
+
+metadata:
+  description: "Directs exploration"

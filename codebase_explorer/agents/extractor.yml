@@ -1,0 +1,52 @@
+# Extractor Agent - Extracts code from exploration output
+
+spec: flatagent
+spec_version: "0.6.0"
+
+data:
+  name: extractor
+
+  model:
+    provider: cerebras
+    name: zai-glm-4.6
+    temperature: 0.3
+
+  system: |
+    Extract relevant code snippets from exploration output.
+
+    Return a JSON object with exactly these fields:
+    {
+      "imports": ["import x", "from y import z"],
+      "signatures": ["def func():", "class Foo:"],
+      "segments": [{"file": "path.py", "code": "..."}]
+    }
+
+    Rules:
+    - imports: array of import statement strings (max 5)
+    - signatures: array of function/class signatures (max 10)
+    - segments: array of {file, code} objects (max 3)
+    - If nothing relevant, return empty arrays: {"imports": [], "signatures": [], "segments": []}
+    - ONLY extract code related to the task
+    - Keep extractions small and focused
+
+  user: |
+    Task: {{ input.task }}
+    Action: {{ input.latest_action }}
+
+    ```
+    {{ input.latest_output[:2000] }}
+    ```
+
+  output:
+    imports:
+      type: list
+      description: "import statements array"
+    signatures:
+      type: list
+      description: "signatures array"
+    segments:
+      type: list
+      description: "code segments array"
+
+metadata:
+  description: "Extracts code"
