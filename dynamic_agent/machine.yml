@@ -1,0 +1,120 @@
+# Dynamic Agent Example
+# Demonstrates On-The-Fly (OTF) agent generation with pre-execution supervision
+
+spec: flatmachine
+spec_version: "0.3.0"
+
+data:
+  name: dynamic-agent
+  
+  context:
+    # User's creative writing task
+    task: "{{ input.task }}"
+    style_hints: "{{ input.style_hints | default('') }}"
+    
+    # OTF agent spec fields (stored individually)
+    otf_name: null
+    otf_system: null
+    otf_user: null
+    otf_temperature: 0.7
+    otf_output_fields: null
+    
+    # Supervisor analysis (pre-execution)
+    supervisor_approved: false
+    supervisor_analysis: null
+    supervisor_concerns: null
+    
+    # Human review
+    human_approved: false
+    human_acknowledged: false
+    
+    # OTF execution result
+    otf_result: null
+    
+    # Iteration tracking
+    generation_attempts: 0
+    max_attempts: 3
+  
+  agents:
+    generator: ./agents/generator.yml
+    supervisor: ./agents/supervisor.yml
+  
+  states:
+    start:
+      type: initial
+      transitions:
+        - to: generate_agent
+    
+    generate_agent:
+      agent: generator
+      input:
+        task: "{{ context.task }}"
+        style_hints: "{{ context.style_hints }}"
+        previous_concerns: "{{ context.supervisor_concerns }}"
+      output_to_context:
+        otf_name: "{{ output.name }}"
+        otf_system: "{{ output.system }}"
+        otf_user: "{{ output.user }}"
+        otf_temperature: "{{ output.temperature | default(0.7) }}"
+        otf_output_fields: "{{ output.output_fields | default({}) | tojson }}"
+        generation_attempts: "{{ context.generation_attempts + 1 }}"
+      transitions:
+        - to: supervise_spec
+    
+    supervise_spec:
+      # Supervisor analyzes the OTF spec BEFORE execution
+      agent: supervisor
+      input:
+        original_task: "{{ context.task }}"
+        spec_name: "{{ context.otf_name }}"
+        spec_system: "{{ context.otf_system }}"
+        spec_user: "{{ context.otf_user }}"
+        spec_temperature: "{{ context.otf_temperature }}"
+        spec_output_fields: "{{ context.otf_output_fields }}"
+      output_to_context:
+        supervisor_approved: "{{ output.approved }}"
+        supervisor_analysis: "{{ output.analysis }}"
+        supervisor_concerns: "{{ output.concerns }}"
+      transitions:
+        - to: human_review
+    
+    human_review:
+      # Human reviews supervisor's analysis
+      action: human_review_otf
+      transitions:
+        # If human approved the agent for execution
+        - condition: "context.human_approved"
+          to: otf_execute
+        # Otherwise (rejected or denied) check if we can retry
+        - to: check_retry
+    
+    check_retry:
+      # Check if we can retry generation
+      transitions:
+        - condition: "context.generation_attempts >= context.max_attempts"
+          to: max_attempts_reached
+        - to: generate_agent
+    
+    otf_execute:
+      # Execute the approved OTF agent
+      action: otf_execute
+      transitions:
+        - to: done
+    
+    done:
+      type: final
+      output:
+        content: "{{ context.otf_result.content | default(context.otf_result) }}"
+        agent_name: "{{ context.otf_name }}"
+        attempts: "{{ context.generation_attempts }}"
+    
+    max_attempts_reached:
+      type: final
+      output:
+        error: "Max generation attempts reached"
+        last_concerns: "{{ context.supervisor_concerns }}"
+        attempts: "{{ context.generation_attempts }}"
+
+metadata:
+  description: "Dynamic agent generation with pre-execution supervision and human-in-the-loop"
+  tags: ["otf", "dynamic", "creative-writing", "human-in-loop"]

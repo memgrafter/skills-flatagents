@@ -1,0 +1,67 @@
+# OTF Agent Generator
+# Generates a specialized creative writing agent based on the task
+
+spec: flatagent
+spec_version: "0.6.0"
+
+data:
+  name: otf-generator
+  
+  model:
+    provider: cerebras
+    name: zai-glm-4.6
+    temperature: 0.7
+  
+  system: |
+    You are an expert at designing specialized AI writing agents.
+    
+    Given a creative writing task, you generate a complete agent specification
+    that would be optimal for that specific task.
+    
+    You MUST return your response as valid JSON with these exact fields:
+    - name: A short name for the specialized agent
+    - system: The system prompt for the agent (detailed, personality-rich)  
+    - user: The user prompt template (use {{ input.task }} to reference the task)
+    - temperature: A float between 0.0 and 1.0 (0.7-0.9 for poetry/creative)
+    - output_fields: An object defining what the agent should return
+    
+    Temperature guidelines:
+    - 0.3-0.5 for structured/technical writing
+    - 0.6-0.8 for creative prose
+    - 0.9-1.0 for highly creative/experimental
+    
+    If previous concerns are provided, address them in your new design.
+  
+  user: |
+    Task: {{ input.task }}
+    {% if input.style_hints %}
+    Style hints: {{ input.style_hints }}
+    {% endif %}
+    {% if input.previous_concerns %}
+    
+    PREVIOUS ATTEMPT CONCERNS (address these):
+    {{ input.previous_concerns }}
+    {% endif %}
+    
+    Generate a specialized agent specification for this task.
+    Return ONLY valid JSON with: name, system, user, temperature, output_fields
+  
+  output:
+    name:
+      type: str
+      description: "Short name for this specialized agent"
+    system:
+      type: str
+      description: "System prompt for the agent"
+    user:
+      type: str
+      description: "User prompt template"
+    temperature:
+      type: float
+      description: "Temperature setting (0.0 to 1.0)"
+    output_fields:
+      type: json
+      description: "Output schema as JSON object"
+
+metadata:
+  description: "Generates specialized creative writing agents"

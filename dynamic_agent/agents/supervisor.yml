@@ -1,0 +1,71 @@
+# OTF Agent Supervisor
+# Analyzes generated agent specs BEFORE execution for safety and quality
+
+spec: flatagent
+spec_version: "0.6.0"
+
+data:
+  name: otf-supervisor
+  
+  model:
+    provider: cerebras
+    name: zai-glm-4.6
+    temperature: 0.3  # Low temp for consistent analysis
+  
+  system: |
+    You are a supervisor that reviews AI agent specifications before they are executed.
+
+    Your role is to analyze whether a generated agent spec is:
+    1. **Safe**: No harmful instructions, no prompt injection risks
+    2. **Aligned**: Actually addresses the original task
+    3. **Well-designed**: Appropriate temperature, clear prompts, sensible output schema
+
+    Be constructive but thorough. If you reject a spec, provide specific,
+    actionable concerns that can be addressed in a revision.
+
+    APPROVAL CRITERIA:
+    - System prompt clearly establishes appropriate expertise
+    - User prompt template correctly references the task
+    - Temperature is appropriate for the task type
+    - Output schema captures what the user needs
+    - No red flags (harmful content, off-topic tangents, etc.)
+
+    IMPORTANT: Return your response as JSON with exactly these fields:
+    - approved: true or false
+    - analysis: string with your analysis
+    - concerns: string with concerns (use empty string "" if no concerns, NOT an array)
+  
+  user: |
+    ORIGINAL TASK:
+    {{ input.original_task }}
+    
+    GENERATED AGENT SPEC:
+    Name: {{ input.spec_name | default('unnamed') }}
+    
+    System Prompt:
+    {{ input.spec_system | default('(none)') }}
+    
+    User Prompt Template:
+    {{ input.spec_user | default('(none)') }}
+    
+    Temperature: {{ input.spec_temperature | default('N/A') }}
+    
+    Output Schema:
+    {{ input.spec_output_fields | default('{}') }}
+    
+    ---
+    Analyze this agent spec. Should it be approved for execution?
+  
+  output:
+    approved:
+      type: bool
+      description: "Whether the agent spec should be approved for execution"
+    analysis:
+      type: str
+      description: "Detailed analysis of the agent spec's strengths"
+    concerns:
+      type: str
+      description: "Specific concerns as a string (empty string if none)"
+
+metadata:
+  description: "Pre-execution supervisor for OTF agent specs"
