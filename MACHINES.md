@@ -34,7 +34,7 @@ Usage instructions and examples in markdown.
 ### machine.yml
 ```yaml
 spec: flatmachine
-spec_version: "0.1.0"
+spec_version: "x.y.z"  # grep SPEC_VERSION .venv/**/flatmachine.d.ts
 
 data:
   name: my-skill
@@ -65,7 +65,7 @@ data:
 ### agents/*.yml
 ```yaml
 spec: flatagent
-spec_version: "0.6.0"
+spec_version: "x.y.z"  # grep SPEC_VERSION .venv/**/flatagent.d.ts
 
 data:
   name: processor
@@ -123,6 +123,7 @@ Reference `settings.hooks: skill_name.hooks` in machine.yml.
 |------|---------|
 | `type: initial` | Entry state, exactly one per machine |
 | `agent: name` | Call a flatagent, map input/output |
+| `machine: name` | Invoke child machine (from `machines` map) |
 | `action: name` | Call a hook action |
 | `type: final` | Terminal state with output mapping |
 
@@ -147,11 +148,20 @@ Set in machine settings: `settings: { expression_engine: cel }`
 ## Key Patterns
 
 - **Templating**: Use `{{ context.var }}` and `{{ input.var }}` in YAML
-- **State flow**: `type: initial` → agent/action states → `type: final`
+- **State flow**: `type: initial` → agent/action/machine states → `type: final`
 - **Error handling**: `on_error: error_state` with `{{ context.last_error }}`
 - **Retry logic**: `execution: { type: retry, backoffs: [2, 8], jitter: 0.1 }`
+- **Parallel**: `execution: { type: parallel, n_samples: 3 }`
 - **Conditions**: `transitions: [{ condition: "expr", to: state }]`
 - **Loops**: Use conditions to loop back (e.g., `round < max_rounds`)
+- **MCP tools**: Agent `mcp: { servers: {...}, tool_prompt: "..." }` for tool use
+
+### Dynamic Patterns
+
+- **Nested HSM**: `machines: { sub: ./sub.yml }` → state `machine: sub` → child runs, output merges to context
+- **Dynamic agent**: Inline `agents: { gen: { spec: flatagent, data: {...} } }` or hook returns AgentWrapper
+- **Dynamic machine**: Inline `machines: { dyn: { spec: flatmachine, data: {...} } }` for runtime composition
+- **Decider**: Agent outputs `decision` field → transitions branch: `condition: "output.decision == 'path_a'"`
 
 ## Quick-Start Checklist
 
@@ -166,22 +176,16 @@ Set in machine settings: `settings: { expression_engine: cel }`
 
 ## Spec Assets
 
-Access bundled specs via `importlib.resources` (requires `flatagents>=0.1.8`):
+To get latest specs, upgrade flatagents: `uv pip install -p .venv/bin/python --upgrade flatagents`
 
-```python
-from importlib.resources import files
-
-spec = files('flatagents.assets').joinpath('flatagent.slim.d.ts').read_text()
-```
+Canonical sources in `.venv/lib/python3.12/site-packages/flatagents/assets/`:
 
 | Asset | Use Case |
 |-------|----------|
-| `flatagent.slim.d.ts` | **Default** — minimal TypeScript spec for LLM generation |
-| `flatmachine.slim.d.ts` | **Default** — minimal TypeScript spec for LLM generation |
-| `flatagent.d.ts` | Verbose spec with JSDoc comments — use when solving specific problems |
-| `flatmachine.d.ts` | Verbose spec with JSDoc comments — use when solving specific problems |
-| `flatagent.schema.json` | JSON Schema — for JSON-based agents or special tooling |
-| `flatmachine.schema.json` | JSON Schema — for JSON-based agents or special tooling |
+| `flatagent.d.ts` | **Canonical** — full TypeScript spec with JSDoc |
+| `flatmachine.d.ts` | **Canonical** — full TypeScript spec with JSDoc |
+| `flatagent.slim.d.ts` | Minimal spec to save context |
+| `flatmachine.slim.d.ts` | Minimal spec to save context |
 
-**Recommendation**: Use `.slim.d.ts` by default to save context. Switch to full `.d.ts` when the LLM needs detailed guidance. Use `.schema.json` only for JSON agent pipelines or validation tooling.
+**Recommendation**: Read the full `.d.ts` files when creating or modifying agents/machines. Use `.slim.d.ts` for context-constrained scenarios.
 
