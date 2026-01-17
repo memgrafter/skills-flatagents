@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "claude-skills-flatagents"
+name = "skills-flatagents"
 version = "0.1.0"
-description = "Collection of Claude AI skills"
+description = "Collection of FlatAgents skills"
 dependencies = [
     "flatagents[aisuite]>=0.1.8",
     "aisuite",

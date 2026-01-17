@@ -1,12 +1,12 @@
-# Claude Skills - FlatAgents
+# FlatAgents Skills
 
-Claude Code skills powered by [FlatAgents](https://github.com/memgrafter/flatagents).
+Agent skills powered by [FlatAgents](https://github.com/memgrafter/flatagents).
 
 LLM/machine readers: use MACHINES.md as a primary reference, it is more comprehensive and token efficient.
 
 ## Skills
 
-All skill use flatagents, returning limited context to claude to preserve the context window.
+All skills use FlatAgents, returning limited context to the caller to preserve the context window.
 
 - **search_refiner** - Search the web with Exa MCP and refine results to 500 tokens
 - **shell_analyzer** - Run shell commands and analyze output with validated summaries. Use for build logs, test output, or any command with substantial output. Preserves context by returning concise summaries with grep-validated citations.
@@ -48,7 +48,7 @@ data:
 ```
 
 **Common providers:**
-- `anthropic` - Requires `ANTHROPIC_API_KEY` (models: claude-3-5-sonnet-20241022, etc.)
+- `anthropic` - Requires `ANTHROPIC_API_KEY` (models: see provider docs)
 - `openai` - Requires `OPENAI_API_KEY` (models: gpt-4, gpt-4-turbo, etc.)
 - `cerebras` - Requires `CEREBRAS_API_KEY` (models: zai-glm-4.6, llama3.1-8b, etc.)
 - See [FlatAgents docs](https://github.com/memgrafter/flatagents) for full provider list

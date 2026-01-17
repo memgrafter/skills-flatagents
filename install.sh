@@ -100,8 +100,8 @@ for skill in $SKILLS; do
     fi
 done
 
-# Symlink skills to ~/.claude/skills/
-SKILLS_DIR="$HOME/.claude/skills"
+# Symlink skills to ~/.flatagents/skills/ (override with FLATAGENTS_SKILLS_DIR)
+SKILLS_DIR="${FLATAGENTS_SKILLS_DIR:-$HOME/.flatagents/skills}"
 mkdir -p "$SKILLS_DIR"
 
 for skill in $SKILLS; do

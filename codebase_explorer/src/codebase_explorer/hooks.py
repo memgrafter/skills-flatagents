@@ -163,6 +163,9 @@ class CodebaseExplorerHooks(MachineHooks):
         Returns: context.latest_output, updated tree_outputs
         """
         cmd = context.get("action_command", "")
+        # Use working_dir from context if available (passed via machine input)
+        working_dir = context.get("working_dir")
+        cwd = Path(working_dir).resolve() if working_dir else self.working_dir
 
         # If just a path, prepend tree command
         if not cmd or not cmd.strip().startswith("tree"):
@@ -173,7 +176,7 @@ class CodebaseExplorerHooks(MachineHooks):
             result = subprocess.run(
                 cmd,
                 shell=True,
-                cwd=str(self.working_dir),
+                cwd=str(cwd),
                 capture_output=True,
                 text=True,
                 timeout=30
@@ -206,6 +209,9 @@ class CodebaseExplorerHooks(MachineHooks):
         Returns: context.latest_output, updated rg_results
         """
         cmd = context.get("action_command", "")
+        # Use working_dir from context if available (passed via machine input)
+        working_dir = context.get("working_dir")
+        cwd = Path(working_dir).resolve() if working_dir else self.working_dir
 
         # If just a pattern, prepend rg command
         if not cmd or not cmd.strip().startswith("rg"):
@@ -216,7 +222,7 @@ class CodebaseExplorerHooks(MachineHooks):
             result = subprocess.run(
                 cmd,
                 shell=True,
-                cwd=str(self.working_dir),
+                cwd=str(cwd),
                 capture_output=True,
                 text=True,
                 timeout=60
@@ -253,6 +259,9 @@ class CodebaseExplorerHooks(MachineHooks):
         Returns: context.latest_output, updated file_contents
         """
         filepath = context.get("action_command", "")
+        # Use working_dir from context if available (passed via machine input)
+        working_dir = context.get("working_dir")
+        base_path = Path(working_dir).resolve() if working_dir else self.working_dir
 
         if not filepath:
             context["latest_output"] = "Error: no file path specified"
@@ -260,12 +269,12 @@ class CodebaseExplorerHooks(MachineHooks):
             return context
 
         # Resolve path relative to working dir
-        full_path = self.working_dir / filepath
+        full_path = base_path / filepath
 
         # Security: ensure path is within working dir
         try:
             full_path = full_path.resolve()
-            if not str(full_path).startswith(str(self.working_dir)):
+            if not str(full_path).startswith(str(base_path)):
                 context["latest_output"] = "Error: path outside working directory"
                 context["latest_action"] = "read"
                 return context

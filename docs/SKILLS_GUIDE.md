@@ -1,6 +1,6 @@
-# Claude Code Skills Guide: From Simple to Advanced Meta Skills
+# FlatAgents Skills Guide: From Simple to Advanced Meta Skills
 
-A comprehensive guide to learning and mastering Claude Code Skills, progressing from basic concepts through advanced meta-skill implementations.
+A comprehensive guide to learning and mastering FlatAgents Skills, progressing from basic concepts through advanced meta-skill implementations.
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -15,10 +15,10 @@ A comprehensive guide to learning and mastering Claude Code Skills, progressing 
 
 ## Introduction
 
-Claude Code Skills extend Claude's capabilities by providing specialized instructions, tools, and workflows. Skills can range from simple single-file implementations to complex meta-skills that orchestrate multiple capabilities.
+FlatAgents Skills extend an assistant's capabilities by providing specialized instructions, tools, and workflows. Skills can range from simple single-file implementations to complex meta-skills that orchestrate multiple capabilities.
 
 ### What is a Skill?
-A Skill is a reusable configuration that teaches Claude how to perform specific tasks. Skills can:
+A Skill is a reusable configuration that teaches the assistant how to perform specific tasks. Skills can:
 - Enforce brand guidelines and formatting
 - Provide specialized workflows
 - Restrict tool access for safety
@@ -33,17 +33,17 @@ Simple skills are single-file implementations that are easy to create and unders
 
 #### Basic Skill Structure
 ```yaml
-# .claude/skills/explain-with-diagrams.md
+# .flatagents/skills/explain-with-diagrams.md
 name: Explain Code with Diagrams
-description: Teaches Claude to explain code using diagrams and analogies
+description: Teaches the assistant to explain code using diagrams and analogies
 allowed-tools: []
 ```
 
 #### Creating Your First Skill
-1. Create a `.claude/skills/` directory in your project
+1. Create a `.flatagents/skills/` directory in your project
 2. Create a markdown file with your skill definition
 3. Add YAML metadata at the top (name, description, allowed-tools)
-4. Write instructions for Claude to follow
+4. Write instructions for the assistant to follow
 
 #### Example: Simple Skill
 ```yaml
@@ -77,7 +77,7 @@ As skills become more complex, organize them using multiple files to maintain cl
 
 #### Structure
 ```
-.claude/skills/advanced-skill/
+.flatagents/skills/advanced-skill/
 ├── skill.md           # Main skill definition
 ├── guidelines.md      # Detailed guidelines
 ├── templates/         # Reusable templates
@@ -117,7 +117,7 @@ Always validate output using the utility script:
 
 ### Tool Restriction
 
-Use the `allowed-tools` field to limit which tools Claude can use with this skill.
+Use the `allowed-tools` field to limit which tools the assistant can use with this skill.
 
 ```yaml
 allowed-tools:
@@ -129,7 +129,7 @@ allowed-tools:
 
 This improves:
 - **Safety:** Prevent unintended operations
-- **Focus:** Keep Claude on task
+- **Focus:** Keep the assistant on task
 - **Predictability:** Consistent behavior
 
 ---
@@ -216,7 +216,7 @@ Creates well-structured skill files with templates and best practices.
 ```
 
 #### 2. **prompt-optimize**
-Transforms Claude into an expert prompt engineer using advanced techniques.
+Transforms the assistant into an expert prompt engineer using advanced techniques.
 
 **Purpose:** Enhance skill effectiveness through optimized prompting
 
@@ -428,14 +428,11 @@ Skills are a practical way to manage limited context by loading only what matter
 ## Resources
 
 ### Official Documentation
-- **Claude Code Skills Docs:** https://code.claude.com/docs/en/skills
-- **Agent Skills Guide:** https://docs.claude.com/en/docs/claude-code/skills
+- **FlatAgents docs:** https://github.com/memgrafter/flatagents
+- **Local skills reference:** `MACHINES.md`
 
 ### Community Resources
-- **Claude Meta Skills Repository:** https://github.com/YYH211/Claude-meta-skill
-  - Ready-to-use meta skills
-  - Templates and examples
-  - Best practices guide
+- **Shared skill templates:** Maintain an internal repo of reusable skills and patterns
 
 ### Learning Paths
 
@@ -476,8 +473,8 @@ Skills are a practical way to manage limited context by loading only what matter
 For issues or questions:
 - Check the troubleshooting section of official docs
 - Review examples in the meta-skill repository
-- Ask in Claude Code community channels
-- File issues at https://github.com/anthropics/claude-code/issues
+- Ask in your community channels
+- File issues in your project's issue tracker
 
 ---
 
@@ -495,4 +492,4 @@ Meta Skills (Automation, Optimization, Governance)
 Skill Ecosystem (Organization-wide Governance & Evolution)
 ```
 
-Each level builds on the previous, enabling more sophisticated automation and coordination of Claude's capabilities.
+Each level builds on the previous, enabling more sophisticated automation and coordination of the assistant's capabilities.

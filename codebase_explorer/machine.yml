@@ -6,6 +6,13 @@ spec_version: "0.3.0"
 
 data:
   name: codebase-explorer
+  
+  # Hooks class for this machine's actions (tree, rg, read_file, etc.)
+  hooks:
+    file: ./src/codebase_explorer/hooks.py
+    class: CodebaseExplorerHooks
+    args:
+      working_dir: "."
 
   context:
     # Input

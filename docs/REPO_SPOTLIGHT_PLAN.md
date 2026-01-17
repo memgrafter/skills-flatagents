@@ -17,7 +17,7 @@ How does the digest persist and get accessed?
 | Option | Pros | Cons |
 |--------|------|------|
 | Stdout (ephemeral) | Simple | No reuse, manual paste |
-| File in repo (`.claude/codebase-map.md`) | Persists, Claude can `Read` it | Gets stale, needs regen trigger |
+| File in repo (`.flatagents/codebase-map.md`) | Persists, the assistant can `Read` it | Gets stale, needs regen trigger |
 | CLAUDE.md injection | Auto-loaded every session | Pollutes instructions, wasteful |
 | MCP resource | Clean tool access | Requires MCP infrastructure |
 | Cache + file watcher | Always fresh | Complex |
@@ -287,11 +287,10 @@ No external deps for v1. Tree-sitter optional for v2.
 - **Replicate:** Incremental updates, hybrid search approach
 - Source: https://github.com/m1rl0k/Context-Engine
 
-### Claude Context (Zilliz)
+### Context Map (Zilliz)
 - ~40% token reduction with equivalent retrieval quality
 - Hybrid search (BM25 + dense vector)
 - **Replicate:** Token efficiency techniques
-- Source: https://github.com/zilliztech/claude-context
 
 **Note:** We want to replicate key parts locally, not consume external MCPs. Running locally means we can use simpler approaches (Python AST, git commands, file watching) without vector DB infrastructure.
 
@@ -302,7 +301,7 @@ No external deps for v1. Tree-sitter optional for v2.
 **Phase:** Planning
 
 **Blockers:**
-1. **Persistence layer** - How does Claude access/reuse the map?
+1. **Persistence layer** - How does the assistant access/reuse the map?
 2. **Maintenance cost** - LLM generation is expensive; map generation should be LLM-free (deterministic code via static analysis). LLM only for optional one-time summary.
 
 **Key Insight:** Map generation should be **code-only** (AST, imports, git). Fast, free, can run on every commit. LLM is for consumption, not generation.

@@ -1,0 +1,196 @@
+2026-01-06 16:23:45 - flatagents.flatmachine - WARNING - Config version 0.3.0 may not be fully supported. Current SDK supports 0.1.x.
+explore /Users/trentrobbins/code/skills-flatagents
+task explore the codebase_explorer skill
+budget 4000 tokens 10 iters
+
+## Summary
+Structure: Multi-skill repository with codebase_explorer, dynamic_agent, search_refiner, shell_analyzer, and test_writer. Each skill follows consistent pattern: agents/, machine.yml, run.sh, SKILL.md, and src/. Shared utilities (diff_utils.py, json_utils.py) and root docs/ and tests/ support the ecosystem.
+
+Key Files: codebase_explorer/src/codebase_explorer/main.py provides CLI implementation. CodebaseExplorerHooks implements budget-aware exploration with tree, ripgrep, and file reading capabilities. machine.yml defines the complete state machine workflow with 11 states including judge, extract, summarize, and finalize. Agents/ directory contains four YAML configurations: extractor.yml, judge_confirm.yml, judge.yml, and summarizer.yml.
+
+Patterns: FlatMachine state machine orchestrates exploration cycle through judge decision → action routing → extraction → summarization loop. Budget-aware system with token tracking (tiktoken), frozen state management (imports/signatures/segments), and two-pass removal capability with confirmation. Context flows between states using {{ context.* }} templating. Terminal conditions check completion, iterations, and budget limits.
+
+Explored: Complete machine.yml workflow, revealing 11-state architecture: start → judge → route_action → exec_* (tree/rg/read) → extract → summarize → update_tokens → judge (loop). Discovered comprehensive context management with frozen_token_count, summary_token_count, budget tracking, and two-pass removal system (remove_frozen → confirm_removal → removal_accepted/restore_frozen). Final state outputs complete exploration results.
+
+Unknown: Individual agent implementations in agents/ directory, specific extraction algorithms, exploration strategy heuristics in judge agent, and shared utilities integration details.
+
+## Imports
+import argparse
+import asyncio
+import json
+import logging
+import sys
+from pathlib import Path
+from flatagents import FlatMachine
+from .hooks import CodebaseExplorerHooks
+import argparse
+import asyncio
+import json
+import logging
+import sys
+from pathlib import Path
+from flatagents import FlatMachine
+from .hooks import CodebaseExplorerHooks
+import subprocess
+import json
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+import logging
+
+## Signatures
+def parse_args():
+async def main():
+def parse_args():
+async def main():
+class CodebaseExplorerHooks(MachineHooks):
+def __init__(self, working_dir: str = "."):
+def _log(self, *parts):
+def count_tokens(self, text: str) -> int:
+def count_frozen_tokens(self, context: Dict[str, Any]) -> int:
+
+## Code Segments
+
+### codebase_explorer/__main__.py
+```
+#!/usr/bin/env python3
+"""
+Codebase Explorer CLI
+
+Explores a codebase to gather context for a task using:
+- tree: directory structure discovery
+- ripgrep: code search
+- file reading: full file contents
+
+Features budget-aware frozen state management with two-pass removal.
+"""
+
+import argparse
+import asyncio
+import json
+import logging
+import sys
+from pathlib import Path
+
+# Unbuffered output for live progress
+sys.stdout.reconfigure(line_buffering=True)
+
+# Reduce logging noise - only show warnings and above
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("flatagents").setLevel(logging.WARNING)
+logging.getLogger("codebase_explorer").setLevel(logging.WARNING)
+
+from flatagents import FlatMachine
+from .hooks import CodebaseExplorerHooks
+
+# Hard cap on API calls to prevent runaway costs
+MAX_API_CALLS = 50
+```
+
+### codebase_explorer/cli.py
+```
+#!/usr/bin/env python3
+"""
+Codebase Explorer CLI
+
+Explores a codebase to gather context for a task using:
+- tree: directory structure discovery
+- ripgrep: code search
+- file reading: full file contents
+
+Features budget-aware frozen state management with two-pass removal.
+"""
+
+import argparse
+import asyncio
+import json
+import logging
+import sys
+from pathlib import Path
+
+# Unbuffered output for live progress
+sys.stdout.reconfigure(line_buffering=True)
+
+# Reduce logging noise - only show warnings and above
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("flatagents").setLevel(logging.WARNING)
+logging.getLogger("codebase_explorer").setLevel(logging.WARNING)
+
+from flatagents import FlatMachine
+from .hooks import CodebaseExplorerHooks
+
+# Hard cap on API calls to prevent runaway costs
+MAX_API_CALLS = 50
+```
+
+### codebase_explorer_hooks.py
+```
+class CodebaseExplorerHooks(MachineHooks):
+    """
+    Hooks for codebase exploration with budget-aware frozen state management.
+    """
+
+    # Each iteration uses ~3-4 API calls (judge, extractor, summarizer, sometimes judge_confirm)
+    CALLS_PER_ITERATION = 4
+    MAX_API_CALLS = 50
+```
+
+### codebase_explorer_spec
+```
+spec: flatmachine
+spec_version: "0.3.0"
+
+data:
+  name: "codebase-explorer"
+  context:
+    task: "{{ input.task }}"
+    working_dir: "{{ input.working_dir | default('.') }}"
+    summary: "No exploration done yet. Starting fresh."
+    frozen_imports: []
+    frozen_signatures: []
+    frozen_segments: []
+    frozen_files: {}
+    tree_outputs: []
+    rg_results: []
+    file_contents: {}
+    latest_action: null
+    latest_output: null
+    action_command: null
+    pending_removals: []
+    has_pending_removals: false
+    stashed_items: []
+    removal_pending: false
+    removal_confirmed: false
+    frozen_token_count: 0
+    summary_token_count: 0
+    token_budget: "{{ input.token_budget | default(40000) }}"
+    budget_burn_rate: 0
+    projected_overage: 0
+    iteration: 0
+    max_iterations: "{{ input.max_iterations | default(10) }}"
+    next_action: null
+  agents:
+    judge: ./agents/judge.yml
+    judge_confirm: ./agents/judge_confirm.yml
+    extractor: ./agents/extractor.yml
+    summarizer: ./agents/summarizer.yml
+  states:
+    start:
+      type: initial
+      transitions:
+        - to: judge
+    judge:
+      agent: judge
+      input:
+        task: "{{ context.task }}"
+        frozen_token_count: "{{ context.frozen_token_count }}"
+        token_budget: "{{ context.token_budget }}"
+        budget_burn_rate: "{{ context.budget_burn_rate }}"
+        projected_overage: "{{ context.projected_overage }}"
+        iteration: "{{ context.iteration }}"
+        max_iterations: "{{ context.max_iterations }}"
+        frozen_imports: "{{ context.frozen_imports }}"
+```
+
+---
+Explored: 21 imports, 9 signatures, 4 segments
+Tokens: 985/4000 | Calls: 31
