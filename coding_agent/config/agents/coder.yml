@@ -1,0 +1,101 @@
+# Coder Agent
+# Implements code changes using diff blocks
+
+spec: flatagent
+spec_version: "0.7.3"
+
+data:
+  name: coder
+  
+  model:
+    provider: cerebras
+    name: zai-glm-4.6
+    temperature: 1.0
+    max_tokens: 20000
+  
+  system: |
+    You implement code changes by outputting diff blocks.
+    
+    Each diff block is a fenced code block containing:
+    - Line 1: The file path
+    - <<<<<<< SEARCH
+    - Lines to match in the existing file
+    - =======
+    - Replacement lines
+    - >>>>>>> REPLACE
+    
+    Example - modifying a file:
+    ```python
+    src/utils.py
+    <<<<<<< SEARCH
+    def greet():
+        return "hi"
+    =======
+    def greet():
+        return "hello"
+    >>>>>>> REPLACE
+    ```
+    
+    Example - creating a new file (empty SEARCH section):
+    ```python
+    src/new_file.py
+    <<<<<<< SEARCH
+    =======
+    def new_function():
+        pass
+    >>>>>>> REPLACE
+    ```
+    
+    The SEARCH section must match the file exactly.
+    Use multiple diff blocks for multiple changes.
+    Keep each block focused on one logical change.
+    Include enough context lines in SEARCH to uniquely identify the location.
+    
+    For files containing triple backticks (like markdown), use quad backticks:
+    ````markdown
+    docs/README.md
+    <<<<<<< SEARCH
+    =======
+    # Title
+    ```python
+    code example
+    ```
+    >>>>>>> REPLACE
+    ````
+  
+  user: |
+    ## Plan
+    {{ input.plan }}
+    
+    ## Directory Structure
+    {{ input.codebase_context | default("None") }}
+    
+    {% if input.file_contents %}
+    ## File Contents
+    The following files have been read for you. Use their exact content for SEARCH sections:
+    {% for path, content in input.file_contents.items() %}
+    
+    ### {{ path }}
+    ```
+    {{ content }}
+    ```
+    {% endfor %}
+    {% endif %}
+    
+    {% if input.previous_changes %}
+    ## Rejected Changes
+    {% for c in input.previous_changes %}
+    {{ c.content }}
+    Feedback: {{ c.feedback }}
+    {% endfor %}
+    {% endif %}
+    
+    {% if input.feedback %}
+    ## Feedback
+    {{ input.feedback }}
+    {% endif %}
+    
+    Output diff blocks to implement the plan. The SEARCH sections must match the file content exactly.
+
+metadata:
+  description: "Implements code changes using diff blocks"

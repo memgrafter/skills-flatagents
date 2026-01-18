@@ -1,0 +1,43 @@
+# Tools Manifest for Coding Agent
+# Configure MCP servers, shell permissions, and skills path
+
+tools:
+  # MCP-based tools (extend with additional servers as needed)
+  mcp:
+    filesystem:
+      command: npx
+      args: ["-y", "@anthropics/mcp-filesystem", "{{ context.working_dir }}"]
+      filter:
+        allow:
+          - "*:read_file"
+          - "*:list_directory"
+          - "*:write_file"
+          - "*:create_directory"
+        deny:
+          - "*:delete_*"
+    
+    # Placeholder for search MCP (exa, perplexity, etc)
+    # search:
+    #   command: npx
+    #   args: ["-y", "@anthropics/mcp-exa"]
+    #   env:
+    #     EXA_API_KEY: "{{ env.EXA_API_KEY }}"
+  
+  # Shell commands - require human approval by default
+  shell:
+    # Commands matching these patterns auto-approve
+    auto_approve:
+      - "ls *"
+      - "cat *"
+      - "head *"
+      - "tail *"
+      - "grep *"
+      - "find *"
+      - "wc *"
+      - "tree *"
+    # All other commands require human approval
+    require_approval: true
+  
+  # Skills directory - symlink external skills here
+  # Example: ln -s /path/to/claude-skills .skills
+  skills_path: ".skills"

@@ -1,0 +1,173 @@
+# Coding Agent Machine
+# OODA-inspired loop: Explore → Plan → Execute → Verify
+# Human approval gates before risky operations
+
+spec: flatmachine
+spec_version: "0.7.3"
+
+data:
+  name: coding-agent
+  
+  # Hooks class for this machine's actions (exploration, review, apply)
+  hooks:
+    module: coding_agent.hooks
+    class: CodingAgentHooks
+    args:
+      working_dir: "."
+  
+  context:
+    # Input from user
+    task: "{{ input.task }}"
+    working_dir: "{{ input.cwd | default('.') }}"
+    
+    # State tracking
+    codebase_context: null
+    plan: null
+    plan_history: []      # Preserve rejected plans
+    changes: null
+    changes_history: []   # Preserve rejected changes
+    issues: null
+    file_contents: {}     # Files read for coder context
+    
+    # Control flow
+    iteration: 0
+    max_iterations: "{{ input.max_iterations | default(5) }}"
+    plan_approved: false
+    result_approved: false
+    human_feedback: null
+  
+  agents:
+    planner: ./agents/planner.yml
+    coder: ./agents/coder.yml
+    reviewer: ./agents/reviewer.yml
+  
+  machines:
+    explorer: ../.skills/codebase_explorer/machine.yml
+  
+  states:
+    # Entry point
+    start:
+      type: initial
+      transitions:
+        - to: explore_codebase
+    
+    # Gather context about the codebase using codebase_explorer skill
+    explore_codebase:
+      machine: explorer
+      input:
+        task: "{{ context.task }}"
+        working_dir: "{{ context.working_dir }}"
+        token_budget: 40000
+        max_iterations: 10
+      output_to_context:
+        summary: "{{ output.summary }}"
+        frozen_signatures: "{{ output.frozen_signatures }}"
+        frozen_segments: "{{ output.frozen_segments }}"
+        file_contents: "{{ output.file_contents }}"
+        codebase_context: "{{ output.summary }}"
+      transitions:
+        - to: plan_changes
+    
+    # Generate implementation plan
+    plan_changes:
+      agent: planner
+      execution:
+        type: retry
+        backoffs: [2, 8, 16]
+      input:
+        task: "{{ context.task }}"
+        codebase_context: "{{ context.codebase_context }}"
+        frozen_signatures: "{{ context.frozen_signatures }}"
+        file_contents: "{{ context.file_contents }}"
+        previous_plans: "{{ context.plan_history }}"
+        feedback: "{{ context.human_feedback }}"
+      output_to_context:
+        plan: "{{ output }}"
+      transitions:
+        - to: review_plan
+    
+    # Human reviews the plan
+    review_plan:
+      action: human_review_plan
+      transitions:
+        - condition: "context.plan_approved == true"
+          to: read_plan_files  # Read files before executing
+        - condition: "context.iteration >= context.max_iterations"
+          to: max_iterations
+        - to: plan_changes  # Loop back with feedback
+    
+    # Read files mentioned in plan for coder context
+    read_plan_files:
+      action: read_plan_files
+      transitions:
+        - to: execute_plan
+    
+    # Apply the plan
+    execute_plan:
+      agent: coder
+      execution:
+        type: retry
+        backoffs: [2, 8, 16]
+      input:
+        plan: "{{ context.plan }}"
+        codebase_context: "{{ context.codebase_context }}"
+        file_contents: "{{ context.file_contents }}"
+        previous_changes: "{{ context.changes_history }}"
+        feedback: "{{ context.human_feedback }}"
+      output_to_context:
+        changes: "{{ output }}"
+      transitions:
+        - to: verify_changes
+    
+    # Review the changes for correctness
+    verify_changes:
+      agent: reviewer
+      input:
+        task: "{{ context.task }}"
+        plan: "{{ context.plan }}"
+        changes: "{{ context.changes }}"
+      output_to_context:
+        issues: "{{ output.issues }}"
+        review_summary: "{{ output.summary }}"
+        iteration: "{{ context.iteration + 1 }}"
+      transitions:
+        - to: review_result
+    
+    # Human reviews final result
+    review_result:
+      action: human_review_result
+      transitions:
+        - condition: "context.result_approved == true"
+          to: apply_changes
+        - condition: "context.iteration >= context.max_iterations"
+          to: max_iterations
+        - to: execute_plan  # Loop back with feedback
+    
+    # Apply changes to filesystem
+    apply_changes:
+      action: apply_changes
+      transitions:
+        - to: done
+    
+    # Hit max iterations
+    max_iterations:
+      type: final
+      output:
+        status: "max_iterations"
+        plan: "{{ context.plan }}"
+        changes: "{{ context.changes }}"
+        issues: "{{ context.issues }}"
+        iterations: "{{ context.iteration }}"
+    
+    # Success
+    done:
+      type: final
+      output:
+        status: "completed"
+        plan: "{{ context.plan }}"
+        changes: "{{ context.changes }}"
+        iterations: "{{ context.iteration }}"
+
+metadata:
+  description: "AI coding agent with human-in-the-loop review"
+  tags: ["coding", "human-in-loop", "agentic"]
