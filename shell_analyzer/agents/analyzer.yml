@@ -2,17 +2,12 @@
 # Analyzes command output and provides summaries with verifiable citations
 
 spec: flatagent
-spec_version: "0.6.0"
+spec_version: "0.7.1"
 
 data:
   name: shell-analyzer-agent
 
-  model:
-    provider: cerebras
-    name: zai-glm-4.6
-    temperature: 1.0
-    max_tokens: 4096
-    output_tokens: 500
+  model: default
 
   system: |
     You analyze shell command output and provide concise summaries.

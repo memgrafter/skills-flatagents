@@ -1,15 +1,12 @@
 # Extractor Agent - Extracts code from exploration output
 
 spec: flatagent
-spec_version: "0.6.0"
+spec_version: "0.7.1"
 
 data:
   name: extractor
 
-  model:
-    provider: cerebras
-    name: zai-glm-4.6
-    temperature: 0.3
+  model: extractor
 
   system: |
     Extract relevant code snippets from exploration output.

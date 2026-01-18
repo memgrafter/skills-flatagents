@@ -1,15 +1,12 @@
 # Judge Agent - directs codebase exploration
 
 spec: flatagent
-spec_version: "0.6.0"
+spec_version: "0.7.1"
 
 data:
   name: judge
 
-  model:
-    provider: cerebras
-    name: zai-glm-4.6
-    temperature: 1.0
+  model: judge
 
   system: |
     You explore a codebase to gather context. Pick ONE action per turn.

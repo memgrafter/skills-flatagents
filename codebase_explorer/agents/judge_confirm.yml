@@ -2,15 +2,12 @@
 # Reviews items removed by junior engineer, confirms or rejects
 
 spec: flatagent
-spec_version: "0.6.0"
+spec_version: "0.7.1"
 
 data:
   name: judge-confirm
 
-  model:
-    provider: cerebras
-    name: zai-glm-4.6
-    temperature: 1.0
+  model: judge_confirm
 
   system: |
     A junior engineer on your team just removed some frozen context items

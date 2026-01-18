@@ -1,0 +1,12 @@
+spec: flatprofiles
+spec_version: "0.7.1"
+
+data:
+  model_profiles:
+    default:
+      provider: cerebras
+      name: zai-glm-4.6
+      temperature: 1.0
+      max_tokens: 4096
+      output_tokens: 500
+  default: default

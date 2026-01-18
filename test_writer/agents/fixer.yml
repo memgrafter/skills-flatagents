@@ -2,17 +2,12 @@
 # Debugs failing tests or identifies production bugs
 
 spec: flatagent
-spec_version: "0.6.0"
+spec_version: "0.7.1"
 
 data:
   name: test-fixer
 
-  model:
-    provider: cerebras
-    name: zai-glm-4.6
-    temperature: 0.6
-    max_tokens: 8192
-    output_tokens: 2000
+  model: fixer
 
   system: |
     You debug failing tests. Given test code, error output, and source code:

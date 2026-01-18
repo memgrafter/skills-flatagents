@@ -1,0 +1,18 @@
+spec: flatprofiles
+spec_version: "0.7.1"
+
+data:
+  model_profiles:
+    default:
+      provider: cerebras
+      name: zai-glm-4.6
+      temperature: 0.7
+    generator:
+      provider: cerebras
+      name: zai-glm-4.6
+      temperature: 0.85
+    supervisor:
+      provider: cerebras
+      name: zai-glm-4.6
+      temperature: 0.3
+  default: default

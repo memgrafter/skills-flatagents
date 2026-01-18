@@ -186,12 +186,11 @@ class OTFAgentHooks(MachineHooks):
         
         agent_config = {
             "spec": "flatagent",
-            "spec_version": "0.6.0",
+            "spec_version": "0.7.1",
             "data": {
                 "name": name,
                 "model": {
-                    "provider": "cerebras",
-                    "name": "zai-glm-4.6",
+                    "profile": "default",
                     "temperature": temperature
                 },
                 "system": system,

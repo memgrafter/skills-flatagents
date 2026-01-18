@@ -2,17 +2,12 @@
 # Generates pytest test code for uncovered code
 
 spec: flatagent
-spec_version: "0.6.0"
+spec_version: "0.7.1"
 
 data:
   name: test-writer
 
-  model:
-    provider: cerebras
-    name: zai-glm-4.6
-    temperature: 0.6
-    max_tokens: 8192
-    output_tokens: 2000
+  model: writer
 
   system: |
     You write Python tests using pytest.

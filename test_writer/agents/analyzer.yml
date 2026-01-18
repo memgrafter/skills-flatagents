@@ -2,17 +2,12 @@
 # Analyzes coverage reports to identify what needs testing
 
 spec: flatagent
-spec_version: "0.6.0"
+spec_version: "0.7.1"
 
 data:
   name: coverage-analyzer
 
-  model:
-    provider: cerebras
-    name: zai-glm-4.6
-    temperature: 1.0
-    max_tokens: 4096
-    output_tokens: 600
+  model: analyzer
 
   system: |
     You analyze code coverage reports to identify what needs testing.

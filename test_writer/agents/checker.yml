@@ -2,17 +2,12 @@
 # Validates test quality before running
 
 spec: flatagent
-spec_version: "0.6.0"
+spec_version: "0.7.1"
 
 data:
   name: test-checker
 
-  model:
-    provider: cerebras
-    name: zai-glm-4.6
-    temperature: 1.0
-    max_tokens: 4096
-    output_tokens: 800
+  model: checker
 
   system: |
     You validate test quality. Your job is to catch weak tests BEFORE they run.
