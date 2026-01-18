@@ -7,7 +7,7 @@ name = "skills-flatagents"
 version = "0.1.0"
 description = "Collection of FlatAgents skills"
 dependencies = [
-    "flatagents[aisuite]>=0.7.1",
+    "flatagents[local]>=0.7.3",
     "aisuite",
     "cerebras-cloud-sdk",
     "tiktoken",

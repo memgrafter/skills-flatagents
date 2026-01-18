@@ -200,8 +200,9 @@ class OTFAgentHooks(MachineHooks):
         }
         
         try:
-            # Create the agent
-            agent = FlatAgent(config_dict=agent_config)
+            # Create the agent with profiles from context
+            profiles_dict = context.get("_profiles")
+            agent = FlatAgent(config_dict=agent_config, profiles_dict=profiles_dict)
             self.metrics["agents_generated"] += 1
             
             # Execute it

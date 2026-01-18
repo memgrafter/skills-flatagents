@@ -9,23 +9,26 @@ MANIFEST="$SCRIPT_DIR/install-manifest.yml"
 
 # Parse arguments
 SKILL_FILTER=""
-UPGRADE=false
+USE_LOCAL_SDK=false
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --skill=*)
             SKILL_FILTER="${1#*=}"
             shift
             ;;
-        --upgrade)
-            UPGRADE=true
+        --local)
+            USE_LOCAL_SDK=true
             shift
             ;;
         *)
-            echo "Usage: $0 [--skill=<skill-name>] [--upgrade]" >&2
+            echo "Usage: $0 [--skill=<skill-name>] [--local]" >&2
+            echo "  --local    Install flatagents SDK from ~/code/flatagents/sdk/python (editable)"
             exit 1
             ;;
     esac
 done
+
+LOCAL_SDK_PATH="${FLATAGENTS_SDK_PATH:-$HOME/code/flatagents}/sdk/python"
 
 # Detect package manager
 if command -v uv &>/dev/null; then
@@ -56,19 +59,22 @@ fi
 # Activate venv (needed for non-uv commands and PATH)
 source "$VENV/bin/activate"
 
-# Upgrade mode: force reinstall flatagents to latest version
-if [[ "$UPGRADE" = true ]]; then
-    echo "Upgrading flatagents to latest version..."
+# Install flatagents SDK (local or remote with auto-upgrade)
+if [[ "$USE_LOCAL_SDK" = true ]]; then
+    if [[ ! -d "$LOCAL_SDK_PATH" ]]; then
+        echo "ERROR: Local SDK not found at $LOCAL_SDK_PATH" >&2
+        exit 1
+    fi
+    echo "Installing flatagents from local SDK (editable)..."
+    pip_install -e "$LOCAL_SDK_PATH"
+else
+    echo "Installing/upgrading flatagents from PyPI..."
     pip_install --upgrade flatagents
 fi
 
 # Install project in editable mode with base dependencies
 echo "Installing base dependencies..."
 pip_install -e "$SCRIPT_DIR"
-
-# Ensure flatagents >= 0.1.6 (required for FlatMachine support)
-echo "Ensuring flatagents >= 0.1.6..."
-pip_install "flatagents>=0.1.6"
 
 # Parse manifest to get skill list
 if [[ -z "$SKILL_FILTER" ]]; then
