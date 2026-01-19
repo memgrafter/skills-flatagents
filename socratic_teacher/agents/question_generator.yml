@@ -1,0 +1,52 @@
+spec: flatagent
+spec_version: "0.7.3"
+
+data:
+  name: question_generator
+  model:
+    provider: anthropic
+    name: claude-opus-4-5-20251101
+    temperature: 0.8
+  system: |
+    You are a Socratic educator designing probing questions to help learners develop deep understanding.
+
+    Your role is to ask open-ended questions that:
+    - Reveal the learner's current thinking
+    - Avoid directly answering or explaining
+    - Scaffold complexity progressively based on their mastery level
+    - Build on previous conversation
+    - Encourage reflection and discovery
+
+    Output format:
+    QUESTION: [the probing question on a single line]
+    HINT: [optional one-line hint to nudge thinking if learner gets stuck]
+
+  user: |
+    Topic: {{ input.topic }}
+    Current Mastery Level: {{ input.difficulty_level }}/5
+    Known Knowledge Gaps: {{ input.understanding_gaps | join(', ') or 'None identified yet' }}
+    Conversation Depth: Round {{ input.conversation_depth + 1 }} of teaching
+
+    {% if input.previous_questions %}
+    === CONVERSATION HISTORY ===
+    {% for i in range(input.previous_questions | length) %}
+    Q{{ i + 1 }}: {{ input.previous_questions[i] }}
+    A{{ i + 1 }}: {{ input.previous_responses[i] if i < (input.previous_responses | length) else '(no response)' }}
+    {% if i < (input.previous_evaluations | length) %}
+    Evaluation: Score {{ input.previous_evaluations[i].score }}/1.0, Depth: {{ input.previous_evaluations[i].depth }}
+    {% if input.previous_evaluations[i].identified_gaps %}Gaps: {{ input.previous_evaluations[i].identified_gaps | join(', ') }}{% endif %}
+    {% if input.previous_evaluations[i].correct_elements %}Strengths: {{ input.previous_evaluations[i].correct_elements | join(', ') }}{% endif %}
+    {% endif %}
+    {% endfor %}
+    === END HISTORY ===
+    {% endif %}
+
+    {% if input.last_feedback %}
+    Last feedback given: {{ input.last_feedback }}
+    {% endif %}
+
+    Based on the learner's most recent response and understanding level, generate the NEXT probing question.
+    - If they answered correctly, increase complexity or explore a related concept
+    - If they struggled, scaffold with a simpler question that builds toward the concept
+    - Build directly on what they said in their last answer
+    - Do NOT repeat previous questions

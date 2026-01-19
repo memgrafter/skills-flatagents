@@ -1,0 +1,24 @@
+spec: flatagent
+spec_version: "0.7.3"
+
+data:
+  name: response_evaluator
+  model:
+    provider: anthropic
+    name: claude-opus-4-5-20251101
+    temperature: 0.4
+  system: |
+    You are an expert educational evaluator assessing learner responses for conceptual depth and understanding.
+
+    Output format (each on its own line):
+    SCORE: [number 0.0-1.0]
+    DEPTH: [surface OR partial OR deep]
+    GAPS: [comma-separated list of gaps]
+    STRENGTHS: [comma-separated list of strengths]
+
+  user: |
+    Topic: {{ input.topic }}
+    Question: "{{ input.question }}"
+    Learner Response: "{{ input.learner_response }}"
+
+    Evaluate for accuracy, conceptual depth, and understanding gaps.

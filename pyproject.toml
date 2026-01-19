@@ -7,7 +7,7 @@ name = "skills-flatagents"
 version = "0.1.0"
 description = "Collection of FlatAgents skills"
 dependencies = [
-    "flatagents[local]>=0.7.6",
+    "flatagents[local]>=0.7.7",
     "aisuite",
     "cerebras-cloud-sdk",
     "tiktoken",
@@ -20,4 +20,4 @@ all = ["aisuite[mcp]", "pytest", "pytest-cov"]
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["shared*", "search_refiner*", "shell_analyzer*", "test_writer*", "codebase_explorer*", "dynamic_agent*", "coding_agent*"]
+include = ["shared*", "search_refiner*", "shell_analyzer*", "test_writer*", "codebase_explorer*", "dynamic_agent*", "coding_agent*", "file_writer*", "socratic_teacher*"]

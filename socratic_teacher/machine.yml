@@ -1,0 +1,177 @@
+spec: flatmachine
+spec_version: "0.7.3"
+
+data:
+  name: socratic-teacher
+
+  hooks:
+    module: socratic_teacher.hooks
+    class: SocraticTeacherHooks
+
+  context:
+    # Input parameters
+    topic: "{{ input.topic }}"
+    learner_level: "{{ input.learner_level | default(1) | int }}"
+    max_rounds: "{{ input.max_rounds | default(10) | int }}"
+    working_dir: "{{ input.working_dir | default('.') }}"
+
+    # Runtime state
+    round_count: 0
+    mastery_score: 0.0
+    identified_gaps: []
+    strengths: []
+
+    # Current interaction
+    question: ""
+    follow_up_prompt: ""
+    learner_response: ""
+    evaluation_score: 0.0
+    evaluation_depth: "partial"
+    evaluation_gaps: []
+    evaluation_strengths: []
+    feedback: ""
+    feedback_type: ""
+
+    # History for continuity
+    question_history: []
+    response_history: []
+    evaluation_history: []
+    session_transcript: ""
+
+    # Control
+    session_complete: false
+    termination_reason: ""
+    last_error: ""
+
+  agents:
+    question_generator: ./agents/question_generator.yml
+    response_evaluator: ./agents/response_evaluator.yml
+    feedback_provider: ./agents/feedback_provider.yml
+
+  machines:
+    file_writer: ../file_writer/machine.yml
+
+  settings:
+    hooks: socratic_teacher.hooks
+    max_steps: 50
+
+  states:
+    start:
+      type: initial
+      transitions:
+        - to: ask_question
+
+    ask_question:
+      agent: question_generator
+      execution:
+        type: retry
+        backoffs: [2, 8]
+        jitter: 0.1
+      input:
+        topic: "{{ context.topic }}"
+        difficulty_level: "{{ (context.mastery_score * 4 + 1) | round }}"
+        understanding_gaps: "{{ context.identified_gaps }}"
+        previous_questions: "{{ context.question_history }}"
+        previous_responses: "{{ context.response_history }}"
+        previous_evaluations: "{{ context.evaluation_history }}"
+        last_feedback: "{{ context.feedback }}"
+        conversation_depth: "{{ context.round_count }}"
+      output_to_context:
+        _agent_output: "{{ output }}"
+      on_error: error
+      transitions:
+        - to: parse_question_output
+
+    parse_question_output:
+      action: parse_question
+      transitions:
+        - to: wait_response
+
+    wait_response:
+      action: collect_learner_response
+      transitions:
+        - to: evaluate_response
+
+    evaluate_response:
+      agent: response_evaluator
+      execution:
+        type: retry
+        backoffs: [2, 8]
+        jitter: 0.1
+      input:
+        topic: "{{ context.topic }}"
+        question: "{{ context.question }}"
+        learner_response: "{{ context.learner_response }}"
+        expected_concepts: "{{ context.identified_gaps }}"
+        understanding_level: "{{ context.learner_level }}"
+      output_to_context:
+        _agent_output: "{{ output }}"
+      on_error: error
+      transitions:
+        - to: parse_evaluation_output
+
+    parse_evaluation_output:
+      action: parse_evaluation
+      transitions:
+        - to: provide_feedback
+
+    provide_feedback:
+      agent: feedback_provider
+      execution:
+        type: retry
+        backoffs: [2, 8]
+        jitter: 0.1
+      input:
+        question: "{{ context.question }}"
+        learner_response: "{{ context.learner_response }}"
+        evaluation_score: "{{ context.evaluation_score }}"
+        is_correct: "{{ context.evaluation_score >= 0.7 }}"
+        response_depth: "{{ context.evaluation_depth }}"
+      output_to_context:
+        _agent_output: "{{ output }}"
+      on_error: error
+      transitions:
+        - to: parse_feedback_output
+
+    parse_feedback_output:
+      action: parse_feedback
+      transitions:
+        - to: check_mastery
+
+    check_mastery:
+      action: update_understanding_model
+      transitions:
+        - condition: "context.mastery_score >= 0.85 or context.round_count >= context.max_rounds"
+          to: save_session
+        - to: ask_question
+
+    save_session:
+      machine: file_writer
+      input:
+        changes: "{{ context.session_transcript }}"
+        working_dir: "{{ context.working_dir }}"
+      transitions:
+        - to: done
+      on_error: done
+
+    done:
+      type: final
+      output:
+        topic: "{{ context.topic }}"
+        final_mastery_score: "{{ context.mastery_score }}"
+        learning_transcript: "{{ context.question_history }}"
+        identified_gaps: "{{ context.identified_gaps }}"
+        strengths: "{{ context.strengths }}"
+        termination_reason: "{{ context.termination_reason }}"
+        rounds_completed: "{{ context.round_count }}"
+
+    error:
+      type: final
+      output:
+        status: "error"
+        error_context: "{{ context.last_error }}"
+        partial_transcript: "{{ context.question_history }}"
+
+metadata:
+  description: "Socratic teaching assistant that guides learners through discovery-based questioning"
+  tags: ["education", "socratic-method", "interactive"]
