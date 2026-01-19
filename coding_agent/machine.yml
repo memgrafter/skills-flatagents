@@ -19,22 +19,27 @@ data:
     # Input from user
     task: "{{ input.task }}"
     working_dir: "{{ input.cwd | default('.') }}"
-    
-    # State tracking
-    codebase_context: null
-    plan: null
-    plan_history: []      # Preserve rejected plans
-    changes: null
-    changes_history: []   # Preserve rejected changes
-    issues: null
-    file_contents: {}     # Files read for coder context
-    
-    # Control flow
-    iteration: 0
+
+    # Resume support (set by main.py when restoring from checkpoint)
+    _resume_from: "{{ input._resume_from | default(null) }}"
+
+    # State tracking - use input values if resuming from checkpoint, else defaults
+    codebase_context: "{{ input.codebase_context | default(null) }}"
+    plan: "{{ input.plan | default(null) }}"
+    plan_history: "{{ input.plan_history | default([]) }}"
+    changes: "{{ input.changes | default(null) }}"
+    changes_history: "{{ input.changes_history | default([]) }}"
+    issues: "{{ input.issues | default(null) }}"
+    file_contents: "{{ input.file_contents | default({}) }}"
+    frozen_signatures: "{{ input.frozen_signatures | default(null) }}"
+    frozen_segments: "{{ input.frozen_segments | default(null) }}"
+
+    # Control flow - restore from checkpoint if available
+    iteration: "{{ input.iteration | default(0) }}"
     max_iterations: "{{ input.max_iterations | default(5) }}"
-    plan_approved: false
-    result_approved: false
-    human_feedback: null
+    plan_approved: "{{ input.plan_approved | default(false) }}"
+    result_approved: "{{ input.result_approved | default(false) }}"
+    human_feedback: "{{ input.human_feedback | default(null) }}"
   
   agents:
     planner: ./agents/planner.yml
@@ -45,10 +50,17 @@ data:
     explorer: ./.skills/codebase_explorer/machine.yml
   
   states:
-    # Entry point
+    # Entry point - supports resume from checkpoint
     start:
       type: initial
       transitions:
+        # Resume directly to review_plan if we have a plan from checkpoint
+        - condition: "context._resume_from == 'plan' and context.plan != null"
+          to: review_plan
+        # Resume directly to review_result if we have changes from checkpoint
+        - condition: "context._resume_from == 'result' and context.changes != null"
+          to: review_result
+        # Normal flow
         - to: explore_codebase
     
     # Gather context about the codebase using codebase_explorer skill

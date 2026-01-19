@@ -6,12 +6,8 @@ spec_version: "0.7.3"
 
 data:
   name: coder
-  
-  model:
-    provider: cerebras
-    name: zai-glm-4.6
-    temperature: 1.0
-    max_tokens: 20000
+
+  model: coder
   
   system: |
     You implement code changes by outputting diff blocks.

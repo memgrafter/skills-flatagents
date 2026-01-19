@@ -31,7 +31,7 @@ class CodingAgentHooks(MachineHooks):
     def __init__(self, working_dir: str = "."):
         """Initialize with working directory for exploration."""
         self.working_dir = Path(working_dir).resolve()
-    
+
     def on_action(self, action_name: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """Route actions to their handlers."""
         handlers = {
@@ -304,24 +304,26 @@ class CodingAgentHooks(MachineHooks):
     def _human_review_plan(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """
         Display the plan and get human approval or feedback.
-        
+
         On rejection, saves the plan to history with feedback so
         the planner can learn from it.
         """
         plan_raw = context.get("plan", "")
-        
+
         # FlatAgent wraps text in {'content': ...} - extract it
         if isinstance(plan_raw, dict) and 'content' in plan_raw:
             plan = plan_raw['content']
         else:
             plan = plan_raw
-        
+
+        task = context.get('task', 'Unknown')
+
         print("\n" + "=" * 70)
         print("📋 PLAN REVIEW")
         print("=" * 70)
-        
-        print(f"\n📝 Task: {context.get('task', 'Unknown')}\n")
-        
+
+        print(f"\n📝 Task: {task}\n")
+
         # Display plan as text (show full content)
         if plan and str(plan).strip():
             print("-" * 70)
@@ -329,10 +331,10 @@ class CodingAgentHooks(MachineHooks):
             print("-" * 70)
         else:
             print("[WARNING] No plan content received")
-        
+
         print("\n" + "-" * 70)
         response = input("Approve plan? (y/yes to approve, or enter feedback): ").strip()
-        
+
         if response.lower() in ("y", "yes", ""):
             context["plan_approved"] = True
             context["human_feedback"] = None
@@ -340,7 +342,7 @@ class CodingAgentHooks(MachineHooks):
         else:
             context["plan_approved"] = False
             context["human_feedback"] = response
-            
+
             # Preserve rejected plan in history
             plan_history = context.get("plan_history", [])
             plan_history.append({
@@ -349,44 +351,47 @@ class CodingAgentHooks(MachineHooks):
             })
             context["plan_history"] = plan_history
             print(f"🔄 Feedback recorded. Revising plan...")
-        
+
         print("=" * 70 + "\n")
         return context
     
     def _human_review_result(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """
         Display the changes and get human approval or feedback.
-        
+
         On rejection, saves changes to history with feedback so
         the coder can learn from it.
         """
         changes_raw = context.get("changes", "")
         issues_raw = context.get("issues", "")
         review_summary_raw = context.get("review_summary", "")
-        
+
         # FlatAgent wraps text in {'content': ...} - extract it
         if isinstance(changes_raw, dict) and 'content' in changes_raw:
             changes = changes_raw['content']
         else:
             changes = changes_raw
-            
+
         if isinstance(issues_raw, dict) and 'content' in issues_raw:
             issues = issues_raw['content']
         else:
             issues = issues_raw
-            
+
         if isinstance(review_summary_raw, dict) and 'content' in review_summary_raw:
             review_summary = review_summary_raw['content']
         else:
             review_summary = review_summary_raw
-        
+
+        task = context.get('task', 'Unknown')
+        iteration = context.get('iteration', '?')
+
         print("\n" + "=" * 70)
         print("🔍 RESULT REVIEW")
         print("=" * 70)
-        
-        print(f"\n📝 Task: {context.get('task', 'Unknown')}")
-        print(f"🔄 Iteration: {context.get('iteration', '?')}\n")
-        
+
+        print(f"\n📝 Task: {task}")
+        print(f"🔄 Iteration: {iteration}\n")
+
         # Display changes as text
         if changes and str(changes).strip():
             print("Proposed Changes:")
@@ -395,18 +400,18 @@ class CodingAgentHooks(MachineHooks):
             print("-" * 70)
         else:
             print("[WARNING] No changes content received")
-        
+
         # Display reviewer findings
         if issues and str(issues).strip():
             print(f"\n📊 Reviewer Assessment:")
             print(str(issues))
-        
+
         if review_summary and str(review_summary).strip():
             print(f"\n📊 Review: {review_summary}")
-        
+
         print("\n" + "-" * 70)
         response = input("Approve changes? (y/yes to approve, or enter feedback): ").strip()
-        
+
         if response.lower() in ("y", "yes", ""):
             context["result_approved"] = True
             context["human_feedback"] = None
@@ -414,7 +419,7 @@ class CodingAgentHooks(MachineHooks):
         else:
             context["result_approved"] = False
             context["human_feedback"] = response
-            
+
             # Preserve rejected changes in history
             changes_history = context.get("changes_history", [])
             changes_history.append({
@@ -424,7 +429,7 @@ class CodingAgentHooks(MachineHooks):
             })
             context["changes_history"] = changes_history
             print(f"🔄 Feedback recorded. Revising changes...")
-        
+
         print("=" * 70 + "\n")
         return context
     
