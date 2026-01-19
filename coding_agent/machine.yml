@@ -42,7 +42,7 @@ data:
     reviewer: ./agents/reviewer.yml
   
   machines:
-    explorer: ../.skills/codebase_explorer/machine.yml
+    explorer: ./.skills/codebase_explorer/machine.yml
   
   states:
     # Entry point

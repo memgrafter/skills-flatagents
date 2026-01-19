@@ -28,7 +28,7 @@ setup_logging(level=log_level)
 logger = get_logger(__name__)
 
 
-async def run(task: str, cwd: str = ".", max_iterations: int = 5):
+async def run(task: str, cwd: str = ".", max_iterations: int = 5, claude_mode: bool = False):
     """
     Run the coding agent workflow.
 
@@ -36,13 +36,14 @@ async def run(task: str, cwd: str = ".", max_iterations: int = 5):
         task: The coding task to accomplish
         cwd: Working directory for the codebase
         max_iterations: Maximum revision iterations
+        claude_mode: If True, use checkpoint/exit for approvals instead of input()
     """
     logger.info("=" * 70)
     logger.info("🤖 Coding Agent")
     logger.info("=" * 70)
 
     # Resolve paths
-    config_path = Path(__file__).parent.parent.parent.parent / 'config' / 'machine.yml'
+    config_path = Path(__file__).parent.parent.parent / 'machine.yml'
     working_dir = Path(cwd).expanduser().resolve()
     
     # Capture actual directory user ran from (for safety checks)
@@ -51,7 +52,7 @@ async def run(task: str, cwd: str = ".", max_iterations: int = 5):
     # Create machine with hooks (passing working_dir for exploration tools)
     machine = FlatMachine(
         config_file=str(config_path),
-        hooks=CodingAgentHooks(working_dir=str(working_dir))
+        hooks=CodingAgentHooks(working_dir=str(working_dir), claude_mode=claude_mode)
     )
 
     logger.info(f"Machine: {machine.machine_name}")
@@ -108,12 +109,18 @@ def main():
         default=5,
         help="Maximum revision iterations (default: 5)"
     )
+    parser.add_argument(
+        "--claude",
+        action="store_true",
+        help="Claude Code mode: use checkpoint/exit for approvals instead of input()"
+    )
     args = parser.parse_args()
     
     asyncio.run(run(
         task=args.task,
         cwd=args.cwd,
-        max_iterations=args.max_iterations
+        max_iterations=args.max_iterations,
+        claude_mode=args.claude
     ))
 
 
