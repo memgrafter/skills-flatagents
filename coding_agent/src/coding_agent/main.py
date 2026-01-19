@@ -132,7 +132,9 @@ def main():
     )
     parser.add_argument(
         "task",
-        help="The coding task to accomplish"
+        nargs="?",
+        default=None,
+        help="The coding task to accomplish (optional on resume)"
     )
     parser.add_argument(
         "--cwd", "-c",
@@ -151,9 +153,19 @@ def main():
         help="Claude Code mode: use checkpoint/exit for approvals instead of input()"
     )
     args = parser.parse_args()
-    
+
+    # Resolve task from checkpoint if resuming
+    task = args.task
+    if args.claude and not task:
+        checkpoint = ClaudeCodingAgentHooks.load_checkpoint(args.cwd)
+        if checkpoint:
+            task = checkpoint.get("context", {}).get("task")
+
+    if not task:
+        parser.error("task is required (unless resuming from checkpoint with --claude)")
+
     asyncio.run(run(
-        task=args.task,
+        task=task,
         cwd=args.cwd,
         max_iterations=args.max_iterations,
         claude_mode=args.claude

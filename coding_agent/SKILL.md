@@ -47,17 +47,24 @@ When you see exit code 2:
 1. Parse stderr to find `APPROVAL_NEEDED: plan` or `APPROVAL_NEEDED: result`
 2. Display the content from stderr to the user
 3. Use `AskUserQuestion` to ask the user to approve or provide feedback
-4. Resume with the decision:
+4. Resume with the decision via environment variable (task arg not needed on resume):
 
 ```bash
-# Approve plan
-CODING_AGENT_APPROVAL_PLAN=approved $HOME/.flatagents/skills/coding_agent/run.sh "<task>" --cwd "<dir>" --claude
+# Approve plan (task retrieved from checkpoint)
+CODING_AGENT_APPROVAL_PLAN=approved $HOME/.flatagents/skills/coding_agent/run.sh --cwd "<dir>" --claude
 
 # Reject plan with feedback
-CODING_AGENT_APPROVAL_PLAN="<user feedback here>" $HOME/.flatagents/skills/coding_agent/run.sh "<task>" --cwd "<dir>" --claude
+CODING_AGENT_APPROVAL_PLAN="<user feedback here>" $HOME/.flatagents/skills/coding_agent/run.sh --cwd "<dir>" --claude
 
 # Approve result
-CODING_AGENT_APPROVAL_RESULT=approved $HOME/.flatagents/skills/coding_agent/run.sh "<task>" --cwd "<dir>" --claude
+CODING_AGENT_APPROVAL_RESULT=approved $HOME/.flatagents/skills/coding_agent/run.sh --cwd "<dir>" --claude
 ```
 
-The agent restores state from the checkpoint file and continues from where it paused.
+### Environment Variables
+
+| Variable | Values | Purpose |
+|----------|--------|---------|
+| `CODING_AGENT_APPROVAL_PLAN` | `approved` or feedback text | Resume after plan review |
+| `CODING_AGENT_APPROVAL_RESULT` | `approved` or feedback text | Resume after result review |
+
+The agent restores state (including the task) from the checkpoint file and continues from where it paused.
