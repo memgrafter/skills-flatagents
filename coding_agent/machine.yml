@@ -19,6 +19,7 @@ data:
     # Input from user
     task: "{{ input.task }}"
     working_dir: "{{ input.cwd | default('.') }}"
+    user_cwd: "{{ input.user_cwd | default(null) }}"
 
     # Resume support (set by main.py when restoring from checkpoint)
     _resume_from: "{{ input._resume_from | default(null) }}"
@@ -48,6 +49,7 @@ data:
   
   machines:
     explorer: ./.skills/codebase_explorer/machine.yml
+    file_writer: ../file_writer/machine.yml
   
   states:
     # Entry point - supports resume from checkpoint
@@ -157,7 +159,14 @@ data:
     
     # Apply changes to filesystem
     apply_changes:
-      action: apply_changes
+      machine: file_writer
+      input:
+        changes: "{{ context.changes }}"
+        working_dir: "{{ context.working_dir }}"
+        user_cwd: "{{ context.user_cwd }}"
+      output_to_context:
+        applied_changes: "{{ output.applied_changes }}"
+        apply_errors: "{{ output.apply_errors }}"
       transitions:
         - to: done
     

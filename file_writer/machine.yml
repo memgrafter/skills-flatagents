@@ -1,0 +1,41 @@
+# File Writer Machine
+
+spec: flatmachine
+spec_version: "0.7.3"
+
+data:
+  name: file-writer
+
+  hooks:
+    module: shared.file_write_machine
+    class: FileWriteHooks
+
+  context:
+    changes: "{{ input.changes | default('') }}"
+    working_dir: "{{ input.working_dir | default('.') }}"
+    user_cwd: "{{ input.user_cwd | default(null) }}"
+    applied_changes: []
+    apply_errors: []
+    write_events: []
+
+  states:
+    start:
+      type: initial
+      transitions:
+        - to: write
+
+    write:
+      action: write_files
+      transitions:
+        - to: done
+
+    done:
+      type: final
+      output:
+        applied_changes: "{{ context.applied_changes }}"
+        apply_errors: "{{ context.apply_errors }}"
+        write_events: "{{ context.write_events }}"
+
+metadata:
+  description: "Apply Aider-style SEARCH/REPLACE diffs to disk"
+  tags: ["filesystem", "diff-apply"]
