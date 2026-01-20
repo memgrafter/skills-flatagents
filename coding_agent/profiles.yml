@@ -7,26 +7,26 @@ spec_version: "0.7.3"
 data:
   model_profiles:
     default:
-      provider: litellm
-      name: anthropic/claude-sonnet-4-20250514
+      provider: cerebras
+      name: zai-glm-4.7
       temperature: 0.7
       max_tokens: 16000
 
     planner:
-      provider: litellm
-      name: anthropic/claude-sonnet-4-20250514
+      provider: cerebras
+      name: zai-glm-4.7
       temperature: 0.7
       max_tokens: 16000
 
     coder:
-      provider: litellm
-      name: anthropic/claude-sonnet-4-20250514
+      provider: cerebras
+      name: zai-glm-4.7
       temperature: 0.3
       max_tokens: 16000
 
     reviewer:
-      provider: litellm
-      name: anthropic/claude-sonnet-4-20250514
+      provider: cerebras
+      name: zai-glm-4.7
       temperature: 0.3
       max_tokens: 8000
 
