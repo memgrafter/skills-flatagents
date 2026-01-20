@@ -4,6 +4,7 @@ import re
 import sys
 from datetime import datetime
 from flatagents import MachineHooks
+from socratic_teacher.session_store import JSONLSessionStore
 
 # Turn off litellm logging
 os.environ["LITELLM_LOG"] = "ERROR"
@@ -29,6 +30,8 @@ class SocraticTeacherHooks(MachineHooks):
         """Handle custom actions. Must return full context, not partial."""
         if action == "init_session":
             return self._init_session(context)
+        elif action == "show_past_sessions":
+            return self._show_past_sessions(context)
         elif action == "collect_learner_response":
             return self._collect_learner_response(context)
         elif action == "update_understanding_model":
@@ -48,6 +51,60 @@ class SocraticTeacherHooks(MachineHooks):
         context["learner_level"] = int(input_data.get("learner_level", context.get("learner_level", 1)))
         context["max_rounds"] = int(input_data.get("max_rounds", context.get("max_rounds", 10)))
         context["working_dir"] = input_data.get("working_dir", context.get("working_dir", "."))
+        return context
+
+    def _show_past_sessions(self, context: dict) -> dict:
+        """Load and display past sessions for this topic."""
+        topic = context.get("topic", "")
+        working_dir = context.get("working_dir", ".")
+
+        store_path = f"{working_dir}/.socratic_sessions.jsonl"
+        store = JSONLSessionStore(store_path)
+
+        past_sessions = store.list(topic=topic)
+
+        if not past_sessions:
+            print(f"\n{'='*70}")
+            print(f"Topic: {topic}")
+            print(f"No previous sessions found. Starting fresh!")
+            print(f"{'='*70}\n")
+            return context
+
+        # Display past sessions
+        print(f"\n{'='*70}")
+        print(f"Topic: {topic}")
+        print(f"Found {len(past_sessions)} previous session(s):")
+        print(f"{'='*70}\n")
+
+        for i, session in enumerate(past_sessions, 1):
+            timestamp = session.get("timestamp", "unknown")
+            # Parse ISO timestamp to readable format
+            try:
+                dt = datetime.fromisoformat(timestamp)
+                date_str = dt.strftime("%Y-%m-%d %H:%M")
+            except:
+                date_str = timestamp
+
+            mastery = session.get("final_mastery_score", 0.0)
+            rounds = session.get("rounds_completed", 0)
+            reason = session.get("termination_reason", "unknown")
+            gaps = session.get("identified_gaps", [])
+            first_q = session.get("first_question", "")
+
+            print(f"Session {i}: {date_str}")
+            print(f"  Mastery: {mastery:.2f}/1.0 | Rounds: {rounds} | Ended: {reason}")
+            if first_q:
+                # Truncate if too long
+                display_q = first_q if len(first_q) <= 80 else first_q[:77] + "..."
+                print(f"  First Q: {display_q}")
+            if gaps:
+                gaps_str = ", ".join(gaps[:3])
+                if len(gaps) > 3:
+                    gaps_str += f" (+{len(gaps) - 3} more)"
+                print(f"  Gaps: {gaps_str}")
+            print()
+
+        print(f"{'='*70}\n")
         return context
 
     def _collect_learner_response(self, context: dict) -> dict:
@@ -150,6 +207,10 @@ class SocraticTeacherHooks(MachineHooks):
         context["question"] = question
         context["follow_up_prompt"] = hint
 
+        # Track first question for metadata
+        if not context.get("first_question"):
+            context["first_question"] = question
+
         self._debug_print("PARSED_QUESTION", {"question": question, "hint": hint})
         return context
 
@@ -209,7 +270,7 @@ class SocraticTeacherHooks(MachineHooks):
         return context
 
     def _update_transcript(self, context: dict) -> None:
-        """Build formatted session transcript."""
+        """Build formatted session transcript and wrap in file_writer format."""
         lines = []
 
         # Header
@@ -254,4 +315,48 @@ class SocraticTeacherHooks(MachineHooks):
         max_rounds = context.get("max_rounds", 10)
         lines.append(f"**Rounds:** {round_count}/{max_rounds}")
 
-        context["session_transcript"] = "\n".join(lines)
+        termination_reason = context.get("termination_reason", "")
+        if termination_reason:
+            lines.append(f"**Termination Reason:** {termination_reason}")
+
+        markdown_content = "\n".join(lines)
+
+        # Generate filename
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        topic_slug = topic.replace(" ", "_").replace("/", "-").replace("\\", "-")
+        # Truncate topic if too long
+        if len(topic_slug) > 50:
+            topic_slug = topic_slug[:50]
+        filename = f"socratic_session_{topic_slug}_{timestamp}.md"
+
+        # Wrap in SEARCH/REPLACE format for file_writer
+        # Empty SEARCH block = create new file
+        context["session_transcript"] = f"""```markdown
+{filename}
+<<<<<<< SEARCH
+
+=======
+{markdown_content}
+>>>>>>> REPLACE
+```"""
+
+        # Save session metadata to JSONL
+        session_id = filename.replace(".md", "")
+        working_dir = context.get("working_dir", ".")
+        store_path = f"{working_dir}/.socratic_sessions.jsonl"
+        store = JSONLSessionStore(store_path)
+
+        metadata = {
+            "session_id": session_id,
+            "topic": topic,
+            "timestamp": datetime.now().isoformat(),
+            "filepath": filename,
+            "final_mastery_score": mastery,
+            "rounds_completed": round_count,
+            "termination_reason": termination_reason,
+            "identified_gaps": identified_gaps,
+            "strengths": strengths,
+            "first_question": context.get("first_question", ""),
+        }
+
+        store.save(metadata)

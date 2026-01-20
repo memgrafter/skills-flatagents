@@ -3,10 +3,7 @@ spec_version: "0.7.3"
 
 data:
   name: response_evaluator
-  model:
-    provider: anthropic
-    name: claude-opus-4-5-20251101
-    temperature: 0.4
+  model: response_evaluator
   system: |
     You are an expert educational evaluator assessing learner responses for conceptual depth and understanding.
 

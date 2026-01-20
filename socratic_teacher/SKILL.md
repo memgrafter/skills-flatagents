@@ -19,7 +19,7 @@ An interactive teaching skill that uses the Socratic method to guide learners to
 - `--level` (optional, default 1): Learner proficiency level (1-5 scale)
 - `--max-rounds` (optional, default 10): Maximum number of teaching rounds
 - `--working-dir` (optional, default "."): Directory to save session transcripts
-- `--cwd` (optional): User's current working directory
+- `--cwd` (optional): Alias for `--working-dir`
 
 ## Features
 

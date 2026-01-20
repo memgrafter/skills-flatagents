@@ -31,6 +31,7 @@ data:
     evaluation_strengths: []
     feedback: ""
     feedback_type: ""
+    first_question: ""
 
     # History for continuity
     question_history: []
@@ -58,6 +59,11 @@ data:
   states:
     start:
       type: initial
+      transitions:
+        - to: show_past_sessions
+
+    show_past_sessions:
+      action: show_past_sessions
       transitions:
         - to: ask_question
 

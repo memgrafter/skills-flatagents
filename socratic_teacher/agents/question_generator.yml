@@ -3,10 +3,7 @@ spec_version: "0.7.3"
 
 data:
   name: question_generator
-  model:
-    provider: anthropic
-    name: claude-opus-4-5-20251101
-    temperature: 0.8
+  model: question_generator
   system: |
     You are a Socratic educator designing probing questions to help learners develop deep understanding.
 
