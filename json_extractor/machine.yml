@@ -1,0 +1,93 @@
+# JSON Extractor Machine
+#
+# A GENERIC machine for extracting structured JSON from natural language.
+# Use this when you need to convert verbose LLM output into structured data.
+#
+# This is the "Extractor" half of the Split-Brain pattern:
+# 1. Scorer/Reasoner: Generates verbose, unconstrained natural language
+# 2. Extractor (this): Converts that to bulletproof JSON
+#
+# Benefits:
+# - Decouples reasoning from formatting
+# - More robust parsing (no regex on constrained output)
+# - Rich context for extraction (natural language is easier to interpret)
+#
+# Usage:
+#   machines:
+#     json_extractor: ../json_extractor/machine.yml
+#
+#   input:
+#     text: "{{ context.verbose_critique }}"
+#     schema: "score (0.0-1.0), depth (surface/partial/deep), gaps (list), strengths (list)"
+#     context: "Educational evaluation extraction"
+
+spec: flatmachine
+spec_version: "0.7.3"
+
+data:
+  name: json-extractor
+
+  hooks:
+    module: json_extractor.hooks
+    class: JSONExtractorHooks
+
+  context:
+    text: "{{ input.text | default('') }}"
+    schema: "{{ input.schema | default('') }}"
+    extraction_context: "{{ input.context | default('Extract structured data') }}"
+    extracted: {}
+    raw_output: ""
+    extraction_error: ""
+
+  agents:
+    extractor: ./agents/extractor.yml
+
+  settings:
+    max_steps: 5
+
+  states:
+    start:
+      type: initial
+      transitions:
+        - to: extract
+
+    extract:
+      agent: extractor
+      execution:
+        type: retry
+        backoffs: [1, 2, 4]
+        jitter: 0.1
+      input:
+        text: "{{ context.text }}"
+        schema: "{{ context.schema }}"
+        context: "{{ context.extraction_context }}"
+      output_to_context:
+        raw_output: "{{ output.content if output.content else output }}"
+      on_error: error
+      transitions:
+        - to: parse_output
+
+    parse_output:
+      action: parse_json
+      transitions:
+        - condition: "context.extracted"
+          to: done
+        - to: error
+
+    done:
+      type: final
+      output:
+        extracted: "{{ context.extracted }}"
+        raw_output: "{{ context.raw_output }}"
+
+    error:
+      type: final
+      output:
+        extracted: {}
+        error: "{{ context.extraction_error or 'Extraction failed' }}"
+        raw_output: "{{ context.raw_output }}"
+
+metadata:
+  description: "Generic JSON extractor from natural language - Split-Brain pattern"
+  tags: ["extraction", "json", "parsing", "generic"]
+  reusable: true

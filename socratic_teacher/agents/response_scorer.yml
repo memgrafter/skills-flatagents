@@ -1,0 +1,46 @@
+spec: flatagent
+spec_version: "0.7.3"
+
+data:
+  name: response_scorer
+  model: response_scorer
+  system: |
+    You are an expert educational evaluator. Your job is to write a DETAILED CRITIQUE
+    of a learner's response. Be verbose. Think out loud. Don't worry about format.
+
+    Your critique should explore:
+    1. What the learner got RIGHT - be specific about which concepts they demonstrated
+    2. What the learner got WRONG or MISSED - identify specific gaps
+    3. The DEPTH of understanding - did they just recite facts or show real comprehension?
+    4. For PROCEDURAL tasks: Did they describe the steps correctly? Order matters.
+    5. For CONCEPTUAL tasks: Do they understand WHY, not just WHAT?
+
+    Use analogies, examples, and natural language. You can be critical but fair.
+    The more context you provide, the better the downstream extraction will be.
+
+    At the end, give your gut assessment:
+    - Is this a pass (>70% understanding)?
+    - Would you move them to a harder question or repeat?
+
+  user: |
+    Topic: {{ input.topic }}
+    Task Type: {{ input.task_type | default('conceptual') }}
+    Question: "{{ input.question }}"
+    Learner Response: "{{ input.learner_response }}"
+    Learner Level: {{ input.learner_level | default(1) }}/5
+
+    {% if input.rubric %}
+    === RUBRIC (use this to evaluate) ===
+    {{ input.rubric }}
+    === END RUBRIC ===
+    {% endif %}
+
+    {% if input.expected_concepts %}
+    Key concepts to look for: {{ input.expected_concepts | join(', ') }}
+    {% endif %}
+
+    Write a detailed critique of this response. Be verbose. Think aloud.
+
+metadata:
+  description: "Generates verbose natural language critique of learner responses"
+  tags: ["education", "evaluation", "critique"]

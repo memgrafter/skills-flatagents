@@ -10,10 +10,24 @@ data:
 
   context:
     # Input parameters
-    topic: "{{ input.topic }}"
-    learner_level: "{{ input.learner_level | default(1) | int }}"
+    subject: "{{ input.subject | default('') }}"
+    topic: "{{ input.topic | default('') }}"
+    learner_level: "{{ input.learner_level | default(0) | int }}"  # 0 = auto
     max_rounds: "{{ input.max_rounds | default(10) | int }}"
     working_dir: "{{ input.working_dir | default('.') }}"
+    task_type: "{{ input.task_type | default('') }}"  # 'procedural' or 'conceptual', empty = auto
+
+    # Session management
+    session_id: ""
+    resuming_session: false
+    session_status: "active"  # active, suspended, completed
+
+    # Topic tree
+    topic_tree: []
+    selected_topic: {}
+
+    # Rubric (generated based on task type)
+    rubric: ""
 
     # Runtime state
     round_count: 0
@@ -25,6 +39,7 @@ data:
     question: ""
     follow_up_prompt: ""
     learner_response: ""
+    verbose_critique: ""  # New: scorer output
     evaluation_score: 0.0
     evaluation_depth: "partial"
     evaluation_gaps: []
@@ -43,30 +58,117 @@ data:
     session_complete: false
     termination_reason: ""
     last_error: ""
+    user_quit: false
 
   agents:
+    topic_tree_generator: ./agents/topic_tree_generator.yml
+    rubric_generator: ./agents/rubric_generator.yml
     question_generator: ./agents/question_generator.yml
-    response_evaluator: ./agents/response_evaluator.yml
+    response_scorer: ./agents/response_scorer.yml
     feedback_provider: ./agents/feedback_provider.yml
 
   machines:
     file_writer: ../file_writer/machine.yml
+    json_extractor: ../json_extractor/machine.yml
 
   settings:
     hooks: socratic_teacher.hooks
-    max_steps: 50
+    max_steps: 100  # Increased for longer sessions
 
   states:
+    # ==================== INITIALIZATION ====================
     start:
       type: initial
       transitions:
-        - to: show_past_sessions
+        - to: check_resume
 
-    show_past_sessions:
-      action: show_past_sessions
+    check_resume:
+      action: check_for_resume
+      transitions:
+        - condition: "context.resuming_session"
+          to: restore_session
+        - to: check_topic_tree
+
+    restore_session:
+      action: restore_session_state
+      transitions:
+        - to: show_resume_info
+
+    show_resume_info:
+      action: show_resume_info
       transitions:
         - to: ask_question
 
+    check_topic_tree:
+      action: check_topic_tree
+      transitions:
+        - condition: "context.topic_tree"
+          to: select_topic
+        - to: generate_topic_tree
+
+    generate_topic_tree:
+      agent: topic_tree_generator
+      execution:
+        type: retry
+        backoffs: [2, 8]
+        jitter: 0.1
+      input:
+        subject: "{{ context.subject or context.topic }}"
+        learner_context: "Level {{ context.learner_level }}/5"
+      output_to_context:
+        _agent_output: "{{ output }}"
+      on_error: use_default_topic
+      transitions:
+        - to: parse_topic_tree
+
+    parse_topic_tree:
+      action: parse_topic_tree
+      transitions:
+        - to: select_topic
+
+    use_default_topic:
+      action: use_default_topic
+      transitions:
+        - to: check_auto_difficulty
+
+    select_topic:
+      action: select_topic
+      transitions:
+        - to: check_auto_difficulty
+
+    check_auto_difficulty:
+      action: check_auto_difficulty
+      transitions:
+        - to: generate_rubric
+
+    generate_rubric:
+      agent: rubric_generator
+      execution:
+        type: retry
+        backoffs: [2, 8]
+        jitter: 0.1
+      input:
+        topic: "{{ context.topic }}"
+        task_type: "{{ context.task_type }}"
+        difficulty_level: "{{ context.learner_level }}"
+        known_gaps: "{{ context.identified_gaps }}"
+      output_to_context:
+        rubric: "{{ output.content if output.content else output }}"
+      on_error: skip_rubric
+      transitions:
+        - to: show_session_info
+
+    skip_rubric:
+      action: skip_rubric
+      transitions:
+        - to: show_session_info
+
+    show_session_info:
+      action: show_session_info
+      transitions:
+        - to: ask_question
+
+    # ==================== MAIN LOOP ====================
     ask_question:
       agent: question_generator
       execution:
@@ -96,28 +198,52 @@ data:
     wait_response:
       action: collect_learner_response
       transitions:
-        - to: evaluate_response
+        - condition: "context.user_quit"
+          to: handle_quit
+        - condition: "context.learner_response == ''"
+          to: handle_quit
+        - to: score_response
 
-    evaluate_response:
-      agent: response_evaluator
+    # ==================== SPLIT-BRAIN SCORING ====================
+    score_response:
+      agent: response_scorer
       execution:
         type: retry
         backoffs: [2, 8]
         jitter: 0.1
       input:
         topic: "{{ context.topic }}"
+        task_type: "{{ context.task_type }}"
         question: "{{ context.question }}"
         learner_response: "{{ context.learner_response }}"
+        learner_level: "{{ context.learner_level }}"
+        rubric: "{{ context.rubric }}"
         expected_concepts: "{{ context.identified_gaps }}"
-        understanding_level: "{{ context.learner_level }}"
       output_to_context:
-        _agent_output: "{{ output }}"
+        verbose_critique: "{{ output.content if output.content else output }}"
       on_error: error
       transitions:
-        - to: parse_evaluation_output
+        - to: extract_evaluation
 
-    parse_evaluation_output:
-      action: parse_evaluation
+    extract_evaluation:
+      machine: json_extractor
+      input:
+        text: "{{ context.verbose_critique }}"
+        schema: "score (0.0-1.0), depth (surface/partial/deep), gaps (array of strings), strengths (array of strings)"
+        context: "Educational evaluation extraction from verbose critique"
+      output_to_context:
+        _extractor_output: "{{ output }}"
+      on_error: fallback_evaluation
+      transitions:
+        - to: parse_extraction
+
+    parse_extraction:
+      action: parse_extraction
+      transitions:
+        - to: provide_feedback
+
+    fallback_evaluation:
+      action: fallback_evaluation
       transitions:
         - to: provide_feedback
 
@@ -142,14 +268,31 @@ data:
     parse_feedback_output:
       action: parse_feedback
       transitions:
+        - to: checkpoint_round
+
+    # ==================== CHECKPOINT & MASTERY CHECK ====================
+    checkpoint_round:
+      action: checkpoint_round
+      transitions:
         - to: check_mastery
 
     check_mastery:
       action: update_understanding_model
       transitions:
         - condition: "context.mastery_score >= 0.85 or context.round_count >= context.max_rounds"
-          to: save_session
+          to: complete_session
         - to: ask_question
+
+    # ==================== SESSION TERMINATION ====================
+    handle_quit:
+      action: handle_user_quit
+      transitions:
+        - to: save_session
+
+    complete_session:
+      action: complete_session
+      transitions:
+        - to: save_session
 
     save_session:
       machine: file_writer
@@ -164,12 +307,15 @@ data:
       type: final
       output:
         topic: "{{ context.topic }}"
+        subject: "{{ context.subject }}"
+        session_id: "{{ context.session_id }}"
         final_mastery_score: "{{ context.mastery_score }}"
         learning_transcript: "{{ context.question_history }}"
         identified_gaps: "{{ context.identified_gaps }}"
         strengths: "{{ context.strengths }}"
         termination_reason: "{{ context.termination_reason }}"
         rounds_completed: "{{ context.round_count }}"
+        can_resume: "{{ context.termination_reason == 'user_quit' }}"
 
     error:
       type: final
@@ -177,7 +323,8 @@ data:
         status: "error"
         error_context: "{{ context.last_error }}"
         partial_transcript: "{{ context.question_history }}"
+        session_id: "{{ context.session_id }}"
 
 metadata:
-  description: "Socratic teaching assistant that guides learners through discovery-based questioning"
-  tags: ["education", "socratic-method", "interactive"]
+  description: "Socratic teaching assistant with SQLite persistence, topic trees, and split-brain scoring"
+  tags: ["education", "socratic-method", "interactive", "sqlite"]

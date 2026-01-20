@@ -1,304 +1,370 @@
 # Socratic Teacher Machine Architecture
 
+## Overview
+
+An interactive Socratic teaching system with:
+- **SQLite persistence** for sessions, topic trees, and progress tracking
+- **Split-brain scoring** (Scorer + Extractor pattern) for robust evaluation
+- **Topic tree generation** with auto-difficulty based on history
+- **Session checkpoint/resume** for interrupted learning
+- **Rubric generation** adapting to procedural vs conceptual tasks
+
 ## Machine Composition
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│        socratic_teacher (MAIN ORCHESTRATOR)                │
-│                                                             │
-│  Context:                                                   │
-│  - topic, difficulty, max_rounds, round_count              │
-│  - understanding_model (knowledge gaps)                     │
-│  - question_history, response_history                       │
-│  - mastery_score                                            │
-│  - session_transcript (for persistence)                     │
-│                                                             │
-│  States Flow:                                              │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │ start → ask_question → wait_response →              │   │
-│  │ evaluate_response → check_mastery → provide_feedback│   │
-│  │ └──→ (loop or end) → save_session (optional)        │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                                                             │
-│  Agents Used (embedded):                                    │
-│  • question_generator   (ask state)                        │
-│  • response_evaluator   (evaluate state)                   │
-│  • feedback_provider    (feedback state)                   │
-│                                                             │
-│  Sub-Machines (optional):                                  │
-│  • file_writer (save session transcript/profile to disk)   │
-│  • session_analyzer (analyze learning progress)            │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│        socratic_teacher (MAIN ORCHESTRATOR)                     │
+│                                                                 │
+│  SQLite Storage (.socratic_teacher.db):                        │
+│  ├── sessions       - Session metadata & state                  │
+│  ├── session_rounds - Individual Q&A rounds (checkpoint data)   │
+│  ├── topics         - Topic tree hierarchy                      │
+│  └── topic_progress - User progress per topic                   │
+│                                                                 │
+│  Initialization Flow:                                           │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │ start → check_resume → [restore_session OR             │   │
+│  │ check_topic_tree → generate_topic_tree → select_topic →│   │
+│  │ check_auto_difficulty → generate_rubric] →             │   │
+│  │ show_session_info → ask_question                       │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                                                                 │
+│  Main Loop:                                                     │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │ ask_question → wait_response →                         │   │
+│  │ score_response (Scorer) → extract_evaluation (Extractor)│   │
+│  │ → provide_feedback → checkpoint_round → check_mastery  │   │
+│  │ → [loop OR complete_session] → save_session → done     │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                                                                 │
+│  Agents (6):                                                    │
+│  • topic_tree_generator  - Generate curriculum tree             │
+│  • rubric_generator      - Create task-specific rubrics         │
+│  • question_generator    - Socratic questions                   │
+│  • response_scorer       - Verbose natural language critique    │
+│  • feedback_provider     - Encouraging Socratic feedback        │
+│  • (legacy) response_evaluator - Backwards compat               │
+│                                                                 │
+│  Sub-Machines:                                                  │
+│  • file_writer       - Save session transcript to disk          │
+│  • json_extractor    - Extract structured JSON from critique    │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-## Agent Definitions (New)
+## Split-Brain Scoring Pattern
 
-### 1. `question_generator.yml`
-**Purpose**: Generate probing questions aligned to Socratic method
+The key architectural improvement: decouple reasoning from formatting.
 
-**Input**:
+```
+┌────────────────────┐    ┌──────────────────────┐    ┌────────────┐
+│  response_scorer   │───▶│    json_extractor    │───▶│  Structured│
+│  (The Reasoner)    │    │    (The Architect)   │    │    Data    │
+│                    │    │                      │    │            │
+│  "Write a verbose  │    │  "Extract score,     │    │  {         │
+│   critique. Don't  │    │   depth, gaps from   │    │   score:   │
+│   worry about      │    │   this critique.     │    │   depth:   │
+│   structure."      │    │   Output ONLY JSON." │    │   gaps:    │
+│                    │    │                      │    │  }         │
+└────────────────────┘    └──────────────────────┘    └────────────┘
+
+Benefits:
+- Scorer can hallucinate, use analogies, explore nuance freely
+- Extractor has rich context to interpret ("mostly correct" → 0.8)
+- Bulletproof parsing: no more regex failures on misplaced periods
+- Trade latency (2 calls) for reliability (agent pipelines need this)
+```
+
+## SQLite Schema
+
+```sql
+-- Sessions: main session metadata
+sessions (
+    session_id TEXT PRIMARY KEY,
+    topic TEXT, subject TEXT,
+    learner_level INTEGER, task_type TEXT,
+    status TEXT,  -- 'active', 'suspended', 'completed'
+    mastery_score REAL,
+    identified_gaps TEXT, strengths TEXT, rubric TEXT,
+    termination_reason TEXT,
+    created_at TEXT, updated_at TEXT,
+    context_snapshot TEXT  -- Full context for resume
+)
+
+-- Session rounds: individual Q&A for checkpoint/resume
+session_rounds (
+    session_id TEXT, round_num INTEGER,
+    question TEXT, response TEXT,
+    score REAL, depth TEXT,
+    gaps TEXT, strengths TEXT,
+    critique TEXT,  -- Full verbose scorer output
+    timestamp TEXT
+)
+
+-- Topics: hierarchical topic tree
+topics (
+    topic_id TEXT PRIMARY KEY,  -- e.g., "python:generators"
+    subject TEXT, name TEXT,
+    parent_topic_id TEXT,  -- NULL for root topics
+    description TEXT,
+    difficulty INTEGER,  -- 1-5
+    prerequisites TEXT,  -- JSON array of topic_ids
+    task_type TEXT  -- 'procedural' or 'conceptual'
+)
+
+-- Progress: user progress tracking
+topic_progress (
+    topic_id TEXT PRIMARY KEY,
+    sessions_completed INTEGER,
+    best_mastery_score REAL,
+    avg_mastery_score REAL,
+    total_rounds INTEGER,
+    last_session_id TEXT,
+    last_practiced TEXT
+)
+```
+
+## Agent Definitions
+
+### 1. `topic_tree_generator.yml`
+**Purpose**: Generate curriculum tree for a subject
+
+**Input**: subject, learner_context
+**Output**: JSON array of topic objects
+
+**Key Features**:
+- Creates 8-15 topics with logical progression
+- Marks procedural vs conceptual tasks
+- Builds prerequisite relationships
+
+### 2. `rubric_generator.yml`
+**Purpose**: Create task-type-appropriate evaluation rubrics
+
+**Input**: topic, task_type, difficulty_level, known_gaps
+
+**Output**: Bulleted rubric with [REQUIRED] and [DEPTH] markers
+
+**Key Insight** (from architect feedback):
+- PROCEDURAL tasks: Focus on steps, order, binary checkpoints
+- CONCEPTUAL tasks: Focus on understanding WHY, connections, edge cases
+
+### 3. `response_scorer.yml` (NEW - replaces response_evaluator)
+**Purpose**: Write verbose natural language critique
+
+**Input**: topic, task_type, question, response, rubric, learner_level
+
+**Output**: Free-form critique (passed to json_extractor)
+
+**Prompt Design**:
+- "Be verbose. Think out loud. Don't worry about format."
+- Explore what's right, wrong, depth of understanding
+- Give gut assessment: pass/fail, move harder or repeat?
+
+### 4. `question_generator.yml`
+**Purpose**: Generate Socratic probing questions
+
+**Input**: topic, difficulty_level, understanding_gaps, history
+
+**Output**: QUESTION: ..., HINT: ...
+
+### 5. `feedback_provider.yml`
+**Purpose**: Encouraging Socratic feedback
+
+**Input**: question, response, score, depth
+
+**Output**: Plain text feedback (never gives away answers)
+
+## JSON Extractor Machine (Generic/Reusable)
+
+Located at: `/json_extractor/`
+
+A generic machine for extracting structured JSON from natural language.
+Part of the Split-Brain pattern - can be reused across projects.
+
+**Usage**:
 ```yaml
-topic: str                           # Learning topic
-difficulty_level: int                # 1-5 scale
-understanding_gaps: list[str]        # Known knowledge gaps
-previous_questions: list[str]        # History to avoid repetition
-conversation_depth: int              # How many Q&A rounds so far
+machines:
+  json_extractor: ../json_extractor/machine.yml
+
+extract_evaluation:
+  machine: json_extractor
+  input:
+    text: "{{ context.verbose_critique }}"
+    schema: "score (0.0-1.0), depth (surface/partial/deep), gaps (list)"
+    context: "Educational evaluation extraction"
 ```
 
-**Output**:
-```yaml
-question: str                        # The probing question
-reasoning: str                       # Why this question?
-follow_up_prompt: str               # Hint to nudge thinking
+**Extraction Strategies** (in hooks):
+1. Direct JSON parse
+2. Find JSON object in text
+3. Clean up trailing commas
+4. Parse markdown code blocks
+5. Line-by-line key:value fallback
+
+## Session Flow
+
+### New Session
+```
+1. check_resume → No active session
+2. check_topic_tree → Missing for subject
+3. generate_topic_tree → LLM generates curriculum
+4. parse_topic_tree → Store in SQLite topics table
+5. select_topic → User picks or uses provided
+6. check_auto_difficulty → Based on topic_progress
+7. generate_rubric → Task-appropriate rubric
+8. show_session_info → Display and create session in DB
+9. Main loop...
 ```
 
-**Prompt Template**: Generates open-ended questions that reveal thinking, avoid directly answering, scaffold complexity progressively.
-
----
-
-### 2. `response_evaluator.yml`
-**Purpose**: Assess learner response against question intent and learning objectives
-
-**Input**:
-```yaml
-question: str
-learner_response: str
-expected_concepts: list[str]        # Key ideas to assess
-understanding_level: int            # Baseline (0-5)
-topic: str
+### Resume Session
+```
+1. check_resume → Found suspended session
+2. User confirms resume
+3. restore_session_state → Load from context_snapshot
+4. show_resume_info → Display progress
+5. ask_question → Continue where left off
 ```
 
-**Output**:
-```yaml
-score: float                         # 0.0 (incorrect) to 1.0 (mastery)
-depth: str                           # "surface" | "partial" | "deep"
-identified_gaps: list[str]           # What they don't understand
-correct_elements: list[str]          # What they got right
-next_difficulty: int                 # Recommended next level
+### Graceful Quit
+```
+User types: /quit
+
+1. handle_user_quit triggered
+2. Session marked as "suspended" in SQLite
+3. context_snapshot saved for resume
+4. Transcript written to file
+5. "Session saved! You can resume later."
 ```
 
-**Prompt Template**: Evaluate for conceptual understanding (not just right/wrong), identify misconceptions, recommend direction.
-
----
-
-### 3. `feedback_provider.yml`
-**Purpose**: Generate Socratic feedback (hints, confirmations, or guided questions)
-
-**Input**:
-```yaml
-question: str
-learner_response: str
-evaluation_result: dict              # score, gaps, etc.
-is_correct: bool
-response_depth: str                  # "surface" | "partial" | "deep"
-```
-
-**Output**:
-```yaml
-feedback_type: str                   # "confirm" | "hint" | "redirect" | "probe_deeper"
-feedback_text: str                   # Actual feedback (never the answer)
-next_question: str                   # Optional follow-up to redirect thinking
-encouragement: str
-```
-
-**Prompt Template**: Praise effort, ask clarifying questions, guide toward gaps, never give away answers.
-
----
-
-## Optional Sub-Machine: `session_analyzer`
-
-**Purpose**: Periodically analyze learning trajectory (optional for MVP)
-
-**Triggers**: After every 3-5 rounds or on user request
-
-**Flow**:
-- Analyze question history, response scores, gaps evolution
-- Generate learning report (strengths, misconceptions, readiness)
-- Output: `{ overall_mastery: float, learning_path_recommendation: str }`
-
----
-
-## Session Context (in main machine)
+## Context Schema
 
 ```yaml
-data:
-  context:
-    # Input
-    topic: "{{ input.topic }}"
-    learner_level: "{{ input.level | default(1) }}"  # 1-5
-    max_rounds: "{{ input.max_rounds | default(10) }}"
+context:
+  # Input
+  subject: ""         # Parent subject (e.g., "Python")
+  topic: ""           # Specific topic (e.g., "Generators")
+  learner_level: 0    # 0 = auto from history
+  max_rounds: 10
+  task_type: ""       # 'procedural' or 'conceptual', empty = auto
 
-    # Runtime
-    round_count: 0
-    understanding_model:
-      mastery_score: 0.0              # 0.0-1.0
-      identified_gaps: []
-      strengths: []
+  # Session management
+  session_id: ""
+  resuming_session: false
+  session_status: "active"
 
-    question: ""
-    learner_response: ""
-    evaluation: {}
-    feedback: ""
+  # Topic tree
+  topic_tree: []
+  selected_topic: {}
+  rubric: ""
 
-    # History for continuity
-    question_history: []
-    response_history: []
-    evaluation_history: []
-    session_transcript: ""  # Formatted for file output
+  # Runtime state
+  round_count: 0
+  mastery_score: 0.0
+  identified_gaps: []
+  strengths: []
 
-    # Control
-    session_complete: false
-    termination_reason: ""  # "mastery", "max_rounds", "user_quit"
+  # Current interaction
+  question: ""
+  learner_response: ""
+  verbose_critique: ""    # Scorer output
+  evaluation_score: 0.0
+  evaluation_depth: "partial"
+  evaluation_gaps: []
+  evaluation_strengths: []
+  feedback: ""
+
+  # History
+  question_history: []
+  response_history: []
+  evaluation_history: []
+
+  # Control
+  user_quit: false
+  termination_reason: ""
 ```
 
----
+## Commands
 
-## State Machine States
+- `/quit` or `/q` - Gracefully save and exit (can resume later)
+- `Ctrl+D` - Hard exit (session still checkpointed per-round)
 
-```yaml
-states:
-  start:
-    type: initial
-    transitions:
-      - to: ask_question
-
-  ask_question:
-    agent: question_generator
-    input:
-      topic: "{{ context.topic }}"
-      difficulty_level: "{{ context.understanding_model.mastery_score | scale_to_difficulty }}"
-      understanding_gaps: "{{ context.understanding_model.identified_gaps }}"
-      previous_questions: "{{ context.question_history }}"
-      conversation_depth: "{{ context.round_count }}"
-    output_to_context:
-      question: "{{ output.question }}"
-      follow_up_prompt: "{{ output.follow_up_prompt }}"
-    transitions:
-      - to: wait_response
-
-  wait_response:
-    # Action: pause & collect user input
-    action: collect_learner_response
-    transitions:
-      - to: evaluate_response
-
-  evaluate_response:
-    agent: response_evaluator
-    input:
-      question: "{{ context.question }}"
-      learner_response: "{{ context.learner_response }}"
-      expected_concepts: "{{ context.understanding_model.identified_gaps }}"
-      topic: "{{ context.topic }}"
-    output_to_context:
-      evaluation: "{{ output }}"
-    transitions:
-      - to: provide_feedback
-
-  provide_feedback:
-    agent: feedback_provider
-    input:
-      question: "{{ context.question }}"
-      learner_response: "{{ context.learner_response }}"
-      evaluation_result: "{{ context.evaluation }}"
-    output_to_context:
-      feedback: "{{ output.feedback_text }}"
-      feedback_type: "{{ output.feedback_type }}"
-    transitions:
-      - to: check_mastery
-
-  check_mastery:
-    action: update_understanding_model
-    transitions:
-      - condition: "context.understanding_model.mastery_score >= 0.85"
-        to: save_session
-      - condition: "context.round_count >= context.max_rounds"
-        to: save_session
-      - to: ask_question  # Loop back
-
-  save_session:
-    # Optional: Call file_writer to persist session transcript
-    machine: file_writer
-    input:
-      changes: "{{ context.session_transcript }}"  # Formatted transcript
-      working_dir: "{{ input.working_dir | default('.') }}"
-    transitions:
-      - to: done
-    on_error: done  # Skip if file writing fails
-
-  done:
-    type: final
-    output:
-      topic: "{{ context.topic }}"
-      final_mastery_score: "{{ context.understanding_model.mastery_score }}"
-      learning_transcript: "{{ context.question_history }}"
-      identified_gaps: "{{ context.understanding_model.identified_gaps }}"
-      session_summary: "{{ context.feedback }}"
-```
-
----
-
-## Execution Flow Example
+## Example Flow
 
 ```
-User Input: topic=Python generators, level=2, max_rounds=8
+$ flatagents run socratic_teacher --topic "Python generators" --subject "Python"
 
-Round 1:
-  → question_generator: "What do you think happens when you call a function with 'yield'?"
-  → User: "It returns a value?"
-  → evaluator: score=0.3, depth="surface", gaps=["generator_protocol", "lazy_evaluation"]
-  → feedback: "Good instinct on 'returns'. Can you think about *when* it returns?" (hint, not answer)
+======================================================================
+Subject: Python
+Topic: Python generators
+Type: conceptual
+Difficulty: ** (Level 2/5)
+======================================================================
+Commands: /quit to save and exit | Ctrl+D for hard exit
+Starting session...
 
-Round 2:
-  → question_generator: "When the yield happens, does the function stop running?"
-  → User: "Yes, it pauses and comes back later?"
-  → evaluator: score=0.7, depth="partial", gaps=["state_preservation"]
-  → feedback: "Exactly! It pauses. Now, what happens to the local variables?"
+Question: What do you think happens inside a function when it encounters 'yield'?
 
-Round 3-8:
-  → (similar loop, progressively scaffolding toward generator protocol)
+Your response: It returns a value and pauses
 
-Final:
-  → mastery_score = 0.82 → "Ready to explore advanced use cases"
+[Scorer thinks aloud...]
+"The learner correctly identified that yield causes a pause. They mentioned
+'returns a value' which shows basic understanding. However, they didn't
+address state preservation or the iterator protocol. This is a partial
+understanding - they grasp the surface behavior but miss the deeper mechanics.
+I'd say this is about 70% there. Pass, but needs probing on state."
+
+[Extractor extracts: {score: 0.7, depth: "partial", gaps: ["state_preservation"]}]
+
+Feedback: Good instinct! When yield pauses, what happens to the local
+variables inside the function? Do they disappear?
+[Score: 70.0% | Depth: partial]
+
+...
+
+Round 6:
+Question: Can you explain why generators are "lazy"?
+
+Your response: /quit
+
+======================================================================
+Session saved! You can resume later with the same topic.
+Progress: 78.3% mastery after 5 rounds
+======================================================================
 ```
 
----
+## Files Structure
 
-## Reuse from Existing Machines
+```
+socratic_teacher/
+├── machine.yml                    # Main orchestrator
+├── profiles.yml                   # Model configurations
+├── agents/
+│   ├── topic_tree_generator.yml   # Curriculum generation
+│   ├── rubric_generator.yml       # Task-specific rubrics
+│   ├── question_generator.yml     # Socratic questions
+│   ├── response_scorer.yml        # Verbose critique (NEW)
+│   ├── feedback_provider.yml      # Encouraging feedback
+│   └── response_evaluator.yml     # Legacy (backwards compat)
+└── src/socratic_teacher/
+    ├── __init__.py
+    ├── main.py                    # CLI entry point
+    ├── hooks.py                   # All custom actions
+    ├── sqlite_store.py            # SQLite persistence (NEW)
+    └── session_store.py           # Legacy JSONL (kept for migration)
 
-| Existing | Reused For | How |
-|----------|-----------|-----|
-| `coding_agent` | Main loop pattern | Plan → Evaluate → Feedback → Iterate |
-| `response_evaluator` | Agent scaffolding | Similar multi-criteria output structure |
-| `shell_analyzer` | Retry/error handling | Backoff retry pattern for agent calls |
-| `file_writer` | Session persistence | Save transcript/profile to disk via sub-machine call |
+json_extractor/                    # GENERIC/REUSABLE
+├── machine.yml                    # Split-brain extractor
+├── profiles.yml
+├── hooks.py                       # JSON parsing strategies
+├── __init__.py
+└── agents/
+    └── extractor.yml              # JSON extraction agent
+```
 
-## New Machines/Agents to Build
+## Future Enhancements
 
-1. **socratic_teacher/machine.yml** — Main orchestrator
-2. **socratic_teacher/agents/question_generator.yml** — Ask probing questions
-3. **socratic_teacher/agents/response_evaluator.yml** — Assess responses
-4. **socratic_teacher/agents/feedback_provider.yml** — Socratic feedback
-5. **(Optional) socratic_teacher/agents/session_analyzer.yml** — Periodic progress review
-
-## Existing Machines to Integrate
-
-1. **file_writer** — Sub-machine call for session persistence (save_session state)
-
----
-
-## MVP vs. Future
-
-**MVP (v1)**:
-- Core 5-state loop: ask → response → evaluate → feedback → check_mastery → save_session
-- 3 agents (question_generator, response_evaluator, feedback_provider)
-- Simple mastery scoring (avg of evaluation scores)
-- Session transcript saved via file_writer (optional, non-blocking)
-- No session analyzer
-
-**Future (v2+)**:
-- Session analyzer sub-machine for progress insights
-- Adaptive difficulty curves
-- Learner profile persistence across sessions
-- Multi-topic learning paths
-- Conversation branching based on learner confusion patterns
+- [ ] Multi-subject learning paths
+- [ ] Spaced repetition for gap topics
+- [ ] Conversation branching on confusion patterns
+- [ ] Export progress reports
+- [ ] Web UI integration

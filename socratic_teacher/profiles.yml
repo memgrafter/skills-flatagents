@@ -8,19 +8,47 @@ data:
       name: zai-glm-4.7
       temperature: 1.0
       max_tokens: 10000
+
+    # Question generation - creative, needs variety
     question_generator:
       provider: cerebras
       name: zai-glm-4.7
       temperature: 1.0
-      max_tokens: 10000
-    response_evaluator:
+      max_tokens: 2000
+
+    # Scorer - verbose critique, high creativity allowed
+    response_scorer:
       provider: cerebras
       name: zai-glm-4.7
-      temperature: 1.0
-      max_tokens: 10000
+      temperature: 0.8
+      max_tokens: 3000
+
+    # Feedback - supportive, encouraging
     feedback_provider:
       provider: cerebras
       name: zai-glm-4.7
-      temperature: 1.0
-      max_tokens: 10000
+      temperature: 0.8
+      max_tokens: 1000
+
+    # Topic tree - structured output, lower temperature
+    topic_tree_generator:
+      provider: cerebras
+      name: zai-glm-4.7
+      temperature: 0.5
+      max_tokens: 5000
+
+    # Rubric - structured, consistent
+    rubric_generator:
+      provider: cerebras
+      name: zai-glm-4.7
+      temperature: 0.5
+      max_tokens: 2000
+
+    # Legacy evaluator (kept for backwards compat)
+    response_evaluator:
+      provider: cerebras
+      name: zai-glm-4.7
+      temperature: 0.7
+      max_tokens: 2000
+
   default: default
