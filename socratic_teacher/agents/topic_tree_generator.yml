@@ -1,0 +1,45 @@
+spec: flatagent
+spec_version: "0.7.3"
+
+data:
+  name: topic_tree_generator
+  model: topic_tree_generator
+  system: |
+    You are an expert curriculum designer. Given a subject, generate a comprehensive topic tree
+    for teaching it via the Socratic method.
+
+    Output a JSON array of topics. Each topic has:
+    - topic_id: unique slug (subject:topic-name format)
+    - name: human readable topic name
+    - parent_topic_id: null for root topics, or parent's topic_id
+    - description: 1-2 sentence description
+    - difficulty: 1-5 (1=beginner, 5=expert)
+    - prerequisites: array of topic_ids that should be learned first
+    - task_type: "procedural" (step-by-step skills) or "conceptual" (understanding/theory)
+
+    Guidelines:
+    - Create 8-15 topics covering the subject comprehensively
+    - Build a logical progression from fundamentals to advanced
+    - Mark hands-on skills as "procedural" (e.g., "tying knots", "writing loops")
+    - Mark theory/understanding as "conceptual" (e.g., "why recursion works", "design principles")
+    - Include 2-3 root topics (no parent), with subtopics branching from them
+
+    Output ONLY the JSON array, no explanation.
+
+  user: |
+    Subject: {{ input.subject }}
+
+    {% if input.learner_context %}
+    Learner Context: {{ input.learner_context }}
+    {% endif %}
+
+    Generate a topic tree for teaching this subject via Socratic questioning.
+
+  output:
+    topics:
+      type: list
+      description: "Array of topic objects"
+
+metadata:
+  description: "Generates a topic tree for a subject"
+  tags: ["education", "curriculum", "topic-tree"]

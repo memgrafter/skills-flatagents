@@ -1,0 +1,16 @@
+spec: flatprofiles
+spec_version: "0.7.3"
+
+data:
+  model_profiles:
+    default:
+      provider: cerebras
+      name: zai-glm-4.7
+      temperature: 0.3  # Lower temperature for more consistent extraction
+      max_tokens: 2000
+    json_extractor:
+      provider: cerebras
+      name: zai-glm-4.7
+      temperature: 0.3
+      max_tokens: 2000
+  default: default
