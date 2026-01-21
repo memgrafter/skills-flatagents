@@ -1,0 +1,33 @@
+# Judge Extractor - Extracts action/command from judge output
+
+spec: flatagent
+spec_version: "0.7.1"
+
+data:
+  name: judge-extractor
+  model: extractor
+
+  system: |
+    Extract the action decision from the given text.
+    Return ONLY valid JSON with keys: action, command, reasoning.
+    action must be one of: tree, rg, read, done.
+    If action is done and no command is provided, use an empty string.
+
+  user: |
+    Text: {{ input.text }}
+
+    Respond with JSON: {"action": "tree|rg|read|done", "command": "path or pattern", "reasoning": "short rationale"}
+
+  output:
+    action:
+      type: str
+      description: "tree, rg, read, or done"
+    command:
+      type: str
+      description: "path, pattern, or filepath (empty if done)"
+    reasoning:
+      type: str
+      description: "why"
+
+metadata:
+  description: "Extracts judge decision into structured fields"

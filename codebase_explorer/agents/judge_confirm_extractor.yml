@@ -1,0 +1,29 @@
+# Judge Confirm Extractor - Extracts removal confirmation decision
+
+spec: flatagent
+spec_version: "0.7.1"
+
+data:
+  name: judge-confirm-extractor
+  model: extractor
+
+  system: |
+    Extract the removal confirmation decision from the given text.
+    Return ONLY valid JSON with keys: confirmed, reasoning.
+    confirmed must be true if the decision is to confirm removal, false if reject/restore.
+
+  user: |
+    Text: {{ input.text }}
+
+    Respond with JSON: {"confirmed": true/false, "reasoning": "short rationale"}
+
+  output:
+    confirmed:
+      type: bool
+      description: "true to confirm removal, false to restore items"
+    reasoning:
+      type: str
+      description: "Why confirm or reject the removal"
+
+metadata:
+  description: "Extracts removal confirmation decision"

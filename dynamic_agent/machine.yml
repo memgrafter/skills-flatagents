@@ -11,12 +11,16 @@ data:
     # User's creative writing task
     task: "{{ input.task }}"
     style_hints: "{{ input.style_hints | default('') }}"
+
+    # Raw outputs
+    raw_generator: null
+    raw_supervisor: null
     
     # OTF agent spec fields (stored individually)
     otf_name: null
     otf_system: null
     otf_user: null
-    otf_temperature: 0.7
+    otf_temperature: 0.6
     otf_output_fields: null
     
     # Supervisor analysis (pre-execution)
@@ -37,7 +41,9 @@ data:
   
   agents:
     generator: ./agents/generator.yml
+    generator_extractor: ./agents/generator_extractor.yml
     supervisor: ./agents/supervisor.yml
+    result_extractor: ./agents/result_extractor.yml
   
   states:
     start:
@@ -52,12 +58,25 @@ data:
         style_hints: "{{ context.style_hints }}"
         previous_concerns: "{{ context.supervisor_concerns }}"
       output_to_context:
+        raw_generator: "{{ output.content }}"
+        generation_attempts: "{{ context.generation_attempts + 1 }}"
+      transitions:
+        - to: extract_generator
+
+    extract_generator:
+      agent: generator_extractor
+      execution:
+        type: retry
+        backoffs: [2, 8, 16, 35]
+        jitter: 0.1
+      input:
+        text: "{{ context.raw_generator }}"
+      output_to_context:
         otf_name: "{{ output.name }}"
         otf_system: "{{ output.system }}"
         otf_user: "{{ output.user }}"
-        otf_temperature: "{{ output.temperature | default(0.7) }}"
-        otf_output_fields: "{{ output.output_fields | default({}) }}"
-        generation_attempts: "{{ context.generation_attempts + 1 }}"
+        otf_temperature: "{{ output.temperature | default(0.6) }}"
+        otf_output_fields: "{{ output.output_fields | default({}) | tojson }}"
       transitions:
         - to: supervise_spec
     
@@ -71,6 +90,19 @@ data:
         spec_user: "{{ context.otf_user }}"
         spec_temperature: "{{ context.otf_temperature }}"
         spec_output_fields: "{{ context.otf_output_fields }}"
+      output_to_context:
+        raw_supervisor: "{{ output.content }}"
+      transitions:
+        - to: extract_supervisor
+
+    extract_supervisor:
+      agent: result_extractor
+      execution:
+        type: retry
+        backoffs: [2, 8, 16, 35]
+        jitter: 0.1
+      input:
+        text: "{{ context.raw_supervisor }}"
       output_to_context:
         supervisor_approved: "{{ output.approved }}"
         supervisor_analysis: "{{ output.analysis }}"

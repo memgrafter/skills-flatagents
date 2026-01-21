@@ -19,6 +19,11 @@ data:
 
     Strategy: tree first, then rg to find code, then read key files.
 
+    Output format (plain text only, no JSON):
+    Action: <tree|rg|read|done>
+    Command: <path/pattern/file or empty if done>
+    Reasoning: <brief rationale>
+
   user: |
     Task: {{ input.task }}
     Iter: {{ input.iteration }}/{{ input.max_iterations }}
@@ -26,17 +31,6 @@ data:
 
     Summary: {{ input.summary }}
     {% if input.latest_action %}Last: {{ input.latest_action }} -> {{ input.latest_output_preview }}{% endif %}
-
-  output:
-    action:
-      type: str
-      description: "tree, rg, read, or done"
-    command:
-      type: str
-      description: "path, pattern, or filepath"
-    reasoning:
-      type: str
-      description: "why"
 
 metadata:
   description: "Directs exploration"

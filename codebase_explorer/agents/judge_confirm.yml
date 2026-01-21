@@ -22,6 +22,10 @@ data:
     Be careful: once confirmed, these items are gone. But also don't
     keep irrelevant items that waste budget.
 
+    Output format (plain text only, no JSON):
+    Decision: <confirm|reject>
+    Reasoning: <brief rationale>
+
   user: |
     ## Task
     {{ input.task }}
@@ -41,14 +45,6 @@ data:
 
     ## Decision
     Confirm removal (items are permanently deleted), or reject to restore them?
-
-  output:
-    confirmed:
-      type: bool
-      description: "true to confirm removal, false to restore items"
-    reasoning:
-      type: str
-      description: "Why confirm or reject the removal"
 
 metadata:
   description: "Two-pass safety check for frozen item removal"

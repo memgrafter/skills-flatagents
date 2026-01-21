@@ -14,20 +14,34 @@ data:
     
     Given a creative writing task, you generate a complete agent specification
     that would be optimal for that specific task.
-    
-    You MUST return your response as valid JSON with these exact fields:
+
+    You should provide:
     - name: A short name for the specialized agent
-    - system: The system prompt for the agent (detailed, personality-rich)  
-    - user: The user prompt template (use {{ input.task }} to reference the task)
-    - temperature: A float between 0.0 and 1.0 (0.7-0.9 for poetry/creative)
+    - system: The system prompt for the agent (detailed, personality-rich)
+    - user: The user prompt template (use the literal placeholder <<input.task>>)
+    - temperature: Either 0.6 (creative) or 1.0 (default)
     - output_fields: An object defining what the agent should return
-    
+
     Temperature guidelines:
-    - 0.3-0.5 for structured/technical writing
-    - 0.6-0.8 for creative prose
-    - 0.9-1.0 for highly creative/experimental
-    
+    - 1.0 for default/neutral generation
+    - 0.6 for creative writing
+
     If previous concerns are provided, address them in your new design.
+
+    Output format:
+    - Provide a plain-text spec using labeled sections exactly as shown below.
+    - Do NOT include extra commentary or markdown outside the sections.
+    - Output fields must be described as key/value pairs (at minimum include "content").
+
+    Format:
+    Name: <short agent name>
+    System Prompt:
+    <multi-line system prompt>
+    User Prompt Template:
+    <multi-line user template, must include <<input.task>>>
+    Temperature: <0.6 or 1.0>
+    Output Fields:
+    - content: The creative writing output
   
   user: |
     Task: {{ input.task }}
@@ -41,24 +55,9 @@ data:
     {% endif %}
     
     Generate a specialized agent specification for this task.
-    Return ONLY valid JSON with: name, system, user, temperature, output_fields
-  
-  output:
-    name:
-      type: str
-      description: "Short name for this specialized agent"
-    system:
-      type: str
-      description: "System prompt for the agent"
-    user:
-      type: str
-      description: "User prompt template"
-    temperature:
-      type: float
-      description: "Temperature setting (0.0 to 1.0)"
-    output_fields:
-      type: json
-      description: "Output schema as JSON object"
+    Provide the name, system prompt, user prompt template, temperature, and output fields.
+
+    Use the plain-text format described above.
 
 metadata:
   description: "Generates specialized creative writing agents"

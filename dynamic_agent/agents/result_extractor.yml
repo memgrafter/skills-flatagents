@@ -1,0 +1,28 @@
+# Supervisor Result Extractor
+# Extracts approval decision and analysis from supervisor output
+
+spec: flatagent
+spec_version: "0.7.1"
+
+data:
+  name: result-extractor
+  model: extractor
+  system: |
+    Extract the supervisor analysis from the given text. Return only valid JSON.
+  user: |
+    Text: {{ input.text }}
+
+    Respond with JSON: {"approved": true/false, "analysis": "strengths analysis", "concerns": "issues or empty"}
+  output:
+    approved:
+      type: bool
+      description: "Whether the agent spec should be approved for execution"
+    analysis:
+      type: str
+      description: "Detailed analysis of the agent spec's strengths"
+    concerns:
+      type: str
+      description: "Specific concerns or issues (empty if approved)"
+
+metadata:
+  description: "Extracts supervisor result from raw text output"

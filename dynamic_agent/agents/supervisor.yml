@@ -26,11 +26,6 @@ data:
     - Temperature is appropriate for the task type
     - Output schema captures what the user needs
     - No red flags (harmful content, off-topic tangents, etc.)
-
-    IMPORTANT: Return your response as JSON with exactly these fields:
-    - approved: true or false
-    - analysis: string with your analysis
-    - concerns: string with concerns (use empty string "" if no concerns, NOT an array)
   
   user: |
     ORIGINAL TASK:
@@ -52,17 +47,8 @@ data:
     
     ---
     Analyze this agent spec. Should it be approved for execution?
-  
-  output:
-    approved:
-      type: bool
-      description: "Whether the agent spec should be approved for execution"
-    analysis:
-      type: str
-      description: "Detailed analysis of the agent spec's strengths"
-    concerns:
-      type: str
-      description: "Specific concerns as a string (empty string if none)"
 
+    Provide your analysis of strengths, any concerns or issues, and whether it should be approved.
+  
 metadata:
   description: "Pre-execution supervisor for OTF agent specs"

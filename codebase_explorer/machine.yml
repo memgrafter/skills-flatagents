@@ -37,6 +37,8 @@ data:
     latest_action: null
     latest_output: null
     action_command: null
+    raw_judge: null
+    raw_removal_review: null
 
     # Removal state (two-pass)
     pending_removals: []
@@ -59,7 +61,9 @@ data:
 
   agents:
     judge: ./agents/judge.yml
+    judge_extractor: ./agents/judge_extractor.yml
     judge_confirm: ./agents/judge_confirm.yml
+    judge_confirm_extractor: ./agents/judge_confirm_extractor.yml
     extractor: ./agents/extractor.yml
     summarizer: ./agents/summarizer.yml
 
@@ -87,6 +91,19 @@ data:
         summary: "{{ context.summary }}"
         latest_action: "{{ context.latest_action }}"
         latest_output_preview: "{{ context.latest_output | default('') }}"
+      output_to_context:
+        raw_judge: "{{ output.content }}"
+      transitions:
+        - to: extract_judge
+
+    extract_judge:
+      agent: judge_extractor
+      execution:
+        type: retry
+        backoffs: [2, 8, 16]
+        jitter: 0.1
+      input:
+        text: "{{ context.raw_judge }}"
       output_to_context:
         next_action: "{{ output.action }}"
         action_command: "{{ output.command }}"
@@ -156,7 +173,7 @@ data:
         latest_action: "{{ context.latest_action }}"
         latest_output: "{{ context.latest_output }}"
       output_to_context:
-        summary: "{{ output.updated_summary }}"
+        summary: "{{ output.content }}"
         iteration: "{{ context.iteration + 1 }}"
       transitions:
         - to: update_tokens
@@ -178,6 +195,19 @@ data:
         task: "{{ context.task }}"
         removed_items: "{{ context.stashed_items }}"
         current_frozen_token_count: "{{ context.frozen_token_count }}"
+      output_to_context:
+        raw_removal_review: "{{ output.content }}"
+      transitions:
+        - to: extract_confirm_removal
+
+    extract_confirm_removal:
+      agent: judge_confirm_extractor
+      execution:
+        type: retry
+        backoffs: [2, 8, 16]
+        jitter: 0.1
+      input:
+        text: "{{ context.raw_removal_review }}"
       output_to_context:
         removal_confirmed: "{{ output.confirmed }}"
       transitions:

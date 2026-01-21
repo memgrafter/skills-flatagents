@@ -40,6 +40,9 @@ data:
     Explored: src/auth/, src/models/
     Unknown: src/utils/, configuration loading
 
+    Output format:
+    - Return ONLY the updated summary text (no JSON, no markdown fences).
+
   user: |
     ## Task
     {{ input.task }}
@@ -57,11 +60,6 @@ data:
     ## Update
     Integrate findings from the latest action into the summary.
     Keep it under 400 words. Be specific about what was discovered.
-
-  output:
-    updated_summary:
-      type: str
-      description: "Updated narrative summary (max 400 words)"
 
 metadata:
   description: "Maintains narrative summary of exploration progress"

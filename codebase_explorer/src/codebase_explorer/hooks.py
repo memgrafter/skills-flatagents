@@ -33,7 +33,7 @@ class CodebaseExplorerHooks(MachineHooks):
     Hooks for codebase exploration with budget-aware frozen state management.
     """
 
-    # Each iteration uses ~3-4 API calls (judge, extractor, summarizer, sometimes judge_confirm)
+    # Each iteration uses ~4 API calls (judge, judge_extractor, extractor, summarizer)
     CALLS_PER_ITERATION = 4
     MAX_API_CALLS = 50
 
@@ -88,11 +88,20 @@ class CodebaseExplorerHooks(MachineHooks):
         iteration = context.get("iteration", 0)
 
         # Track API calls for agent states
-        if state_name in ("judge", "extract", "summarize", "confirm_removal"):
+        if state_name in (
+            "judge",
+            "extract_judge",
+            "extract",
+            "summarize",
+            "confirm_removal",
+            "extract_confirm_removal",
+        ):
             self.api_call_count += 1
 
         if state_name == "judge":
             self._log(f"iter {iteration} judge thinking")
+        elif state_name == "extract_judge":
+            self._log(f"iter {iteration} judge extracting")
         elif state_name == "route_action":
             # Check if we should bail early due to API call cap
             remaining_calls = self.MAX_API_CALLS - self.api_call_count

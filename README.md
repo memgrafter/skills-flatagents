@@ -50,7 +50,7 @@ data:
 **Common providers:**
 - `anthropic` - Requires `ANTHROPIC_API_KEY` (models: see provider docs)
 - `openai` - Requires `OPENAI_API_KEY` (models: gpt-4, gpt-4-turbo, etc.)
-- `cerebras` - Requires `CEREBRAS_API_KEY` (models: zai-glm-4.6, llama3.1-8b, etc.)
+- `cerebras` - Requires `CEREBRAS_API_KEY` (models: zai-glm-4.7, etc.)
 - See [FlatAgents docs](https://github.com/memgrafter/flatagents) for full provider list
 
 **search_refiner** also requires `EXA_API_KEY` for web search via Exa MCP.

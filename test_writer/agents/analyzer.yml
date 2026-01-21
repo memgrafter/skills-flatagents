@@ -19,21 +19,11 @@ data:
     4. Skip trivial code (simple getters/setters, __repr__, etc.)
 
     OUTPUT FORMAT:
-    Return a JSON object with this structure:
-    ```json
-    {
-      "targets": [
-        {
-          "type": "function",
-          "name": "function_name",
-          "lines": [10, 11, 12],
-          "priority": "high",
-          "reason": "Core business logic, completely uncovered"
-        }
-      ],
-      "summary": "Brief description of coverage gaps"
-    }
-    ```
+    Return plain text only (no JSON). Use this format:
+    Summary: <brief description of coverage gaps>
+    Targets:
+    - `function_name` (type: function, priority: high, lines: 10,11,12) - reason...
+    - `function_name` (type: method, priority: medium, lines: 45,46) - reason...
 
     Be selective - focus on the most important gaps, not every uncovered line.
 

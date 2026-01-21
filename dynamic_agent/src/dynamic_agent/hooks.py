@@ -177,12 +177,16 @@ class OTFAgentHooks(MachineHooks):
                 "content": {"type": "str", "description": "The creative writing output"}
             }
         
-        # Ensure temperature is a float
+        # Ensure temperature is a float and normalize to allowed values
         if isinstance(temperature, str):
             try:
                 temperature = float(temperature)
             except ValueError:
-                temperature = 0.7
+                temperature = 0.6
+        if temperature != 1.0:
+            temperature = 0.6
+
+        normalized_user = str(user).replace("<<input.task>>", "{{ input.task }}").strip()
         
         agent_config = {
             "spec": "flatagent",
@@ -194,7 +198,7 @@ class OTFAgentHooks(MachineHooks):
                     "temperature": temperature
                 },
                 "system": system,
-                "user": user,
+                "user": normalized_user,
                 "output": output_schema
             }
         }
