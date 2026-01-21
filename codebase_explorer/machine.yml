@@ -86,7 +86,7 @@ data:
         frozen_segments: "{{ context.frozen_segments }}"
         summary: "{{ context.summary }}"
         latest_action: "{{ context.latest_action }}"
-        latest_output_preview: "{{ context.latest_output[:500] if context.latest_output else '' }}"
+        latest_output_preview: "{{ context.latest_output | default('') }}"
       output_to_context:
         next_action: "{{ output.action }}"
         action_command: "{{ output.command }}"
