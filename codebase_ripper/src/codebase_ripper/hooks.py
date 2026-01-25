@@ -126,6 +126,35 @@ ALLOWED_COMMANDS = {
             "ls -la src/",
         ],
     },
+    "tail": {
+        "description": "Show last lines of a file",
+        "syntax": "tail [OPTIONS] FILE",
+        "allowed_flags": ["-n", "-c"],
+        "examples": [
+            "tail -n 20 logs/error.log",
+            "tail -n 50 src/main.py",
+        ],
+    },
+    "file": {
+        "description": "Determine file type (text vs binary, mime type)",
+        "syntax": "file [OPTIONS] FILE",
+        "allowed_flags": ["-b", "-i", "--mime-type", "--mime-encoding"],
+        "examples": [
+            "file src/main.py",
+            "file -i unknown_asset",
+            "file --mime-type data/*",
+        ],
+    },
+    "diff": {
+        "description": "Compare files line by line",
+        "syntax": "diff [OPTIONS] FILE1 FILE2",
+        "allowed_flags": ["-u", "-U", "-q", "-w", "-B", "-y"],
+        "examples": [
+            "diff file_v1.py file_v2.py",
+            "diff -u original.py updated.py",
+            "diff -q config.dev.json config.prod.json",
+        ],
+    },
     "git": {
         "description": "Git version control (read-only commands only)",
         "syntax": "git <subcommand> [OPTIONS] [ARGS]",
