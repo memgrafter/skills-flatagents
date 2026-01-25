@@ -2,14 +2,14 @@
 """
 Codebase Ripper CLI
 
-Shotgun approach to codebase exploration:
-1. Generate many commands (1 LLM call)
-2. Extract command list (1 LLM call)
+Shotgun approach to codebase exploration with iterative passes:
+1. Generate many commands (1 LLM call per iteration)
+2. Extract command list (1 LLM call per iteration)
 3. Validate against allowlist (0 LLM calls)
 4. Execute all in parallel (0 LLM calls)
-5. Extract relevant context (1 LLM call)
+5. Extract relevant context (1 LLM call per iteration)
 
-Total: 3 LLM calls for comprehensive coverage.
+Default: 2 iterations for deeper coverage.
 Output: Clean text context ready for another LLM.
 """
 
@@ -34,7 +34,7 @@ from .hooks import CodebaseRipperHooks
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Rip through a codebase to gather context (shotgun approach)"
+        description="Rip through a codebase to gather context (shotgun approach with iterative passes)"
     )
     parser.add_argument(
         "task",
@@ -50,6 +50,12 @@ def parse_args():
         type=int,
         default=40000,
         help="Maximum tokens for extracted context (default: 40000)"
+    )
+    parser.add_argument(
+        "--max-iterations",
+        type=int,
+        default=2,
+        help="Maximum exploration iterations (default: 2)"
     )
     parser.add_argument(
         "--json",
@@ -75,12 +81,14 @@ async def main():
     print(f"# Codebase Ripper", file=sys.stderr)
     print(f"Directory: {working_dir}", file=sys.stderr)
     print(f"Task: {args.task[:60]}", file=sys.stderr)
+    print(f"Iterations: {args.max_iterations}", file=sys.stderr)
     print(f"---", file=sys.stderr)
 
     result = await machine.execute({
         "task": args.task,
         "working_dir": str(working_dir),
-        "token_budget": args.token_budget
+        "token_budget": args.token_budget,
+        "max_iterations": args.max_iterations
     })
 
     if args.json:
@@ -93,6 +101,7 @@ async def main():
         
         # Stats to stderr
         print(f"\n---", file=sys.stderr)
+        print(f"Iterations: {output.get('iterations', 0)}", file=sys.stderr)
         print(f"Commands: {output.get('commands_generated', 0)} generated, {output.get('commands_valid', 0)} valid, {output.get('commands_rejected', 0)} rejected", file=sys.stderr)
         print(f"Output tokens: {output.get('output_tokens', 0)}", file=sys.stderr)
 

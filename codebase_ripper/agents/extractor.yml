@@ -34,6 +34,8 @@ data:
     - Use markdown formatting
     - Include file paths for all code
     - No JSON, just clean readable text
+    - If this is an iteration > 0, focus on NEW findings not covered in previous context
+    - Avoid duplicating information from previous iterations
 
   user: |
     ## Task
@@ -42,8 +44,17 @@ data:
     ## Token Budget
     Keep output under {{ input.token_budget }} tokens.
 
+    {% if input.iteration > 0 %}
+    ## Iteration {{ input.iteration }}
+    This is iteration {{ input.iteration }}. Focus on NEW findings from this round of exploration.
+    Avoid repeating information already captured in previous iterations.
+    
+    ### Previous Context Summary
+    {{ input.previous_context | truncate(1000) }}
+    {% endif %}
+
     ## Command Outputs
     {{ input.aggregated_output }}
 
 metadata:
-  description: "Extracts clean context from bulk output"
+  description: "Extracts clean context from bulk output with iteration awareness"

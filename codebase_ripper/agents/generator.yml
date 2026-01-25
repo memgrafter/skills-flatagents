@@ -15,6 +15,7 @@ data:
     2. Search for key terms, patterns, and concepts from the task
     3. Find related files, imports, and dependencies
     4. Look for tests, configs, and documentation
+    5. Build on previous iteration results (if provided)
 
     COMMAND GENERATION RULES:
     - Generate 30-80 commands (more is better for coverage)
@@ -25,6 +26,17 @@ data:
 
     {{ input.allowlist }}
 
+    ## Blocked Patterns (DO NOT USE)
+    The following patterns will be rejected by the validator:
+    {{ input.blocked_patterns }}
+
+    ## Security Rules
+    - NO command substitution: $() or backticks
+    - NO pipes (|), redirects (>, <), or chaining (;, &&, ||)
+    - NO dangerous commands: sudo, rm, mv, cp, chmod, chown, curl, wget, nc, eval, exec, source, export
+    - NO parent directory traversal (..) or home directory (~)
+    - NO environment variables: $VAR, ${VAR}
+
   user: |
     ## Task
     {{ input.task }}
@@ -34,9 +46,35 @@ data:
     {{ input.structure }}
     ```
 
+    ## Initial Context
+    These commands have already been run for baseline context:
+    ```
+    {{ input.initial_context }}
+    ```
+
+    {% if input.iteration > 0 %}
+    ## Iteration {{ input.iteration }}
+    
+    ### Previous Context Summary
+    {{ input.previous_summary }}
+
+    ### Previously Accepted Commands ({{ input.accepted_count }} total)
+    {{ input.accepted_commands }}
+
+    ### Previously Rejected Commands (avoid repeating these patterns)
+    {{ input.rejected_commands }}
+
+    ### Instructions for This Iteration
+    Based on the previous context and extracted findings, generate NEW commands that:
+    - Dig deeper into promising areas identified in the summary
+    - Explore files/patterns mentioned but not yet fully examined
+    - AVOID repeating commands that were already run
+    - AVOID patterns that were previously rejected
+    {% else %}
     ## Instructions
     Generate 30-80 shell commands to gather context for this task.
     List one command per line, no numbering, no bullets.
+    {% endif %}
 
 metadata:
-  description: "Generates exploration commands"
+  description: "Generates exploration commands with full security context"

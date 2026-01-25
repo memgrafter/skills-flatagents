@@ -1,5 +1,6 @@
 # Codebase Ripper Machine
 # Shotgun approach: generate many commands, execute all, extract relevant context
+# Supports iterative passes for deeper exploration
 
 spec: flatmachine
 spec_version: "0.8.0"
@@ -18,10 +19,18 @@ data:
     task: "{{ input.task }}"
     working_dir: "{{ input.working_dir | default('.') }}"
     token_budget: "{{ input.token_budget | default(40000) }}"
+    max_iterations: "{{ input.max_iterations | default(2) }}"
 
-    # Phase 1: Structure discovery
+    # Iteration tracking
+    iteration: 0
+    should_continue: true
+
+    # Phase 1: Structure discovery (with full context)
     initial_structure: ""
     allowlist_prompt: ""
+    blocked_patterns: ""
+    initial_context: ""
+    initial_results: []
 
     # Phase 2: Command generation
     raw_commands: ""
@@ -29,16 +38,27 @@ data:
     valid_commands: []
     rejected_commands: []
 
+    # Iteration tracking for commands
+    all_accepted_commands: []
+    all_rejected_commands: []
+    accepted_commands_str: ""
+    rejected_commands_str: ""
+    accepted_count: 0
+
     # Phase 3: Execution
     command_results: []
     aggregated_output: ""
     output_tokens: 0
 
-    # Phase 4: Extraction - just text output
+    # Phase 4: Extraction - accumulated across iterations
     context_output: ""
+    previous_summary: ""
 
     # Stats
     api_call_count: 0
+    total_commands_generated: 0
+    total_commands_valid: 0
+    total_commands_rejected: 0
 
   agents:
     generator: ./agents/generator.yml
@@ -60,6 +80,16 @@ data:
     get_allowlist:
       action: get_allowlist
       transitions:
+        - to: get_blocked_patterns
+
+    get_blocked_patterns:
+      action: get_blocked_patterns
+      transitions:
+        - to: get_initial_context
+
+    get_initial_context:
+      action: get_initial_context
+      transitions:
         - to: generate
 
     # ========== PHASE 2: GENERATE COMMANDS ==========
@@ -69,6 +99,13 @@ data:
         task: "{{ context.task }}"
         structure: "{{ context.initial_structure }}"
         allowlist: "{{ context.allowlist_prompt }}"
+        blocked_patterns: "{{ context.blocked_patterns }}"
+        initial_context: "{{ context.initial_context }}"
+        iteration: "{{ context.iteration }}"
+        previous_summary: "{{ context.previous_summary }}"
+        accepted_commands: "{{ context.accepted_commands_str }}"
+        rejected_commands: "{{ context.rejected_commands_str }}"
+        accepted_count: "{{ context.accepted_count }}"
       output_to_context:
         raw_commands: "{{ output.content }}"
       transitions:
@@ -106,9 +143,25 @@ data:
         task: "{{ context.task }}"
         aggregated_output: "{{ context.aggregated_output }}"
         token_budget: "{{ context.token_budget }}"
+        iteration: "{{ context.iteration }}"
+        previous_context: "{{ context.context_output }}"
       output_to_context:
-        context_output: "{{ output.content }}"
+        context_output: "{{ context.context_output }}\n\n---\n\n{{ output.content }}"
+        previous_summary: "{{ output.content | truncate(2000) }}"
       transitions:
+        - to: prepare_iteration
+
+    # ========== ITERATION MANAGEMENT ==========
+    prepare_iteration:
+      action: prepare_next_iteration
+      transitions:
+        - to: update_iteration
+
+    update_iteration:
+      action: update_iteration_state
+      transitions:
+        - condition: "context.should_continue"
+          to: generate
         - to: finalize
 
     # ========== DONE ==========
@@ -116,11 +169,12 @@ data:
       type: final
       output:
         context: "{{ context.context_output }}"
-        commands_generated: "{{ context.generated_commands | length }}"
-        commands_valid: "{{ context.valid_commands | length }}"
-        commands_rejected: "{{ context.rejected_commands | length }}"
+        commands_generated: "{{ context.accepted_count + (context.all_rejected_commands | length) }}"
+        commands_valid: "{{ context.accepted_count }}"
+        commands_rejected: "{{ context.all_rejected_commands | length }}"
         output_tokens: "{{ context.output_tokens }}"
+        iterations: "{{ context.iteration }}"
 
 metadata:
-  description: "Shotgun codebase exploration - generate many commands, execute all, extract context"
-  tags: ["exploration", "bulk", "fast"]
+  description: "Shotgun codebase exploration with iterative passes - generate many commands, execute all, extract context"
+  tags: ["exploration", "bulk", "fast", "iterative"]

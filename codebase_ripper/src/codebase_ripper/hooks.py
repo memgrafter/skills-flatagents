@@ -173,6 +173,9 @@ class CodebaseRipperHooks(MachineHooks):
     MAX_COMMANDS = 100
     MAX_OUTPUT_PER_COMMAND = 10000  # chars
     MAX_TOTAL_OUTPUT = 200000  # chars
+    MAX_INITIAL_CONTEXT_OUTPUT = 2000  # chars per initial command
+    MAX_ACCEPTED_COMMANDS_HISTORY = 50  # commands to include in history
+    MAX_REJECTED_COMMANDS_HISTORY = 20  # rejections to include in history
     COMMAND_TIMEOUT = 30  # seconds
     MAX_PARALLEL = 10
 
@@ -210,6 +213,82 @@ class CodebaseRipperHooks(MachineHooks):
                 lines.append(f"  - `{ex}`")
             lines.append("")
         return "\n".join(lines)
+
+    def get_blocked_patterns_prompt(self) -> str:
+        """Generate prompt section describing blocked patterns."""
+        lines = ["The following patterns are BLOCKED and will cause command rejection:"]
+        pattern_descriptions = {
+            r'\$\(': "Command substitution $()",
+            r'`': "Backtick command substitution",
+            r'\|': "Pipes (|)",
+            r';': "Command chaining (;)",
+            r'&&': "Logical AND chaining (&&)",
+            r'\|\|': "Logical OR chaining (||)",
+            r'>': "Output redirection (>)",
+            r'<': "Input redirection (<)",
+            r'\bsudo\b': "Privilege escalation (sudo)",
+            r'\brm\b': "File deletion (rm)",
+            r'\bmv\b': "File moving (mv)",
+            r'\bcp\b': "File copying (cp)",
+            r'\bchmod\b': "Permission changes (chmod)",
+            r'\bchown\b': "Ownership changes (chown)",
+            r'\bcurl\b': "Network requests (curl)",
+            r'\bwget\b': "Network requests (wget)",
+            r'\bnc\b': "Netcat (nc)",
+            r'\beval\b': "Eval",
+            r'\bexec\b': "Exec",
+            r'\bsource\b': "Source",
+            r'\bexport\b': "Environment modification (export)",
+            r'\.\.': "Parent directory traversal (..)",
+            r'~': "Home directory (~)",
+            r'\$\{': "Variable expansion (${VAR})",
+            r'\$[A-Za-z]': "Environment variables ($VAR)",
+        }
+        for pattern in BLOCKED_PATTERNS:
+            desc = pattern_descriptions.get(pattern, pattern)
+            lines.append(f"- {desc}")
+        return "\n".join(lines)
+
+    def get_initial_context(self, cwd: Path) -> Tuple[str, List[Dict[str, Any]]]:
+        """
+        Run default commands to establish initial context.
+        
+        Returns: (formatted_output, command_results)
+        """
+        default_commands = [
+            "tree -L 2 --noreport",
+            "tree -L 3 -d --noreport",  # directories only, deeper
+        ]
+        
+        # Check for README files and add head command
+        readme_files = ["README.md", "README.rst", "README.txt", "README"]
+        for readme in readme_files:
+            if (cwd / readme).exists():
+                default_commands.append(f"head -n 200 {readme}")
+                break
+        
+        # Check for common config files
+        config_files = ["pyproject.toml", "package.json", "Cargo.toml", "go.mod", "setup.py"]
+        for config in config_files:
+            if (cwd / config).exists():
+                default_commands.append(f"cat {config}")
+                break
+        
+        # Run default commands
+        results = self.execute_all_commands(default_commands, cwd)
+        
+        # Format output
+        lines = []
+        for r in results:
+            if not r.get("error"):
+                lines.append(f"$ {r['command']}")
+                output = r['output']
+                if len(output) > self.MAX_INITIAL_CONTEXT_OUTPUT:
+                    output = output[:self.MAX_INITIAL_CONTEXT_OUTPUT]
+                lines.append(output)
+                lines.append("")
+        
+        return "\n".join(lines), results
 
     def validate_command(self, cmd: str) -> Tuple[bool, str]:
         """
@@ -357,9 +436,13 @@ class CodebaseRipperHooks(MachineHooks):
         handlers = {
             "get_initial_structure": self._get_initial_structure,
             "get_allowlist": self._get_allowlist,
+            "get_blocked_patterns": self._get_blocked_patterns,
+            "get_initial_context": self._get_initial_context_action,
             "validate_commands": self._validate_commands,
             "execute_commands": self._execute_commands,
             "aggregate_results": self._aggregate_results,
+            "prepare_next_iteration": self._prepare_next_iteration,
+            "update_iteration_state": self._update_iteration_state,
         }
 
         handler = handlers.get(action_name)
@@ -381,6 +464,23 @@ class CodebaseRipperHooks(MachineHooks):
     def _get_allowlist(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """Inject allowlist into context for LLM."""
         context["allowlist_prompt"] = self.get_allowlist_prompt()
+        return context
+
+    def _get_blocked_patterns(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Inject blocked patterns into context for LLM."""
+        context["blocked_patterns"] = self.get_blocked_patterns_prompt()
+        return context
+
+    def _get_initial_context_action(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Run default commands for initial context."""
+        working_dir = context.get("working_dir")
+        cwd = Path(working_dir).resolve() if working_dir else self.working_dir
+        
+        initial_output, initial_results = self.get_initial_context(cwd)
+        context["initial_context"] = initial_output
+        context["initial_results"] = initial_results
+        
+        self._log(f"initial context {len(initial_results)} commands")
         return context
 
     def _validate_commands(self, context: Dict[str, Any]) -> Dict[str, Any]:
@@ -429,4 +529,46 @@ class CodebaseRipperHooks(MachineHooks):
         context["output_tokens"] = self.count_tokens(aggregated)
         
         self._log(f"aggregate {context['output_tokens']} tokens")
+        return context
+
+    def _prepare_next_iteration(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Prepare context for the next iteration."""
+        iteration = context.get("iteration", 0)
+        
+        # Track all accepted and rejected commands across iterations
+        all_accepted = context.get("all_accepted_commands", [])
+        all_rejected = context.get("all_rejected_commands", [])
+        
+        # Add current iteration's results
+        valid_cmds = context.get("valid_commands", [])
+        rejected_cmds = context.get("rejected_commands", [])
+        
+        all_accepted.extend(valid_cmds)
+        all_rejected.extend([r.get("command", "") for r in rejected_cmds])
+        
+        context["all_accepted_commands"] = all_accepted
+        context["all_rejected_commands"] = all_rejected
+        
+        # Format for next iteration (use constants for history limits)
+        context["accepted_commands_str"] = "\n".join(
+            all_accepted[-self.MAX_ACCEPTED_COMMANDS_HISTORY:]
+        )
+        context["rejected_commands_str"] = "\n".join(
+            f"- {r.get('command', '')} ({r.get('reason', '')})" 
+            for r in rejected_cmds[-self.MAX_REJECTED_COMMANDS_HISTORY:]
+        )
+        context["accepted_count"] = len(all_accepted)
+        
+        self._log(f"iteration {iteration} complete, {len(all_accepted)} total commands")
+        return context
+
+    def _update_iteration_state(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Update iteration counter and check if we should continue."""
+        iteration = context.get("iteration", 0) + 1
+        max_iterations = context.get("max_iterations", 2)
+        
+        context["iteration"] = iteration
+        context["should_continue"] = iteration < max_iterations
+        
+        self._log(f"iteration {iteration}/{max_iterations}")
         return context
