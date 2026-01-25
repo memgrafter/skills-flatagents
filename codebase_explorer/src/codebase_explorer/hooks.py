@@ -35,7 +35,7 @@ class CodebaseExplorerHooks(MachineHooks):
 
     # Each iteration uses ~4 API calls (judge, judge_extractor, extractor, summarizer)
     CALLS_PER_ITERATION = 4
-    MAX_API_CALLS = 50
+    MAX_API_CALLS = 10
 
     def __init__(self, working_dir: str = "."):
         self.working_dir = Path(working_dir).resolve()
@@ -99,15 +99,27 @@ class CodebaseExplorerHooks(MachineHooks):
             self.api_call_count += 1
 
         if state_name == "judge":
+            # Check API budget BEFORE starting iteration
+            remaining_calls = self.MAX_API_CALLS - self.api_call_count
+            if remaining_calls < self.CALLS_PER_ITERATION:
+                self._log(f"iter {iteration} API cap reached ({self.api_call_count}/{self.MAX_API_CALLS}), forcing done")
+                context["next_action"] = "done"
+                # Skip to finalize by returning early - set flag for route_action
+                context["_force_finalize"] = True
             self._log(f"iter {iteration} judge thinking")
         elif state_name == "extract_judge":
             self._log(f"iter {iteration} judge extracting")
         elif state_name == "route_action":
-            # Check if we should bail early due to API call cap
-            remaining_calls = self.MAX_API_CALLS - self.api_call_count
-            if remaining_calls < self.CALLS_PER_ITERATION and context.get("next_action") != "done":
-                self._log(f"iter {iteration} API cap approaching ({self.api_call_count}/{self.MAX_API_CALLS}), finalizing with current context")
+            # Check for forced finalize from judge state
+            if context.get("_force_finalize"):
                 context["next_action"] = "done"
+                self._log(f"iter {iteration} forced finalize due to API cap")
+            else:
+                # Check if we should bail early due to API call cap
+                remaining_calls = self.MAX_API_CALLS - self.api_call_count
+                if remaining_calls < self.CALLS_PER_ITERATION and context.get("next_action") != "done":
+                    self._log(f"iter {iteration} API cap approaching ({self.api_call_count}/{self.MAX_API_CALLS}), finalizing with current context")
+                    context["next_action"] = "done"
 
             action = context.get("next_action", "?")
             cmd = context.get("action_command", "")[:30] if context.get("action_command") else ""

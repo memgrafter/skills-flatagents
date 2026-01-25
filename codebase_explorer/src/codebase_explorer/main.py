@@ -29,7 +29,7 @@ from flatagents import FlatMachine
 from .hooks import CodebaseExplorerHooks
 
 # Hard cap on API calls to prevent runaway costs
-MAX_API_CALLS = 50
+MAX_API_CALLS = 10
 
 
 def parse_args():
@@ -54,8 +54,8 @@ def parse_args():
     parser.add_argument(
         "--max-iterations",
         type=int,
-        default=10,
-        help="Maximum exploration iterations (default: 10)"
+        default=2,
+        help="Maximum exploration iterations (default: 2)"
     )
     parser.add_argument(
         "--json",
