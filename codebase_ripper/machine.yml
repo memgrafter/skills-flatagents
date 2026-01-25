@@ -24,6 +24,7 @@ data:
     allowlist_prompt: ""
 
     # Phase 2: Command generation
+    raw_commands: ""
     generated_commands: []
     valid_commands: []
     rejected_commands: []
@@ -33,17 +34,15 @@ data:
     aggregated_output: ""
     output_tokens: 0
 
-    # Phase 4: Extraction
-    frozen_imports: []
-    frozen_signatures: []
-    frozen_segments: []
-    summary: ""
+    # Phase 4: Extraction - just text output
+    context_output: ""
 
     # Stats
     api_call_count: 0
 
   agents:
     generator: ./agents/generator.yml
+    generator_extractor: ./agents/generator_extractor.yml
     extractor: ./agents/extractor.yml
 
   states:
@@ -70,6 +69,15 @@ data:
         task: "{{ context.task }}"
         structure: "{{ context.initial_structure }}"
         allowlist: "{{ context.allowlist_prompt }}"
+      output_to_context:
+        raw_commands: "{{ output.content }}"
+      transitions:
+        - to: extract_commands
+
+    extract_commands:
+      agent: generator_extractor
+      input:
+        text: "{{ context.raw_commands }}"
       output_to_context:
         generated_commands: "{{ output.commands }}"
       transitions:
@@ -99,10 +107,7 @@ data:
         aggregated_output: "{{ context.aggregated_output }}"
         token_budget: "{{ context.token_budget }}"
       output_to_context:
-        frozen_imports: "{{ output.imports | default([]) }}"
-        frozen_signatures: "{{ output.signatures | default([]) }}"
-        frozen_segments: "{{ output.segments | default([]) }}"
-        summary: "{{ output.summary | default('') }}"
+        context_output: "{{ output.content }}"
       transitions:
         - to: finalize
 
@@ -110,10 +115,7 @@ data:
     finalize:
       type: final
       output:
-        summary: "{{ context.summary }}"
-        frozen_imports: "{{ context.frozen_imports }}"
-        frozen_signatures: "{{ context.frozen_signatures }}"
-        frozen_segments: "{{ context.frozen_segments }}"
+        context: "{{ context.context_output }}"
         commands_generated: "{{ context.generated_commands | length }}"
         commands_valid: "{{ context.valid_commands | length }}"
         commands_rejected: "{{ context.rejected_commands | length }}"

@@ -1,12 +1,17 @@
 #!/bin/bash
-# Run codebase ripper
+# Codebase Ripper - Shotgun codebase exploration
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
 
-# Check if running from installed package or development
-if python -c "import codebase_ripper" 2>/dev/null; then
-    python -m codebase_ripper.main "$@"
-else
-    PYTHONPATH="$SCRIPT_DIR/src:$PYTHONPATH" python -m codebase_ripper.main "$@"
+# Activate virtual environment if it exists
+if [ -f "$SCRIPT_DIR/../.venv/bin/activate" ]; then
+    source "$SCRIPT_DIR/../.venv/bin/activate"
+elif [ -f "$SCRIPT_DIR/../../.venv/bin/activate" ]; then
+    source "$SCRIPT_DIR/../../.venv/bin/activate"
 fi
+
+# Add src to Python path
+export PYTHONPATH="$SCRIPT_DIR/src:$PYTHONPATH"
+
+# Run the ripper
+python -m codebase_ripper.main "$@"

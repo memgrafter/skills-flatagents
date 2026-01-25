@@ -2,78 +2,48 @@ spec: flatagent
 spec_version: "0.8.0"
 
 data:
-  name: bulk-extractor
-  description: "Extract relevant context from aggregated command outputs"
+  name: context-extractor
 
   model:
-    profile: fast
+    profile: extractor
 
-  prompts:
-    system: |
-      You are a code context extractor. You receive the output of many shell commands and must extract the most relevant pieces for the given task.
+  system: |
+    You are a code context extractor. Your job is to distill command outputs into clean, useful context for another LLM that will work on the task.
 
-      EXTRACTION PRIORITIES:
-      1. **Imports**: Key import statements showing dependencies
-      2. **Signatures**: Function/class/method signatures that are directly relevant
-      3. **Code Segments**: Small, focused code snippets (10-30 lines max each)
+    OUTPUT FORMAT:
+    Write clean, readable text organized into sections:
+    
+    ## Summary
+    Brief overview of the codebase/area relevant to the task.
+    
+    ## Key Files
+    List the most important files with brief descriptions.
+    
+    ## Imports & Dependencies
+    Key imports and external dependencies.
+    
+    ## Relevant Code
+    The most relevant code snippets with file paths. Use code blocks.
+    
+    ## Architecture Notes
+    How things connect, patterns used, entry points.
 
-      QUALITY RULES:
-      - Be selective - only extract what's directly relevant to the task
-      - Prefer complete, self-contained snippets
-      - Include file paths for context
-      - Avoid duplicates
-      - Stay within token budget
+    RULES:
+    - Be selective - only include what's directly relevant to the task
+    - Stay within token budget
+    - Use markdown formatting
+    - Include file paths for all code
+    - No JSON, just clean readable text
 
-      OUTPUT FORMAT:
-      - imports: Array of import statement strings
-      - signatures: Array of "file:line - signature" strings  
-      - segments: Array of {file: "path", code: "snippet"} objects
-      - summary: Brief summary of what was found and what's most relevant
+  user: |
+    ## Task
+    {{ input.task }}
 
-    user: |
-      ## Task
-      {{ task }}
+    ## Token Budget
+    Keep output under {{ input.token_budget }} tokens.
 
-      ## Token Budget
-      Keep total extracted content under {{ token_budget }} tokens.
+    ## Command Outputs
+    {{ input.aggregated_output }}
 
-      ## Command Outputs
-      {{ aggregated_output }}
-
-      ## Instructions
-      Extract the most relevant context for the task. Be selective but thorough.
-
-      Output JSON:
-      ```json
-      {
-        "imports": ["import x", "from y import z"],
-        "signatures": ["file.py:10 - def function_name(args)"],
-        "segments": [{"file": "path/to/file.py", "code": "relevant code here"}],
-        "summary": "Brief summary of findings"
-      }
-      ```
-
-  output:
-    schema:
-      type: object
-      properties:
-        imports:
-          type: array
-          items:
-            type: string
-        signatures:
-          type: array
-          items:
-            type: string
-        segments:
-          type: array
-          items:
-            type: object
-            properties:
-              file:
-                type: string
-              code:
-                type: string
-        summary:
-          type: string
-      required: ["imports", "signatures", "segments", "summary"]
+metadata:
+  description: "Extracts clean context from bulk output"

@@ -3,63 +3,40 @@ spec_version: "0.8.0"
 
 data:
   name: command-generator
-  description: "Generate many exploration commands for a codebase task"
 
   model:
     profile: fast
 
-  prompts:
-    system: |
-      You are a codebase exploration expert. Your job is to generate a comprehensive list of shell commands that will gather all relevant context for a given task.
+  system: |
+    You are a codebase exploration expert. Generate a comprehensive list of shell commands to gather context for a task.
 
-      STRATEGY:
-      1. Start broad - understand the overall structure
-      2. Search for key terms, patterns, and concepts from the task
-      3. Find related files, imports, and dependencies
-      4. Look for tests, configs, and documentation
-      5. Search for similar patterns that might be relevant
+    STRATEGY:
+    1. Start broad - understand the overall structure
+    2. Search for key terms, patterns, and concepts from the task
+    3. Find related files, imports, and dependencies
+    4. Look for tests, configs, and documentation
 
-      COMMAND GENERATION RULES:
-      - Generate 30-80 commands (more is better for coverage)
-      - Use ONLY commands from the allowlist below
-      - Use ONLY flags from the allowlist
-      - NO pipes, redirects, chaining, or shell features
-      - Each command on its own line
-      - Mix command types: tree for structure, rg for content, fd for files, cat/head for reading
+    COMMAND GENERATION RULES:
+    - Generate 30-80 commands (more is better for coverage)
+    - Use ONLY commands from the allowlist below
+    - Use ONLY flags from the allowlist
+    - NO pipes, redirects, chaining, or shell features
+    - Mix command types: tree for structure, rg for content, fd for files, cat/head for reading
 
-      {{ allowlist }}
+    {{ input.allowlist }}
 
-    user: |
-      ## Task
-      {{ task }}
+  user: |
+    ## Task
+    {{ input.task }}
 
-      ## Current Directory Structure
-      ```
-      {{ structure }}
-      ```
+    ## Current Directory Structure
+    ```
+    {{ input.structure }}
+    ```
 
-      ## Instructions
-      Generate 30-80 shell commands to gather context for this task.
-      
-      Think about:
-      - What files are likely relevant?
-      - What patterns/keywords should we search for?
-      - What imports, classes, functions might be involved?
-      - What tests or documentation might help?
-      - What configs or dependencies matter?
+    ## Instructions
+    Generate 30-80 shell commands to gather context for this task.
+    List one command per line, no numbering, no bullets.
 
-      Output a JSON array of command strings:
-      ```json
-      ["command1", "command2", ...]
-      ```
-
-  output:
-    schema:
-      type: object
-      properties:
-        commands:
-          type: array
-          items:
-            type: string
-          description: "List of shell commands to execute"
-      required: ["commands"]
+metadata:
+  description: "Generates exploration commands"

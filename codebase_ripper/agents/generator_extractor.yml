@@ -1,0 +1,29 @@
+spec: flatagent
+spec_version: "0.8.0"
+
+data:
+  name: generator-extractor
+  model:
+    profile: extractor
+
+  system: |
+    Extract shell commands from the given text.
+    Return ONLY a JSON array of command strings.
+    Each command should be a valid shell command like "tree -L 2" or "rg pattern".
+    Ignore any explanatory text, just extract the commands.
+
+  user: |
+    Text:
+    {{ input.text }}
+
+    Respond with JSON array: ["command1", "command2", ...]
+
+  output:
+    commands:
+      type: list
+      description: "List of shell commands"
+      items:
+        type: str
+
+metadata:
+  description: "Extracts commands from generator output"
