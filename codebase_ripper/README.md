@@ -73,6 +73,61 @@ Only these commands are allowed (with restricted flags):
 | `cat` | Full file contents | `-n` |
 | `wc` | Line/word counts | `-l`, `-w`, `-c` |
 | `ls` | Directory listing | `-l`, `-a`, `-h`, `-R`, `-1`, `-S`, `-t` |
+| `git` | Git version control (read-only subcommands only) | `-n`, `--oneline`, `--stat`, `--graph`, `--decorate`, `--name-only`, `-w`, `-L`, etc. |
+
+**Git subcommands allowed:** `status`, `log`, `diff`, `show`, `ls-files`, `blame`, `describe`, `rev-parse`
+
+**List-only subcommands:** `remote`, `branch`, `tag` (flags only, no arguments - prevents write operations)
+
+**Blocked:** `config`, `--format`, `--pretty`, and all write operations (commit, push, checkout, etc.)
+
+### Git Command Examples
+
+The codebase ripper can now use git commands to understand repository history, changes, and structure:
+
+```bash
+# Check git status
+git status
+
+# View recent commit history
+git log --oneline -20
+
+# View commit history with file changes
+git log --stat -n 10
+
+# Show a graph of branch history
+git log --graph --oneline --decorate -n 20
+
+# List all branches
+git branch -a
+
+# Show files changed in recent commits
+git diff HEAD~1 --name-only
+
+# Show a specific file's changes
+git diff HEAD~1 HEAD -- src/main.py
+
+# View a file from a past commit
+git show HEAD~1:src/config.py
+
+# List all tracked files matching a pattern
+git ls-files '*.py'
+
+# Show who changed each line
+git blame -L 1,30 src/core.py
+
+# View remote repositories
+git remote -v
+
+# View tags
+git tag -l
+
+# Get current commit description
+git describe --tags
+
+# Get current branch name
+git rev-parse --abbrev-ref HEAD
+```
 
 ## Security
 
@@ -83,7 +138,7 @@ Commands are validated against:
 - Chaining: `|`, `;`, `&&`, `||`
 - Redirects: `>`, `<`
 - Dangerous commands: `sudo`, `rm`, `mv`, `cp`, `chmod`, `chown`, `curl`, `wget`, `nc`, `eval`, `exec`
-- Path escapes: `..`, `~`
+- Path escapes: `..`, `~` (as standalone or path prefix; `~` is allowed within git refs like `HEAD~1`)
 - Environment: `$VAR`, `${VAR}`, `export`, `source`
 
 ### Validation Process

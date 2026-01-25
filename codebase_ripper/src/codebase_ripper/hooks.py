@@ -126,6 +126,42 @@ ALLOWED_COMMANDS = {
             "ls -la src/",
         ],
     },
+    "git": {
+        "description": "Git version control (read-only commands only)",
+        "syntax": "git <subcommand> [OPTIONS] [ARGS]",
+        "allowed_subcommands": [
+            "status",       # read-only
+            "log",          # read-only
+            "diff",         # read-only
+            "show",         # read-only
+            "ls-files",     # read-only
+            "blame",        # read-only
+            "describe",     # read-only
+            "rev-parse",    # read-only
+        ],
+        # These subcommands are only allowed with flags, no positional args
+        # (to prevent "git remote add", "git branch -d foo", etc.)
+        "list_only_subcommands": ["remote", "branch", "tag"],
+        "allowed_flags": [
+            "-n", "--oneline", "--graph", "--decorate", "--stat",
+            "--name-only", "--name-status", "--cached", "-p",
+            "--since", "--until", "--author", "--grep",
+            "-w", "-L", "-C", "-M", "--no-merges", "--first-parent",
+            "-a", "-v", "-l", "-r", "--list", "--all", "--tags",
+            "--show-current", "--abbrev-ref", "--abbrev-commit",
+            "--merged", "--no-merged", "--contains", "--points-at",
+            "--short", "--porcelain", "-s", "--quiet",
+        ],
+        "examples": [
+            "git status",
+            "git log --oneline -20",
+            "git branch -a",
+            "git diff HEAD~1 --name-only",
+            "git show HEAD:path/to/file.py",
+            "git remote -v",
+            "git tag -l",
+        ],
+    },
 }
 
 # Dangerous patterns to block
@@ -152,7 +188,8 @@ BLOCKED_PATTERNS = [
     r'\bsource\b',    # Source
     r'\bexport\b',    # Environment modification
     r'\.\.',          # Parent directory traversal
-    r'~',             # Home directory
+    r'(^|\s)~/?',     # Home directory expansion (starts with ~ or ~/)
+    r'/~[a-zA-Z]',    # User home reference (/~user)
     r'\$\{',          # Variable expansion
     r'\$[A-Za-z]',    # Environment variables
 ]
@@ -207,6 +244,9 @@ class CodebaseRipperHooks(MachineHooks):
             lines.append(f"### {cmd}")
             lines.append(f"{info['description']}")
             lines.append(f"Syntax: `{info['syntax']}`")
+            # Show subcommands for git
+            if "allowed_subcommands" in info:
+                lines.append(f"Allowed subcommands: {', '.join(info['allowed_subcommands'])}")
             lines.append(f"Allowed flags: {', '.join(info['allowed_flags'])}")
             lines.append("Examples:")
             for ex in info['examples']:
@@ -240,7 +280,8 @@ class CodebaseRipperHooks(MachineHooks):
             r'\bsource\b': "Source",
             r'\bexport\b': "Environment modification (export)",
             r'\.\.': "Parent directory traversal (..)",
-            r'~': "Home directory (~)",
+            r'(^|\s)~/?': "Home directory expansion (~/path or ~ at start of argument)",
+            r'/~[a-zA-Z]': "User home reference (/~user)",
             r'\$\{': "Variable expansion (${VAR})",
             r'\$[A-Za-z]': "Environment variables ($VAR)",
         }
@@ -293,7 +334,7 @@ class CodebaseRipperHooks(MachineHooks):
     def validate_command(self, cmd: str) -> Tuple[bool, str]:
         """
         Validate a command against allowlist and security rules.
-        
+
         Returns: (is_valid, reason)
         """
         cmd = cmd.strip()
@@ -313,7 +354,38 @@ class CodebaseRipperHooks(MachineHooks):
         if base_cmd not in ALLOWED_COMMANDS:
             return False, f"command not in allowlist: {base_cmd}"
 
-        # Validate flags
+        # Special handling for git subcommands
+        if base_cmd == "git":
+            if len(parts) < 2:
+                return False, "git command requires a subcommand"
+            subcommand = parts[1]
+            
+            git_config = ALLOWED_COMMANDS[base_cmd]
+            allowed_subcommands = git_config.get("allowed_subcommands", [])
+            list_only = git_config.get("list_only_subcommands", [])
+            allowed_flags = git_config.get("allowed_flags", [])
+            
+            # Check if subcommand is allowed
+            if subcommand not in allowed_subcommands and subcommand not in list_only:
+                return False, f"git subcommand not allowed: {subcommand}"
+            
+            # For list-only subcommands (remote, branch, tag), only allow flags, no positional args
+            if subcommand in list_only:
+                for part in parts[2:]:
+                    if not part.startswith("-"):
+                        return False, f"git {subcommand}: only listing allowed, no arguments"
+            
+            # Validate flags
+            for part in parts[2:]:
+                if part.startswith("-"):
+                    flag = re.match(r'^(-{1,2}[a-zA-Z][-a-zA-Z]*)', part)
+                    if flag:
+                        flag_name = flag.group(1)
+                        if not any(flag_name.startswith(af) for af in allowed_flags):
+                            return False, f"git flag not allowed: {flag_name}"
+            return True, "ok"
+
+        # Validate flags for non-git commands
         allowed_flags = ALLOWED_COMMANDS[base_cmd]["allowed_flags"]
         for part in parts[1:]:
             if part.startswith("-"):
