@@ -1,26 +1,29 @@
 ---
 name: codebase-ripper
-description: Shotgun codebase exploration with iterative passes - generates many commands, executes in parallel, extracts relevant context. Full security context for optimal command generation.
+description: Out-of-band codebase exploration using a cheap/fast model. Keeps your main context window clean while gathering broad codebase understanding. Returns a compressed summary, not raw file dumps.
 ---
 
-Use this skill to quickly gather codebase context with comprehensive coverage. Generates 30-80 shell commands per iteration with full knowledge of security rules, executes all in parallel, then extracts relevant context. Default 2 iterations for deeper exploration.
-
-## When to use
-
-- Before writing code that needs to understand existing patterns
-- Before generating tests for existing code
-- When you need broad coverage quickly
-- When you want comprehensive context with minimal effort
-- When exploring unfamiliar codebases
+Offload codebase exploration to a cheaper model running out-of-band. Instead of polluting your context with 30+ file reads, get back a curated summary.
 
 ## Why use it
 
-1. **Full context for generator** - knows allowlist, blocked patterns, security rules
-2. **Iterative passes** - default 2 iterations for deeper exploration
-3. **Fast** - parallel execution of all commands
-4. **Secure** - command allowlist, blocked dangerous patterns
-5. **Broad coverage** - 30-80 commands per iteration with history tracking
-6. **Builds on findings** - each iteration learns from previous results
+1. **Saves your context window** - exploration happens outside your session, only the summary lands in your context
+2. **Saves money** - uses a cheap/fast model for exploration, not your expensive main model
+3. **Compressed output** - returns a narrative summary, not 40k tokens of raw files
+4. **Broad coverage** - runs 30-80 commands in parallel per iteration, finds things you wouldn't think to look for
+
+## When to use
+
+- **Unfamiliar codebase** - need broad orientation before you know what to ask for
+- **Long sessions** - context is precious, don't waste it on exploration
+- **Exploratory questions** - "how does auth work here?" when you don't know what you're looking for yet
+- **Before writing tests** - need to understand patterns across the codebase
+
+## When NOT to use
+
+- You already know exactly what file/function you need (just use `read`)
+- The codebase is small enough to just read directly
+- You need to modify code (this is read-only exploration)
 
 ## Usage
 
@@ -31,48 +34,29 @@ $HOME/.flatagents/skills/codebase_ripper/run.sh "<task>" [-d <directory>] [--tok
 ## Examples
 
 ```bash
-# Quick exploration (2 iterations default)
+# Explore unfamiliar codebase
 ./run.sh "Understand the authentication flow"
 
-# Explore specific directory
-./run.sh "Find all API endpoints" -d src/api
-
-# Deep exploration with more iterations
+# Deep exploration
 ./run.sh "Map out the entire data layer" --max-iterations 4
 
-# Quick single-pass exploration
+# Quick single-pass
 ./run.sh "Get quick overview" --max-iterations 1
 
-# With custom budget
-./run.sh "Write tests for UserService" --token-budget 20000
-
-# JSON output
-./run.sh "Find database queries" --json
+# Specific directory
+./run.sh "Find all API endpoints" -d src/api
 ```
 
 ## Output
 
-Returns structured context:
-- `context`: narrative overview with key files, imports, code, and architecture notes
-- `commands_generated`: total commands generated across iterations
-- `commands_valid`: how many passed validation
-- `commands_rejected`: how many were blocked
-- `iterations`: how many exploration passes were completed
-- `output_tokens`: final token count
+Returns a curated `context` field - a narrative summary with key files, patterns, and architecture notes. Stats go to stderr.
 
-## Generator Context
+## How it works
 
-The command generator receives comprehensive context:
-- **Allowlist**: All allowed commands with syntax and flag details
-- **Blocked patterns**: Security rules explaining rejectable patterns
-- **Initial context**: Auto-detected README, tree structure, config files
-- **Previous findings**: Summary from prior iterations
-- **Command history**: Accepted/rejected commands to avoid repeating mistakes
+1. Cheap model generates 30-80 shell commands based on your task
+2. Commands run in parallel (read-only: rg, fd, cat, git log, etc.)
+3. Cheap model extracts relevant context from bulk output
+4. Repeat for 2 iterations (configurable)
+5. Return compressed summary to your main session
 
-## Security
-
-Only allows: `tree`, `rg`, `fd`, `head`, `tail`, `cat`, `wc`, `ls`, `file`, `diff`, `du`, `git` (read-only subcommands)
-
-Blocks: pipes, redirects, command chaining, shell escapes, dangerous commands
-
-The generator sees all security rules, producing higher-quality commands with fewer rejections.
+Cost: 2-4 cheap LLM calls. Benefit: keeps 40k+ tokens out of your main context.
