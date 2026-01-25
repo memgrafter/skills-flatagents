@@ -4,6 +4,7 @@
 
 skills:
   - codebase_explorer
+  - codebase_ripper
   - coding_agent
   - dynamic_agent
   - search_refiner

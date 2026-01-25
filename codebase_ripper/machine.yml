@@ -1,0 +1,124 @@
+# Codebase Ripper Machine
+# Shotgun approach: generate many commands, execute all, extract relevant context
+
+spec: flatmachine
+spec_version: "0.8.0"
+
+data:
+  name: codebase-ripper
+
+  hooks:
+    file: ./src/codebase_ripper/hooks.py
+    class: CodebaseRipperHooks
+    args:
+      working_dir: "."
+
+  context:
+    # Input
+    task: "{{ input.task }}"
+    working_dir: "{{ input.working_dir | default('.') }}"
+    token_budget: "{{ input.token_budget | default(40000) }}"
+
+    # Phase 1: Structure discovery
+    initial_structure: ""
+    allowlist_prompt: ""
+
+    # Phase 2: Command generation
+    generated_commands: []
+    valid_commands: []
+    rejected_commands: []
+
+    # Phase 3: Execution
+    command_results: []
+    aggregated_output: ""
+    output_tokens: 0
+
+    # Phase 4: Extraction
+    frozen_imports: []
+    frozen_signatures: []
+    frozen_segments: []
+    summary: ""
+
+    # Stats
+    api_call_count: 0
+
+  agents:
+    generator: ./agents/generator.yml
+    extractor: ./agents/extractor.yml
+
+  states:
+    # ========== PHASE 1: SETUP ==========
+    start:
+      type: initial
+      transitions:
+        - to: get_structure
+
+    get_structure:
+      action: get_initial_structure
+      transitions:
+        - to: get_allowlist
+
+    get_allowlist:
+      action: get_allowlist
+      transitions:
+        - to: generate
+
+    # ========== PHASE 2: GENERATE COMMANDS ==========
+    generate:
+      agent: generator
+      input:
+        task: "{{ context.task }}"
+        structure: "{{ context.initial_structure }}"
+        allowlist: "{{ context.allowlist_prompt }}"
+      output_to_context:
+        generated_commands: "{{ output.commands }}"
+      transitions:
+        - to: validate
+
+    validate:
+      action: validate_commands
+      transitions:
+        - to: execute
+
+    # ========== PHASE 3: EXECUTE ALL ==========
+    execute:
+      action: execute_commands
+      transitions:
+        - to: aggregate
+
+    aggregate:
+      action: aggregate_results
+      transitions:
+        - to: extract
+
+    # ========== PHASE 4: EXTRACT CONTEXT ==========
+    extract:
+      agent: extractor
+      input:
+        task: "{{ context.task }}"
+        aggregated_output: "{{ context.aggregated_output }}"
+        token_budget: "{{ context.token_budget }}"
+      output_to_context:
+        frozen_imports: "{{ output.imports | default([]) }}"
+        frozen_signatures: "{{ output.signatures | default([]) }}"
+        frozen_segments: "{{ output.segments | default([]) }}"
+        summary: "{{ output.summary | default('') }}"
+      transitions:
+        - to: finalize
+
+    # ========== DONE ==========
+    finalize:
+      type: final
+      output:
+        summary: "{{ context.summary }}"
+        frozen_imports: "{{ context.frozen_imports }}"
+        frozen_signatures: "{{ context.frozen_signatures }}"
+        frozen_segments: "{{ context.frozen_segments }}"
+        commands_generated: "{{ context.generated_commands | length }}"
+        commands_valid: "{{ context.valid_commands | length }}"
+        commands_rejected: "{{ context.rejected_commands | length }}"
+        output_tokens: "{{ context.output_tokens }}"
+
+metadata:
+  description: "Shotgun codebase exploration - generate many commands, execute all, extract context"
+  tags: ["exploration", "bulk", "fast"]
