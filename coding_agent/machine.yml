@@ -3,7 +3,7 @@
 # Human approval gates before risky operations
 
 spec: flatmachine
-spec_version: "0.7.3"
+spec_version: "0.8.0"
 
 data:
   name: coding-agent

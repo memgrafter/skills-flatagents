@@ -2,7 +2,7 @@
 # Reviews items removed by junior engineer, confirms or rejects
 
 spec: flatagent
-spec_version: "0.7.1"
+spec_version: "0.8.0"
 
 data:
   name: judge-confirm

@@ -2,7 +2,7 @@
 # Performs web search via Exa MCP and returns raw results
 
 spec: flatagent
-spec_version: "0.7.1"
+spec_version: "0.8.0"
 
 data:
   name: search-agent

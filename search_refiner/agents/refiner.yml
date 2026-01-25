@@ -2,7 +2,7 @@
 # Refines search results down to max output_tokens of most relevant information
 
 spec: flatagent
-spec_version: "0.7.1"
+spec_version: "0.8.0"
 
 data:
   name: refiner-agent

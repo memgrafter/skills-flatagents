@@ -2,7 +2,7 @@
 # Explores a codebase with budget-aware frozen state management
 
 spec: flatmachine
-spec_version: "0.7.1"
+spec_version: "0.8.0"
 
 data:
   name: codebase-explorer

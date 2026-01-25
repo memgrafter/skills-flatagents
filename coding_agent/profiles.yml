@@ -2,7 +2,7 @@
 # Separate profiles allow easy model switching and tuning per agent role
 
 spec: flatprofiles
-spec_version: "0.7.3"
+spec_version: "0.8.0"
 
 data:
   model_profiles:

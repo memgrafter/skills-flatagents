@@ -2,7 +2,7 @@
 # Debugs failing tests or identifies production bugs
 
 spec: flatagent
-spec_version: "0.7.1"
+spec_version: "0.8.0"
 
 data:
   name: test-fixer

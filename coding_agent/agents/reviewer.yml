@@ -2,7 +2,7 @@
 # Reviews changes for correctness in plain text
 
 spec: flatagent
-spec_version: "0.7.3"
+spec_version: "0.8.0"
 
 data:
   name: reviewer

@@ -2,7 +2,7 @@
 # Implements code changes using diff blocks
 
 spec: flatagent
-spec_version: "0.7.3"
+spec_version: "0.8.0"
 
 data:
   name: coder

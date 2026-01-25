@@ -1,5 +1,5 @@
 spec: flatagent
-spec_version: "0.7.3"
+spec_version: "0.8.0"
 
 data:
   name: feedback_provider
