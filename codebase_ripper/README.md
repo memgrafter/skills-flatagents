@@ -1,14 +1,14 @@
 # Codebase Ripper
 
-Shotgun approach to codebase exploration with iterative passes. Instead of single-pass LLM-guided exploration, this tool:
+Shotgun approach to codebase exploration with iterative passes:
 
-1. **Gathers initial context** (0 LLM calls) - tree structure, README, config files
-2. **Generates many commands** (1 LLM call per iteration) - 30-80 commands based on task + structure + security rules
-3. **Validates against allowlist** (0 LLM calls) - security filtering with full context
-4. **Executes all in parallel** (0 LLM calls) - fast bulk execution  
-5. **Extracts relevant context** (1 LLM call per iteration) - picks the good stuff, builds on previous findings
+1. **Gather context** (0 LLM) - tree, README, config files
+2. **Generate commands** (1 LLM/iter) - 30-80 commands based on task + structure + security rules
+3. **Validate** (0 LLM) - filter against allowlist
+4. **Execute in parallel** (0 LLM) - fast bulk execution
+5. **Extract relevant context** (1 LLM/iter) - picks the good stuff, builds on previous findings
 
-**Default: 2 iterations** for comprehensive coverage with deeper exploration.
+**Default: 2 iterations** for comprehensive coverage.
 
 ## Usage
 
@@ -20,16 +20,11 @@ Shotgun approach to codebase exploration with iterative passes. Instead of singl
 
 ## Architecture
 
-### Flow (with iterative passes)
-
 ```
 start → get_structure → get_allowlist → get_blocked_patterns → get_initial_context
                                                                       ↓
-                           ┌──────────────────────────────────────────┘
-                           ↓
                     ┌─────────────────────────────────────────────────────┐
                     │              ITERATION LOOP (default: 2)             │
-                    │                                                       │
                     │  generate (LLM) → validate → execute → extract (LLM) │
                     │       ↑                                      │        │
                     │       └──── prepare_iteration ←──────────────┘        │
@@ -38,167 +33,70 @@ start → get_structure → get_allowlist → get_blocked_patterns → get_initi
                                             finalize
 ```
 
-Each iteration:
-1. **generate** - LLM produces 30-80 commands based on task + structure + previous findings (1 LLM call)
-2. **validate** - Filter commands against allowlist, block dangerous patterns (no LLM)
-3. **execute** - Run all valid commands in parallel with ThreadPoolExecutor (no LLM)
-4. **extract** - LLM picks relevant context, avoiding duplicates from previous iterations (1 LLM call)
-
-### Generator Context
-
-The command generator receives full context including:
-- **Allowlist** - Complete list of allowed commands with syntax and examples
-- **Blocked patterns** - Security rules explaining what patterns are rejected
-- **Initial context** - Tree structure, README, config files (auto-detected)
-- **Previous findings** - Summary from previous iterations
-- **Accepted/rejected commands** - History to avoid repeating rejected patterns
-
 ### Key Files
 
 - `machine.yml` - State flow with iteration loop
-- `src/codebase_ripper/hooks.py` - Allowlist, validation, parallel execution, iteration tracking
+- `src/codebase_ripper/hooks.py` - Allowlist, validation, parallel execution
 - `agents/generator.yml` - Generates command list with full security context
 - `agents/extractor.yml` - Extracts relevant context with iteration awareness
 
 ## Command Allowlist
 
-Only these commands are allowed (with restricted flags):
+| Command | Description |
+|---------|-------------|
+| `tree` | Directory structure |
+| `rg` | Ripgrep content search |
+| `fd` | Find files by name |
+| `head` | First N lines |
+| `tail` | Last N lines |
+| `cat` | Full file contents |
+| `wc` | Line/word/char counts |
+| `ls` | Directory listing |
+| `file` | File type detection |
+| `diff` | Compare files |
+| `du` | Disk usage |
+| `git` | Read-only git commands |
 
-| Command | Description | Allowed Flags |
-|---------|-------------|---------------|
-| `tree` | Directory structure | `-L`, `-d`, `-I`, `--noreport`, `-a`, `-f`, `-P` |
-| `rg` | Ripgrep content search | `-i`, `-w`, `-l`, `-c`, `-n`, `-A`, `-B`, `-C`, `-t`, `-g`, `-e`, `-m`, `-o`, etc. |
-| `fd` | Find files by name | `-e`, `-t`, `-d`, `-H`, `-I`, `-g`, `-a` |
-| `head` | First N lines of file | `-n`, `-c` |
-| `cat` | Full file contents | `-n` |
-| `wc` | Line/word counts | `-l`, `-w`, `-c` |
-| `ls` | Directory listing | `-l`, `-a`, `-h`, `-R`, `-1`, `-S`, `-t` |
-| `git` | Git version control (read-only subcommands only) | `-n`, `--oneline`, `--stat`, `--graph`, `--decorate`, `--name-only`, `-w`, `-L`, etc. |
+### Git Commands
 
-**Git subcommands allowed:** `status`, `log`, `diff`, `show`, `ls-files`, `blame`, `describe`, `rev-parse`
+**Subcommands:** `status`, `log`, `diff`, `show`, `ls-files`, `blame`, `describe`, `rev-parse`, `shortlog`
 
-**List-only subcommands:** `remote`, `branch`, `tag` (flags only, no arguments - prevents write operations)
+**List-only:** `remote`, `branch`, `tag` (flags only, no arguments)
 
-**Blocked:** `config`, `--format`, `--pretty`, and all write operations (commit, push, checkout, etc.)
-
-### Git Command Examples
-
-The codebase ripper can now use git commands to understand repository history, changes, and structure:
-
+**Examples:**
 ```bash
-# Check git status
-git status
-
-# View recent commit history
 git log --oneline -20
-
-# View commit history with file changes
-git log --stat -n 10
-
-# Show a graph of branch history
-git log --graph --oneline --decorate -n 20
-
-# List all branches
-git branch -a
-
-# Show files changed in recent commits
+git log --format='%h %s' -10
+git shortlog -sn
 git diff HEAD~1 --name-only
-
-# Show a specific file's changes
-git diff HEAD~1 HEAD -- src/main.py
-
-# View a file from a past commit
-git show HEAD~1:src/config.py
-
-# List all tracked files matching a pattern
-git ls-files '*.py'
-
-# Show who changed each line
 git blame -L 1,30 src/core.py
-
-# View remote repositories
-git remote -v
-
-# View tags
-git tag -l
-
-# Get current commit description
-git describe --tags
-
-# Get current branch name
-git rev-parse --abbrev-ref HEAD
+git ls-files '*.py'
 ```
 
 ## Security
-
-Commands are validated against:
 
 ### Blocked Patterns
 - Command substitution: `$()`, backticks
 - Chaining: `|`, `;`, `&&`, `||`
 - Redirects: `>`, `<`
 - Dangerous commands: `sudo`, `rm`, `mv`, `cp`, `chmod`, `chown`, `curl`, `wget`, `nc`, `eval`, `exec`
-- Path escapes: `..`, `~` (as standalone or path prefix; `~` is allowed within git refs like `HEAD~1`)
+- Path escapes: `..`, `~` (standalone; `~` allowed in git refs like `HEAD~1`)
 - Environment: `$VAR`, `${VAR}`, `export`, `source`
 
-### Validation Process
-1. Check command against blocked patterns regex
-2. Verify base command is in allowlist
-3. Verify all flags are in allowed flags list
-4. Only then execute
-
-**The generator now sees all these rules**, reducing rejected commands and improving command quality.
-
-## Output Format
-
-```
-## Summary
-Brief description of what was found
-
-## Key Files
-Important files with descriptions
-
-## Imports & Dependencies
-  import relevant_module
-  from package import thing
-
-## Relevant Code
-### path/to/file.py
-```
-relevant code snippet
-```
-
-## Architecture Notes
-How things connect, patterns used
-
----
-Iterations: 2
-Commands: 100 generated, 90 valid, 10 rejected
-Output tokens: 15000
-```
-
-## Comparison to codebase_explorer
-
-| Aspect | codebase_explorer | codebase_ripper |
-|--------|-------------------|-----------------|
-| LLM calls | 4-8 per iteration | 2 per iteration |
-| Default iterations | 2 | 2 |
-| Approach | Iterative, guided, selective | Bulk, filtered, comprehensive |
-| Speed | Slower per command | Faster (parallel execution) |
-| Coverage | Deeper on fewer paths | Broader coverage |
-| Generator context | Task + structure | Task + structure + allowlist + blocked patterns + initial context + history |
-| Best for | Complex understanding | Quick broad context gathering |
+### Validation
+1. Check against blocked patterns
+2. Verify command in allowlist
+3. Verify flags in allowed flags list
 
 ## Configuration
 
-### Hooks Constants (in hooks.py)
-
 ```python
-MAX_COMMANDS = 100          # Max commands to process per iteration
-MAX_OUTPUT_PER_COMMAND = 10000   # Chars per command output
-MAX_TOTAL_OUTPUT = 200000   # Total aggregated chars
-COMMAND_TIMEOUT = 30        # Seconds per command
-MAX_PARALLEL = 10           # Parallel execution threads
+# hooks.py constants
+MAX_COMMANDS = 100           # Per iteration
+MAX_OUTPUT_PER_COMMAND = 10000
+MAX_TOTAL_OUTPUT = 200000
+COMMAND_TIMEOUT = 30
+MAX_PARALLEL = 10
 ```
 
 ### CLI Options
@@ -212,3 +110,4 @@ Options:
   --max-iterations N     Max exploration iterations (default: 2)
   --json                 Output as JSON
 ```
+

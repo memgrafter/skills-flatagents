@@ -22,20 +22,11 @@ data:
     - Use ONLY commands from the allowlist below
     - Use ONLY flags from the allowlist
     - NO pipes, redirects, chaining, or shell features
-    - Mix command types: tree for structure, rg for content, fd for files, cat/head for reading
 
     {{ input.allowlist }}
 
     ## Blocked Patterns (DO NOT USE)
-    The following patterns will be rejected by the validator:
     {{ input.blocked_patterns }}
-
-    ## Security Rules
-    - NO command substitution: $() or backticks
-    - NO pipes (|), redirects (>, <), or chaining (;, &&, ||)
-    - NO dangerous commands: sudo, rm, mv, cp, chmod, chown, curl, wget, nc, eval, exec, source, export
-    - NO parent directory traversal (..) or home directory (~)
-    - NO environment variables: $VAR, ${VAR}
 
   user: |
     ## Task

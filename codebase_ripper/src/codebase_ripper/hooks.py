@@ -155,6 +155,17 @@ ALLOWED_COMMANDS = {
             "diff -q config.dev.json config.prod.json",
         ],
     },
+    "du": {
+        "description": "Show disk usage of files/directories",
+        "syntax": "du [OPTIONS] [PATH]",
+        "allowed_flags": ["-h", "-s", "-d", "--max-depth", "-a", "-c"],
+        "examples": [
+            "du -sh .",
+            "du -h -d 1",
+            "du -sh src/",
+            "du -h --max-depth=2",
+        ],
+    },
     "git": {
         "description": "Git version control (read-only commands only)",
         "syntax": "git <subcommand> [OPTIONS] [ARGS]",
@@ -167,6 +178,7 @@ ALLOWED_COMMANDS = {
             "blame",        # read-only
             "describe",     # read-only
             "rev-parse",    # read-only
+            "shortlog",     # read-only, contributor summary
         ],
         # These subcommands are only allowed with flags, no positional args
         # (to prevent "git remote add", "git branch -d foo", etc.)
@@ -180,10 +192,13 @@ ALLOWED_COMMANDS = {
             "--show-current", "--abbrev-ref", "--abbrev-commit",
             "--merged", "--no-merged", "--contains", "--points-at",
             "--short", "--porcelain", "-s", "--quiet",
+            "--format", "--pretty",  # custom log formatting
         ],
         "examples": [
             "git status",
             "git log --oneline -20",
+            "git log --format='%h %s' -10",
+            "git shortlog -sn",
             "git branch -a",
             "git diff HEAD~1 --name-only",
             "git show HEAD:path/to/file.py",

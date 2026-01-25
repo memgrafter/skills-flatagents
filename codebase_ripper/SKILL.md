@@ -71,7 +71,7 @@ The command generator receives comprehensive context:
 
 ## Security
 
-Only allows: `tree`, `rg`, `fd`, `head`, `cat`, `wc`, `ls`
+Only allows: `tree`, `rg`, `fd`, `head`, `tail`, `cat`, `wc`, `ls`, `file`, `diff`, `du`, `git` (read-only subcommands)
 
 Blocks: pipes, redirects, command chaining, shell escapes, dangerous commands
 
