@@ -1,6 +1,6 @@
 url,title,added_at,status,scraped_at,note
 https://github.com/SWE-agent/mini-swe-agent?ref=ghuntley.com,SWE-agent/mini-swe-agent at ghuntley.com,2026-01-30T19:48:30.363191+00:00,scraped,2026-01-30T19:49:16.089145+00:00,
-https://github.com/Laszlobeer/Dungeo_ai,GitHub - Laszlobeer/Dungeo_ai: this is a dungeon ai run locally that use your llm,2026-01-30T19:48:30.364790+00:00,pending,,
+https://github.com/Laszlobeer/Dungeo_ai,GitHub - Laszlobeer/Dungeo_ai: this is a dungeon ai run locally that use your llm,2026-01-30T19:48:30.364790+00:00,scraped,2026-01-30T20:28:03.164163+00:00,
 https://www.praf.me/ai-coding,An unusual consequence of AI coding - Praful,2026-01-30T19:48:30.365545+00:00,pending,,
 https://www.reddit.com/r/AI_Agents/comments/1glzob6/tutorial_on_building_agent_with_memory_using_letta/,Tutorial on building agent with memory using Letta : r/AI_Agents,2026-01-30T19:48:30.366163+00:00,pending,,
 https://www.youtube.com/live/romFuksqnqg,Riley Brown Turned Coding Into a Video Game - YouTube,2026-01-30T19:48:30.366757+00:00,skipped: Matches skip pattern: ^https?://(www\.)?youtube\.com,,
