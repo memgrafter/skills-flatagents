@@ -1,0 +1,71 @@
+spec: flatmachine
+spec_version: "0.8.3"
+
+data:
+  name: website-scraper
+
+  context:
+    url: "{{ input.url }}"
+    data_dir: "{{ input.data_dir }}"
+    raw_content: ""
+    title: ""
+    scraped_at: ""
+    word_count: 0
+    summary: ""
+    raw_file_path: ""
+    summary_file_path: ""
+
+  agents:
+    summarizer: ./agents/summarizer.yml
+
+  hooks:
+    file: "./src/website_scraper/hooks.py"
+    class: "WebsiteScraperHooks"
+
+  states:
+    start:
+      type: initial
+      action: scrape_url
+      on_error: error
+      transitions:
+        - to: summarize
+
+    summarize:
+      agent: summarizer
+      execution:
+        type: retry
+        backoffs: [2, 8, 16]
+        jitter: 0.1
+      input:
+        url: "{{ context.url }}"
+        title: "{{ context.title }}"
+        content: "{{ context.raw_content }}"
+      output_to_context:
+        summary: "{{ output.content }}"
+      on_error: error
+      transitions:
+        - to: save
+
+    save:
+      action: save_files
+      on_error: error
+      transitions:
+        - to: done
+
+    done:
+      type: final
+      output:
+        url: "{{ context.url }}"
+        title: "{{ context.title }}"
+        raw_file: "{{ context.raw_file_path }}"
+        summary_file: "{{ context.summary_file_path }}"
+        word_count: "{{ context.word_count }}"
+
+    error:
+      type: final
+      output:
+        error: "{{ context.last_error }}"
+        url: "{{ context.url }}"
+
+metadata:
+  description: "Scrape URL to clean text and generate LLM summary"
