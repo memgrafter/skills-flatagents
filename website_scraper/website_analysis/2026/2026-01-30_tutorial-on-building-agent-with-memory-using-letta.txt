@@ -1,0 +1,4 @@
+Tutorial on building agent with memory using Letta
+Hi all - I'm one of the creators of Letta, an agents framework focused on memory, and we just released a free short course with Andrew Ng. The course covers both the memory management research (e.g. MemGPT) behind Letta, as well as an introduction to using the OSS agents framework.
+Unlike other frameworks, Letta is very focused on persistence and having "agents-as-a-service". This means that all state (including messages, tools, memory, etc.) is all persisted in a DB. So all agent state is essentially automatically save across sessions (and even if you re-start the server). We also have an ADE (Agent Development Environment) to easily view and iterate on your agent design.
+I've seen a lot of people posting here about using agent framework like Langchain, CrewAI, etc. -- we haven't marketed that much in general but thought the course might be interesting to people here!

@@ -1,0 +1,123 @@
+🚀 Fast and simple Node.js version manager, built in Rust
+🌎 Cross-platform support (macOS, Windows, Linux)
+✨ Single file, easy installation, instant startup
+🚀 Built with speed in mind
+📂 Works with .node-version
+and .nvmrc
+files
+For bash
+, zsh
+and fish
+shells, there's an automatic installation script.
+First ensure that curl
+and unzip
+are already installed on your operating system. Then execute:
+curl -fsSL https://fnm.vercel.app/install | bash
+On macOS, it is as simple as brew upgrade fnm
+.
+On other operating systems, upgrading fnm
+is almost the same as installing it. To prevent duplication in your shell config file, pass --skip-shell
+to the install command:
+curl -fsSL https://fnm.vercel.app/install | bash -s -- --skip-shell
+--install-dir
+Set a custom directory for fnm to be installed. The default is $XDG_DATA_HOME/fnm
+(if $XDG_DATA_HOME
+is not defined it falls back to $HOME/.local/share/fnm
+on linux and $HOME/Library/Application Support/fnm
+on MacOS).
+Note: On macOS, this option is only meaningful when using
+--force-install
+since Homebrew is the default installation method.
+--skip-shell
+Skip appending shell specific loader to shell config file, based on the current user shell, defined in $SHELL
+. e.g. for Bash, $HOME/.bashrc
+. $HOME/.zshrc
+for Zsh. For Fish - $HOME/.config/fish/conf.d/fnm.fish
+--force-install
+macOS installations using the installation script are deprecated in favor of the Homebrew formula, but this forces the script to install using it anyway.
+Example:
+curl -fsSL https://fnm.vercel.app/install | bash -s -- --install-dir "./.fnm" --skip-shell
+brew install fnm
+Then, set up your shell for fnm
+winget install Schniz.fnm
+scoop install fnm
+Then, set up your shell for fnm
+choco install fnm
+Then, set up your shell for fnm
+cargo install fnm
+Then, set up your shell for fnm
+- Download the latest release binary for your system
+- Make it available globally on
+PATH
+environment variable - Set up your shell for fnm
+To remove fnm (😢), just delete the .fnm
+folder in your home directory. You should also edit your shell configuration to remove any references to fnm (ie. read Shell Setup, and do the opposite).
+fnm ships its completions with the binary:
+fnm completions --shell <SHELL>
+Where <SHELL>
+can be one of the supported shells:
+bash
+zsh
+fish
+powershell
+Please follow your shell instructions to install them.
+Environment variables need to be setup before you can start using fnm.
+This is done by evaluating the output of fnm env
+.
+Note
+Check out the Configuration section to enable highly recommended features, like automatic version switching.
+Adding a .node-version
+to your project is as simple as:
+$ node --version
+v14.18.3
+$ node --version > .node-version
+Check out the following guides for the shell you use:
+Add the following to your .bashrc
+profile:
+eval "$(fnm env --use-on-cd --shell bash)"
+Add the following to your .zshrc
+profile:
+eval "$(fnm env --use-on-cd --shell zsh)"
+Create ~/.config/fish/conf.d/fnm.fish
+and add this line to it:
+fnm env --use-on-cd --shell fish | source
+Add the following to the end of your profile file:
+fnm env --use-on-cd --shell powershell | Out-String | Invoke-Expression
+- For macOS/Linux, the profile is located at
+~/.config/powershell/Microsoft.PowerShell_profile.ps1
+- For Windows location is either:
+%userprofile%\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1
+Powershell 5%userprofile%\Documents\PowerShell\Microsoft.PowerShell_profile.ps1
+Powershell 6+
+- To create the profile file you can run this in PowerShell:
+if (-not (Test-Path $profile)) { New-Item $profile -Force }
+- To edit your profile run this in PowerShell:
+Invoke-Item $profile
+fnm is also supported but is not entirely covered. You can set up a startup script for cmd.exe or Windows Terminal and append the following lines:
+@echo off
+:: for /F will launch a new instance of cmd so we create a guard to prevent an infnite loop
+if not defined FNM_AUTORUN_GUARD (
+set "FNM_AUTORUN_GUARD=AutorunGuard"
+FOR /f "tokens=*" %%z IN ('fnm env --use-on-cd') DO CALL %%z
+)
+Usage is very similar to the normal WinCMD install, apart for a few tweaks to allow being called from the cmder startup script. The example assumes that the CMDER_ROOT
+environment variable is set to the root directory of your Cmder installation.
+Then you can do something like this:
+- Make a .cmd file to invoke it
+:: %CMDER_ROOT%\bin\fnm_init.cmd
+@echo off
+FOR /f "tokens=*" %%z IN ('fnm env --use-on-cd') DO CALL %%z
+- Add it to the startup script
+:: %CMDER_ROOT%\config\user_profile.cmd
+call "%CMDER_ROOT%\bin\fnm_init.cmd"
+You can replace %CMDER_ROOT%
+with any other convenient path too.
+See the available configuration options for an extended configuration documentation
+See the available commands for an extended usage documentation
+PRs welcome 🎉
+# Install Rust
+git clone https://github.com/Schniz/fnm.git
+cd fnm/
+cargo build
+cargo run -- --help # Will behave like `fnm --help`
+cargo test

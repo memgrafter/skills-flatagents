@@ -1,0 +1,291 @@
+The Complete Guide to Claude Code: Global CLAUDE.md, MCP Servers, Commands, and Why Single-Purpose Chats Matter
+TL;DR: Your global ~/.claude/CLAUDE.md
+is a security gatekeeper that prevents secrets from reaching production AND a project scaffolding blueprint that ensures every new project follows the same structure. MCP servers extend Claude's capabilities exponentially. Context7 gives Claude access to up-to-date documentation. Custom commands and agents automate repetitive workflows. And research shows mixing topics in a single chat causes 39% performance degradation — so keep chats focused.
+🚀 UPDATE: V3 is now live — adds LSP, 25+ MCP servers, commands/skills merge, and more.
+Part 1: The Global CLAUDE.md as Security Gatekeeper
+The Memory Hierarchy
+Claude Code loads CLAUDE.md files in a specific order:
+| Level | Location | Purpose |
+|---|---|---|
+| Enterprise |
+/etc/claude-code/CLAUDE.md
+| Org-wide policies |
+| Global User |
+~/.claude/CLAUDE.md
+| Your standards for ALL projects |
+| Project |
+./CLAUDE.md
+| Team-shared project instructions |
+| Project Local |
+./CLAUDE.local.md
+| Personal project overrides |
+Your global file applies to every single project you work on.
+What Belongs in Global
+1. Identity & Authentication
+## GitHub Account **ALWAYS** use **YourUsername** for all projects: - SSH: `git@github.com:YourUsername/<repo>.git` ## Docker Hub Already authenticated. Username in `~/.env` as `DOCKER_HUB_USER` ## Deployment Use Dokploy MCP for production. API URL in `~/.env`
+Why global? You use the same accounts everywhere. Define once, inherit everywhere.
+2. The Gatekeeper Rules
+## NEVER EVER DO These rules are ABSOLUTE: ### NEVER Publish Sensitive Data - NEVER publish passwords, API keys, tokens to git/npm/docker - Before ANY commit: verify no secrets included ### NEVER Commit .env Files - NEVER commit `.env` to git - ALWAYS verify `.env` is in `.gitignore` ### NEVER Hardcode Credentials - ALWAYS use environment variables
+Why This Matters: Claude Reads Your .env
+Security researchers discovered that Claude Code automatically reads .env
+files without explicit permission. Backslash Security warns:
+"If not restricted, Claude can read
+.env
+, AWS credentials, orsecrets.json
+and leak them through 'helpful suggestions.'"
+Your global CLAUDE.md creates a behavioral gatekeeper — even if Claude has access, it won't output secrets.
+Defense in Depth
+| Layer | What | How |
+|---|---|---|
+| 1 | Behavioral rules | Global CLAUDE.md "NEVER" rules |
+| 2 | Access control | Deny list in settings.json |
+| 3 | Git safety | .gitignore |
+Part 2: Global Rules for New Project Scaffolding
+This is where global CLAUDE.md becomes a project factory. Every new project you create automatically inherits your standards, structure, and safety requirements.
+The Problem Without Scaffolding Rules
+Research from project scaffolding experts explains:
+"LLM-assisted development fails by silently expanding scope, degrading quality, and losing architectural intent."
+Without global scaffolding rules:
+-
+Each project has different structures
+-
+Security files get forgotten (.gitignore, .dockerignore)
+-
+Error handling is inconsistent
+-
+Documentation patterns vary
+-
+You waste time re-explaining the same requirements
+The Solution: Scaffolding Rules in Global CLAUDE.md
+Add a "New Project Setup" section to your global file:
+## New Project Setup When creating ANY new project, ALWAYS do the following: ### 1. Required Files (Create Immediately) - `.env` — Environment variables (NEVER commit) - `.env.example` — Template with placeholder values - `.gitignore` — Must include: .env, .env.*, node_modules/, dist/, .claude/ - `.dockerignore` — Must include: .env, .git/, node_modules/ - `README.md` — Project overview (reference env vars, don't hardcode) ### 2. Required Directory Structure
+project-root/ ├── src/ # Source code ├── tests/ # Test files ├── docs/ # Documentation (gitignored for generated docs) ├── .claude/ # Claude configuration │ ├── commands/ # Custom slash commands │ └── settings.json # Project-specific settings └── scripts/ # Build/deploy scripts
+### 3. Required .gitignore Entries
+Environment
+.env .env.* .env.local
+Dependencies
+node_modules/ vendor/ pycache/
+Build outputs
+dist/ build/ .next/
+Claude local files
+.claude/settings.local.json CLAUDE.local.md
+Generated docs
+docs/.generated.
+### 4. Node.js Projects — Required Error Handling Add to entry point (index.ts, server.ts, app.ts): ```javascript process.on('unhandledRejection', (reason, promise) => { console.error('Unhandled Rejection at:', promise, 'reason:', reason); process.exit(1); }); process.on('uncaughtException', (error) => { console.error('Uncaught Exception:', error); process.exit(1); });
+5. Required CLAUDE.md Sections
+Every project CLAUDE.md must include:
+-
+Project overview (what it does)
+-
+Tech stack
+-
+Build commands
+-
+Test commands
+-
+Architecture overview
+### Why This Works When you tell Claude "create a new Node.js project," it reads your global CLAUDE.md first and **automatically**: 1. Creates `.env` and `.env.example` 2. Sets up proper `.gitignore` with all required entries 3. Creates the directory structure 4. Adds error handlers to the entry point 5. Generates a project CLAUDE.md with required sections **You never have to remember these requirements again.** ### Advanced: Framework-Specific Rules ```markdown ## Framework-Specific Setup ### Next.js Projects - Use App Router (not Pages Router) - Create `src/app/` directory structure - Include `next.config.js` with strict mode enabled - Add analytics to layout.tsx ### Python Projects - Create `pyproject.toml` (not setup.py) - Use `src/` layout - Include `requirements.txt` AND `requirements-dev.txt` - Add `.python-version` file ### Docker Projects - Multi-stage builds ALWAYS - Never run as root (use non-root user) - Include health checks - `.dockerignore` must mirror `.gitignore` + include `.git/`
+Quality Gates in Scaffolding
+The claude-project-scaffolding approach adds enforcement:
+## Quality Requirements ### File Size Limits - No file > 300 lines (split if larger) - No function > 50 lines ### Required Before Commit - All tests pass - TypeScript compiles with no errors - Linter passes with no warnings - No secrets in staged files ### CI/CD Requirements Every project must include: - `.github/workflows/ci.yml` for GitHub Actions - Pre-commit hooks via Husky (Node.js) or pre-commit (Python)
+Example: What Happens When You Create a Project
+You say: "Create a new Next.js e-commerce project called shopify-clone"
+Claude reads global CLAUDE.md and automatically creates:
+shopify-clone/ ├── .env ← Created (empty, for secrets) ├── .env.example ← Created (with placeholder vars) ├── .gitignore ← Created (with ALL required entries) ├── .dockerignore ← Created (mirrors .gitignore) ├── README.md ← Created (references env vars) ├── CLAUDE.md ← Created (with required sections) ├── next.config.js ← Created (strict mode enabled) ├── package.json ← Created (with required scripts) ├── tsconfig.json ← Created (strict TypeScript) ├── .github/ │ └── workflows/ │ └── ci.yml ← Created (GitHub Actions) ├── .husky/ │ └── pre-commit ← Created (quality gates) ├── .claude/ │ ├── settings.json ← Created (project settings) │ └── commands/ │ ├── build.md ← Created │ └── test.md ← Created ├── src/ │ └── app/ │ ├── layout.tsx ← Created (with analytics) │ ├── page.tsx ← Created │ └── globals.css ← Created └── tests/ └── setup.ts ← Created
+All from your global rules. Zero manual setup.
+Custom /new-project Command
+Create a global command that enforces your scaffolding:
+# ~/.claude/commands/new-project.md Create a new project with the following specifications: Project name: $ARGUMENTS ## Required Steps 1. Create project directory 2. Apply ALL rules from "New Project Setup" section 3. Apply framework-specific rules based on project type 4. Initialize git repository 5. Create initial commit with message "Initial project scaffold" 6. Display checklist of created files ## Verification After creation, verify: - [ ] .env exists (empty) - [ ] .env.example exists (with placeholders) - [ ] .gitignore includes all required entries - [ ] .dockerignore exists - [ ] CLAUDE.md has all required sections - [ ] Error handlers are in place (if applicable) - [ ] CI/CD workflow exists Report any missing items.
+Usage:
+/new-project nextjs shopify-clone
+Team Standardization
+When your team shares global patterns, every developer's projects look the same:
+| Developer | Project A | Project B | Project C |
+|---|---|---|---|
+| Alice | Same structure | Same structure | Same structure |
+| Bob | Same structure | Same structure | Same structure |
+| Carol | Same structure | Same structure | Same structure |
+Benefits:
+-
+Onboarding is instant (every project looks familiar)
+-
+Code reviews are faster (consistent patterns)
+-
+CI/CD pipelines are reusable
+-
+Security is guaranteed (files can't be forgotten)
+Part 3: MCP Servers — Claude's Superpower
+What is MCP?
+The Model Context Protocol is an open standard that connects Claude to external tools. Think of it as a "USB-C port for AI" — standardized connectors to any service.
+Why MCP Changes Everything
+According to Anthropic's engineering blog:
+Before MCP: Every AI tool builds integrations with every service = N×M integrations
+After MCP: Each service builds one MCP server = N+M integrations
+"A massive reduction in complexity."
+Key Benefits
+| Benefit | Description |
+|---|---|
+| Standardization | One protocol, unlimited integrations |
+| Decoupling | Claude doesn't need to know API details |
+| Safety | Servers implement security controls independently |
+| Parallelism | Query multiple servers simultaneously |
+| Ecosystem | Thousands of community-built servers |
+Essential MCP Servers
+-
+GitHub — Issues, PRs, repo management
+-
+PostgreSQL/MongoDB — Direct database queries
+-
+Playwright — Browser automation
+-
+Docker — Container management
+-
+Context7 — Live documentation (see below)
+Configuring MCP Servers
+# Add a server claude mcp add context7 -- npx -y @upstash/context7-mcp@latest # List configured servers claude mcp list
+Add MCP Servers to Your Global Rules
+## Required MCP Servers When starting Claude Code, ensure these MCP servers are configured: ### Always Required - context7 — Live documentation lookup - playwright — Browser automation for testing ### Project-Type Specific - postgres/mongodb — If project uses databases - github — If project uses GitHub - docker — If project uses containers
+Part 4: Context7 — Solving the Hallucination Problem
+The Problem
+LLMs are trained on data that's months or years old. When you ask about React 19 or Next.js 15, Claude might suggest APIs that:
+-
+Don't exist anymore
+-
+Have changed signatures
+-
+Are deprecated
+This is API hallucination — and it's incredibly frustrating.
+The Solution
+Context7 is an MCP server that pulls real-time, version-specific documentation directly into your prompt.
+How It Works
+You: "use context7 to help me implement FastAPI authentication" Context7: [Fetches current FastAPI auth docs] Claude: [Responds with accurate, current code]
+Key Benefits
+| Benefit | Description |
+|---|---|
+| Real-time docs | Current documentation, not training data |
+| Version-specific | Mention "Next.js 14" and get v14 docs |
+| No tab-switching | Docs injected into your prompt |
+| 30+ clients | Works with Cursor, VS Code, Claude Code |
+Installation
+claude mcp add context7 -- npx -y @upstash/context7-mcp@latest
+Usage
+Add "use context7" to any prompt:
+use context7 to show me how to set up Prisma with PostgreSQL
+Part 5: Slash Commands and Agents
+Custom Slash Commands
+Slash commands turn repetitive prompts into one-word triggers.
+Create a command:
+# .claude/commands/fix-types.md Fix all TypeScript type errors in the current file. Run `tsc --noEmit` first to identify errors. Fix each error systematically. Run the type check again to verify.
+Use it:
+/fix-types
+Benefits of Commands
+| Benefit | Description |
+|---|---|
+| Workflow efficiency | One word instead of paragraph prompts |
+| Team sharing | Check into git, everyone gets them |
+| Parameterization |
+Use $ARGUMENTS for dynamic input
+|
+| Orchestration | Commands can spawn sub-agents |
+Sub-Agents
+Sub-agents run in isolated context windows — they don't pollute your main conversation.
+"Each sub-agent operates in its own isolated context window. This means it can focus on a specific task without getting 'polluted' by the main conversation."
+Global Commands Library
+Add frequently-used commands to your global config:
+## Global Commands Store these in ~/.claude/commands/ for use in ALL projects: ### /new-project Creates new project with all scaffolding rules applied. ### /security-check Scans for secrets, validates .gitignore, checks .env handling. ### /pre-commit Runs all quality gates before committing. ### /docs-lookup Spawns sub-agent with Context7 to research documentation.
+Part 6: Why Single-Purpose Chats Are Critical
+This might be the most important section. Research consistently shows that mixing topics destroys accuracy.
+The Research
+Studies on multi-turn conversations found:
+"An average 39% performance drop when instructions are delivered across multiple turns, with models making premature assumptions and failing to course-correct."
+Chroma Research on context rot:
+"As the number of tokens in the context window increases, the model's ability to accurately recall information decreases."
+Research on context pollution:
+"A 2% misalignment early in a conversation chain can create a 40% failure rate by the end."
+Why This Happens
+1. Lost-in-the-Middle Problem
+LLMs recall information best from the beginning and end of context. Middle content gets forgotten.
+2. Context Drift
+Research shows context drift is:
+"The gradual degradation or distortion of the conversational state the model uses to generate its responses."
+As you switch topics, earlier context becomes noise that confuses later reasoning.
+3. Attention Budget
+Anthropic's context engineering guide explains:
+"Transformers require n² pairwise relationships between tokens. As context expands, the model's 'attention budget' gets stretched thin."
+What Happens When You Mix Topics
+Turn 1-5: Discussing authentication system Turn 6-10: Switch to database schema design Turn 11-15: Ask about the auth system again Result: Claude conflates database concepts with auth, makes incorrect assumptions, gives degraded answers
+The earlier auth discussion is now buried in "middle" context, competing with database discussion for attention.
+The Golden Rule
+"One Task, One Chat"
+From context management best practices:
+"If you're switching from brainstorming marketing copy to analyzing a PDF, start a new chat. Don't bleed contexts. This keeps the AI's 'whiteboard' clean."
+Practical Guidelines
+| Scenario | Action |
+|---|---|
+| New feature | New chat |
+| Bug fix (unrelated to current work) |
+/clear then new task
+|
+| Different file/module | Consider new chat |
+| Research vs implementation | Separate chats |
+| 20+ turns elapsed | Start fresh |
+Use /clear Liberally
+/clear
+This resets context. Anthropic recommends:
+"Use
+/clear
+frequently between tasks to reset the context window, especially during long sessions where irrelevant conversations accumulate."
+Sub-Agents for Topic Isolation
+If you need to research something mid-task without polluting your context:
+Spawn a sub-agent to research React Server Components. Return only a summary of key patterns.
+The sub-agent works in isolated context and returns just the answer.
+Putting It All Together
+The Complete Global CLAUDE.md Template
+# Global CLAUDE.md ## Identity & Accounts - GitHub: YourUsername (SSH key: ~/.ssh/id_ed25519) - Docker Hub: authenticated via ~/.docker/config.json - Deployment: Dokploy (API URL in ~/.env) ## NEVER EVER DO (Security Gatekeeper) - NEVER commit .env files - NEVER hardcode credentials - NEVER publish secrets to git/npm/docker - NEVER skip .gitignore verification ## New Project Setup (Scaffolding Rules) ### Required Files - .env (NEVER commit) - .env.example (with placeholders) - .gitignore (with all required entries) - .dockerignore - README.md - CLAUDE.md ### Required Structure project/ ├── src/ ├── tests/ ├── docs/ ├── .claude/commands/ └── scripts/ ### Required .gitignore .env .env.* node_modules/ dist/ .claude/settings.local.json CLAUDE.local.md ### Node.js Requirements - Error handlers in entry point - TypeScript strict mode - ESLint + Prettier configured ### Quality Gates - No file > 300 lines - All tests must pass - No linter warnings - CI/CD workflow required ## Framework-Specific Rules [Your framework patterns here] ## Required MCP Servers - context7 (live documentation) - playwright (browser testing) ## Global Commands - /new-project — Apply scaffolding rules - /security-check — Verify no secrets exposed - /pre-commit — Run all quality gates
+Quick Reference
+| Tool | Purpose | Location |
+|---|---|---|
+| Global CLAUDE.md | Security + Scaffolding |
+~/.claude/CLAUDE.md
+|
+| Project CLAUDE.md | Architecture + Commands |
+./CLAUDE.md
+|
+| MCP Servers | External integrations |
+claude mcp add
+|
+| Context7 | Live documentation |
+claude mcp add context7
+|
+| Slash Commands | Workflow automation |
+.claude/commands/*.md
+|
+| Sub-Agents | Isolated context | Spawn via commands |
+/clear
+| Reset context | Type in chat |
+/init
+| Generate project CLAUDE.md | Type in chat |
+Sources
+-
+Claude Code: Best practices for agentic coding — Anthropic
+-
+Effective context engineering for AI agents — Anthropic
+-
+Introducing the Model Context Protocol — Anthropic
+-
+Claude Project Scaffolding — Madison Hutson
+-
+CLAUDE.md Templates — Claude-Flow
+-
+Context7 MCP Server — Upstash
+-
+Context Rot Research — Chroma
+-
+Claude Code Security Best Practices — Backslash
+-
+Slash Commands Documentation — Claude Code Docs
+-
+Writing a good CLAUDE.md — HumanLayer
+-
+Context Management Guide — Arsturn
+What's in your global CLAUDE.md? Share your scaffolding rules and favorite patterns below.
