@@ -5,24 +5,46 @@ data:
   name: website-scraper
 
   context:
+    # Input
     url: "{{ input.url }}"
     data_dir: "{{ input.data_dir }}"
+    
+    # Scraped content
     raw_content: ""
     title: ""
     scraped_at: ""
     word_count: 0
+    
+    # Summarizer loop
     summary: ""
+    summary_attempt: 0
+    summary_valid: false
+    summary_validation_errors: []
+    judge_result: ""
+    judge_passed: false
+    judge_feedback: ""
+    
+    # Frontmatter loop
+    frontmatter_yaml: ""
+    frontmatter_attempt: 0
+    frontmatter_valid: false
+    frontmatter_validation_errors: []
+    
+    # Output
     raw_file_path: ""
     summary_file_path: ""
 
   agents:
     summarizer: ./agents/summarizer.yml
+    judge_summary: ./agents/judge_summary.yml
+    frontmatter: ./agents/frontmatter.yml
 
   hooks:
     file: "./src/website_scraper/hooks.py"
     class: "WebsiteScraperHooks"
 
   states:
+    # ========== SCRAPE ==========
     start:
       type: initial
       action: scrape_url
@@ -30,6 +52,7 @@ data:
       transitions:
         - to: summarize
 
+    # ========== SUMMARIZER LOOP ==========
     summarize:
       agent: summarizer
       execution:
@@ -40,12 +63,106 @@ data:
         url: "{{ context.url }}"
         title: "{{ context.title }}"
         content: "{{ context.raw_content }}"
+        feedback: "{{ context.judge_feedback }}"
       output_to_context:
         summary: "{{ output.content }}"
       on_error: error
       transitions:
+        - to: validate_summary
+
+    validate_summary:
+      action: validate_summary
+      on_error: error
+      transitions:
+        # Programmatic validation failed - retry summarizer
+        - condition: "not context.summary_valid and context.summary_attempt < 3"
+          to: summarize_with_validation_feedback
+        - condition: "not context.summary_valid"
+          to: error_summary_invalid
+        # Passed programmatic validation - run judge
+        - to: judge_summary
+
+    summarize_with_validation_feedback:
+      agent: summarizer
+      execution:
+        type: retry
+        backoffs: [2, 8, 16]
+        jitter: 0.1
+      input:
+        url: "{{ context.url }}"
+        title: "{{ context.title }}"
+        content: "{{ context.raw_content }}"
+        feedback: "Missing required sections: {{ context.summary_validation_errors | join(', ') }}"
+      output_to_context:
+        summary: "{{ output.content }}"
+      on_error: error
+      transitions:
+        - to: validate_summary
+
+    judge_summary:
+      agent: judge_summary
+      execution:
+        type: retry
+        backoffs: [2, 8]
+        jitter: 0.1
+      input:
+        url: "{{ context.url }}"
+        title: "{{ context.title }}"
+        word_count: "{{ context.word_count }}"
+        summary: "{{ context.summary }}"
+        content: "{{ context.raw_content }}"
+      output_to_context:
+        judge_result: "{{ output.content }}"
+      on_error: error
+      transitions:
+        - to: check_judge_result
+
+    check_judge_result:
+      action: check_judge_result
+      on_error: error
+      transitions:
+        # Judge passed - proceed to frontmatter
+        - condition: "context.judge_passed"
+          to: extract_frontmatter
+        # Judge rejected and we have retries left
+        - condition: "not context.judge_passed and context.summary_attempt < 3"
+          to: summarize
+        # Max retries reached
+        - to: extract_frontmatter
+
+    # ========== FRONTMATTER LOOP ==========
+    extract_frontmatter:
+      agent: frontmatter
+      execution:
+        type: retry
+        backoffs: [2, 8, 16]
+        jitter: 0.1
+      input:
+        url: "{{ context.url }}"
+        title: "{{ context.title }}"
+        summary: "{{ context.summary }}"
+        content: "{{ context.raw_content }}"
+        validation_errors: "{{ context.frontmatter_validation_errors }}"
+      output_to_context:
+        frontmatter_yaml: "{{ output.content }}"
+      on_error: error
+      transitions:
+        - to: validate_frontmatter
+
+    validate_frontmatter:
+      action: validate_frontmatter
+      on_error: error
+      transitions:
+        # Validation passed - save
+        - condition: "context.frontmatter_valid"
+          to: save
+        # Validation failed - retry if attempts remain
+        - condition: "not context.frontmatter_valid and context.frontmatter_attempt < 3"
+          to: extract_frontmatter
+        # Max retries - save anyway with whatever we have
         - to: save
 
+    # ========== SAVE & DONE ==========
     save:
       action: save_files
       on_error: error
@@ -60,12 +177,23 @@ data:
         raw_file: "{{ context.raw_file_path }}"
         summary_file: "{{ context.summary_file_path }}"
         word_count: "{{ context.word_count }}"
+        summary_attempts: "{{ context.summary_attempt }}"
+        frontmatter_attempts: "{{ context.frontmatter_attempt }}"
+        judge_passed: "{{ context.judge_passed }}"
 
+    # ========== ERROR STATES ==========
     error:
       type: final
       output:
         error: "{{ context.last_error }}"
         url: "{{ context.url }}"
 
+    error_summary_invalid:
+      type: final
+      output:
+        error: "Summary failed validation after max retries"
+        validation_errors: "{{ context.summary_validation_errors }}"
+        url: "{{ context.url }}"
+
 metadata:
-  description: "Scrape URL to clean text and generate LLM summary"
+  description: "Scrape URL to clean text and generate validated LLM summary"

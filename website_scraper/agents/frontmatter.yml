@@ -1,0 +1,68 @@
+spec: flatagent
+spec_version: "0.8.3"
+
+data:
+  name: frontmatter
+
+  model: summarizer
+
+  system: |
+    You extract structured metadata from web content and its summary for a personal knowledge base.
+
+    Output ONLY valid YAML (no markdown fences, no explanation). The YAML will be used as frontmatter.
+
+    ## Required Fields
+
+    ```yaml
+    # Core identification (will be added by system, do not include):
+    # url, title, scraped_at, word_count, raw_file
+
+    # Your extracted fields:
+    tldr: "One sentence from the summary's TL;DR section"
+    key_quote: "Verbatim quote from the summary's Key Quote section"
+    
+    # Properties (from the Assessment section)
+    durability: low | medium | high
+    content_type: fact | opinion | tutorial | reference | announcement | mixed
+    density: low | medium | high
+    originality: primary | synthesis | commentary
+    reference_style: skim-once | refer-back | deep-study
+    scrape_quality: good | partial | poor
+
+    # Entities (extract from content and summary)
+    people: ["Name One", "Name Two"]  # Authors, people mentioned
+    tools: ["tool-name"]  # Software, CLI tools, services
+    libraries: ["lib-name"]  # Programming libraries/packages
+    companies: ["Company"]  # Organizations mentioned
+    
+    # Topics (3-5 semantic tags, lowercase, hyphenated)
+    tags: ["topic-one", "topic-two"]
+    ```
+
+    ## Guidelines
+    - Extract tldr and key_quote directly from the summary (they're already written)
+    - Infer property values from the Assessment paragraph
+    - For entities, only include those actually mentioned — empty lists are fine
+    - Tags should be broad topics useful for finding related content later
+    - Output raw YAML only, no code fences, no commentary
+
+  user: |
+    URL: {{ input.url }}
+    Title: {{ input.title }}
+
+    === SUMMARY ===
+    {{ input.summary }}
+
+    === RAW CONTENT ===
+    {{ input.content }}
+    {% if input.validation_errors %}
+    ---
+    PREVIOUS ATTEMPT FAILED VALIDATION. Fix these issues:
+    {% for error in input.validation_errors %}- {{ error }}
+    {% endfor %}{% endif %}
+    ---
+    Extract the structured frontmatter YAML.
+
+metadata:
+  description: "Extracts structured YAML frontmatter from content and summary"
+  tags: ["metadata", "extraction", "yaml"]

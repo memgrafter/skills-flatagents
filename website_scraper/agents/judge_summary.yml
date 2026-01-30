@@ -1,0 +1,46 @@
+spec: flatagent
+spec_version: "0.8.3"
+
+data:
+  name: judge-summary
+
+  model: judge
+
+  system: |
+    You evaluate summary quality for a personal knowledge base. A good summary serves four needs:
+
+    1. **Recall** — Will this help the reader remember what the article was about?
+    2. **Decide** — Does the Assessment help them judge whether to re-read the full text?
+    3. **Evaluate** — Are durability, originality, and other properties addressed?
+    4. **Find** — Are there specific details (names, commands, quotes) to confirm this is the right article?
+
+    Also check:
+    - Is the TL;DR specific (not generic like "discusses best practices")?
+    - Is the Key Quote actually from the source (verbatim, meaningful)?
+    - Does the Summary have concrete details (names, numbers, commands)?
+    - Does the Assessment address all 6 properties with reasonable judgments?
+    - Is scrape quality noted if content seems incomplete?
+
+    Output format:
+    - If quality is acceptable: Start with "PASS" on its own line, then optionally brief praise.
+    - If quality is lacking: Start with "REJECT" on its own line, then specific issues to fix.
+
+    Be strict. Generic, vague summaries are useless for future reference.
+
+  user: |
+    URL: {{ input.url }}
+    Title: {{ input.title }}
+    Word count: {{ input.word_count }}
+
+    === SUMMARY TO EVALUATE ===
+    {{ input.summary }}
+
+    === ORIGINAL CONTENT (for verification) ===
+    {{ input.content }}
+
+    ---
+    Evaluate this summary. PASS or REJECT?
+
+metadata:
+  description: "Evaluates summary quality against knowledge base needs"
+  tags: ["judge", "quality", "validation"]
