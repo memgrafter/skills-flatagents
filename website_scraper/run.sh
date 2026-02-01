@@ -17,7 +17,15 @@ source "$VENV/bin/activate"
 # Check for trafilatura
 if ! python -c "import trafilatura" 2>/dev/null; then
     echo "Installing trafilatura..."
-    pip install trafilatura >/dev/null
+    if ! python -m pip --version >/dev/null 2>&1; then
+        echo "pip not found in $VENV, bootstrapping with ensurepip..."
+        python -m ensurepip --upgrade
+    fi
+    python -m pip install trafilatura
+    if ! python -c "import trafilatura" 2>/dev/null; then
+        echo "ERROR: trafilatura install failed in $VENV" >&2
+        exit 1
+    fi
 fi
 
 # Run skill

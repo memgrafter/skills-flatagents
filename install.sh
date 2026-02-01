@@ -42,7 +42,7 @@ pip_install() {
     if [[ "$USE_UV" = true ]]; then
         uv pip install -p "$VENV/bin/python" "$@"
     else
-        pip install "$@"
+        python -m pip install "$@"
     fi
 }
 
@@ -58,6 +58,15 @@ fi
 
 # Activate venv (needed for non-uv commands and PATH)
 source "$VENV/bin/activate"
+
+# Ensure pip exists in venv (some Python builds omit pip)
+if [[ "$USE_UV" = false ]]; then
+    if ! python -m pip --version >/dev/null 2>&1; then
+        echo "pip not found in $VENV, bootstrapping with ensurepip..."
+        python -m ensurepip --upgrade
+        python -m pip install -U pip
+    fi
+fi
 
 # Install flatagents SDK (local or remote with auto-upgrade)
 if [[ "$USE_LOCAL_SDK" = true ]]; then
