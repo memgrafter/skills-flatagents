@@ -3,11 +3,12 @@
 # Or: ./install.sh --skill=<name> to install specific skill
 
 skills:
-  - codebase_explorer
   - codebase_ripper
-  - coding_agent
-  - dynamic_agent
   - search_refiner
   - shell_analyzer
-  - socratic_teacher
-  - test_writer
+# not typically used as skills, special use only
+#  - coding_agent
+#  - dynamic_agent
+#  - codebase_explorer
+#  - socratic_teacher
+#  - test_writer

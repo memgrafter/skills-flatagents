@@ -6,16 +6,21 @@ data:
     default:
       provider: cerebras
       name: zai-glm-4.7
-      temperature: 1.0
+      temperature: 0.9
+      top_p: 0.95
       max_tokens: 150000
     summarizer:
       provider: cerebras
       name: zai-glm-4.7
-      temperature: 1.0
+      temperature: 0.9
+      top_p: 0.95
       max_tokens: 150000
     judge:
       provider: cerebras
       name: zai-glm-4.7
-      temperature: 0.3
+      temperature: 0.9
+      top_p: 0.95
       max_tokens: 150000
+    cerebras:
   default: default
+  override: default
