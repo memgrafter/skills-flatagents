@@ -21,6 +21,14 @@ data:
       temperature: 0.9
       top_p: 0.95
       max_tokens: 150000
-    cerebras:
+    arcee-free:
+      name: openrouter/arcee-ai/trinity-large-preview:free # way higher rpm
+      temperature: 1.0
+    pony-alpha-free:
+      # LiteLLM strips one leading provider segment for OpenRouter models.
+      # Use double prefix so OpenRouter receives model id: openrouter/pony-alpha.
+      name: openrouter/openrouter/pony-alpha
+      temperature: 1.0
+
   default: default
-  override: default
+  override: pony-alpha-free
