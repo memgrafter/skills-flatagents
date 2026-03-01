@@ -3,7 +3,7 @@ url: https://openreview.net/forum?id=5Xc1ecxO1h
 title: 'Tree of Thoughts: Deliberate Problem Solving with Large Language...'
 scraped_at: '2026-01-30T20:39:04.942019+00:00'
 word_count: 226
-raw_file: 2026-01-30_tree-of-thoughts-deliberate-problem-solving-with-large-langu.txt
+raw_file: raw/2026-01-30_tree-of-thoughts-deliberate-problem-solving-with-large-langu.txt
 tldr: Tree of Thoughts (ToT) is a framework that enhances Large Language Model reasoning by introducing search algorithms
   (exploring multiple reasoning paths, lookahead, and backtracking) over coherent text units, significantly outperforming
   standard Chain-of-Thought prompting in tasks like the Game of 24.

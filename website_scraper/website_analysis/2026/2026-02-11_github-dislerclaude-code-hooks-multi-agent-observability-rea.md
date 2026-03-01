@@ -4,7 +4,7 @@ title: 'GitHub - disler/claude-code-hooks-multi-agent-observability: Real-time m
   hook event tracking.'
 scraped_at: '2026-02-11T10:08:37.235573+00:00'
 word_count: 2586
-raw_file: 2026-02-11_github-dislerclaude-code-hooks-multi-agent-observability-rea.txt
+raw_file: raw/2026-02-11_github-dislerclaude-code-hooks-multi-agent-observability-rea.txt
 tldr: A real-time observability dashboard for Claude Code agents that captures, stores, and visualizes all 12 hook event types
   across multi-agent swarms via a Bun/SQLite server and Vue 3 client.
 key_quote: The true constraint of agentic engineering is no longer what the models can do — it's our ability to prompt engineer

@@ -3,7 +3,7 @@ url: https://blog.cloudflare.com/code-mode/
 title: 'Code Mode: the better way to use MCP'
 scraped_at: '2026-02-11T10:36:44.981465+00:00'
 word_count: 2917
-raw_file: 2026-02-11_code-mode-the-better-way-to-use-mcp.txt
+raw_file: raw/2026-02-11_code-mode-the-better-way-to-use-mcp.txt
 tldr: Cloudflare discovered that LLMs perform better when writing TypeScript code to call MCP tools rather than invoking them
   directly through tool-calling tokens, and built a sandboxed execution environment using V8 isolates to enable this "Code
   Mode" approach.

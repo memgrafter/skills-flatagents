@@ -3,7 +3,7 @@ url: https://arxiv.org/abs/2501.09891
 title: Evolving Deeper LLM Thinking
 scraped_at: '2026-01-30T20:40:08.396676+00:00'
 word_count: 292
-raw_file: 2026-01-30_evolving-deeper-llm-thinking.txt
+raw_file: raw/2026-01-30_evolving-deeper-llm-thinking.txt
 tldr: Introduces "Mind Evolution," an evolutionary search strategy that scales LLM inference-time compute by generating, recombining,
   and refining candidate responses to solve natural language planning tasks with over 98% accuracy.
 key_quote: Mind Evolution solves more than 98% of the problem instances using Gemini 1.5 Pro without the use of a formal solver.

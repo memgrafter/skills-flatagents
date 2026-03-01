@@ -3,7 +3,7 @@ url: https://github.com/badlogic
 title: badlogic - Overview
 scraped_at: '2026-02-11T10:18:25.963436+00:00'
 word_count: 50
-raw_file: 2026-02-11_badlogic-overview.txt
+raw_file: raw/2026-02-11_badlogic-overview.txt
 tldr: GitHub profile page for "badlogic," the creator of libgdx, a cross-platform Java game development framework.
 key_quote: Desktop/Android/HTML5/iOS Java game development framework
 durability: medium

@@ -3,7 +3,7 @@ url: https://mariozechner.at/
 title: '{ Mario Zechner }'
 scraped_at: '2026-02-11T10:19:19.222303+00:00'
 word_count: 345
-raw_file: 2026-02-11_mario-zechner.txt
+raw_file: raw/2026-02-11_mario-zechner.txt
 tldr: Personal website and blog index for Mario Zechner, an independent software developer covering coding agents, MCP tooling,
   JavaScript interpreters, electronics projects, and critical tech journalism.
 key_quote: I'm an independent software developer, coach, and angel investor with over 15 years of experience in academia.

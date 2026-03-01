@@ -5,7 +5,7 @@ title: 'GitHub - Piebald-AI/claude-code-system-prompts: All parts of Claude Code
   security review, agent creation). Updated for each Claude Code version.'
 scraped_at: '2026-02-11T10:31:29.673137+00:00'
 word_count: 2778
-raw_file: 2026-02-11_github-piebald-aiclaude-code-system-prompts-all-parts-of-cla.txt
+raw_file: raw/2026-02-11_github-piebald-aiclaude-code-system-prompts-all-parts-of-cla.txt
 tldr: A comprehensive catalog of all 110+ system prompts, tool descriptions, sub-agent prompts, and system reminders extracted
   from Claude Code v2.1.39, maintained with changelog tracking across 95 versions.
 key_quote: This repository contains an up-to-date list of all Claude Code's various system prompts and their associated token

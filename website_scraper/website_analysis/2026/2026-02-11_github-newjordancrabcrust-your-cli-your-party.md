@@ -3,7 +3,7 @@ url: https://github.com/newjordan/CrabCrust
 title: 'GitHub - newjordan/CrabCrust: Your CLI - Your Party'
 scraped_at: '2026-02-11T09:54:40.918889+00:00'
 word_count: 861
-raw_file: 2026-02-11_github-newjordancrabcrust-your-cli-your-party.txt
+raw_file: raw/2026-02-11_github-newjordancrabcrust-your-cli-your-party.txt
 tldr: A Rust-based CLI tool that wraps git commands (and potentially others) with arcade-style Braille-based terminal animations,
   turning commits into save disk animations and pushes into rocket launches.
 key_quote: Every git commit becomes a save animation, every push launches a rocket, and every command feels like a celebration!

@@ -3,7 +3,7 @@ url: https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent#philoso
 title: pi-mono/packages/coding-agent at main · badlogic/pi-mono
 scraped_at: '2026-02-11T10:41:29.934756+00:00'
 word_count: 20
-raw_file: 2026-02-11_pi-monopackagescoding-agent-at-main-badlogicpi-mono.txt
+raw_file: raw/2026-02-11_pi-monopackagescoding-agent-at-main-badlogicpi-mono.txt
 tldr: The scrape failed to capture the actual coding-agent documentation — only generic GitHub UI text was retrieved.
 key_quote: We read every piece of feedback, and take your input very seriously.
 durability: medium

@@ -3,7 +3,7 @@ url: https://github.com/nicobailon/pi-rewind-hook
 title: 'GitHub - nicobailon/pi-rewind-hook: Pi agent hook for rewinding file changes during coding sessions'
 scraped_at: '2026-01-30T20:35:52.210902+00:00'
 word_count: 810
-raw_file: 2026-01-30_github-nicobailonpi-rewind-hook-pi-agent-hook-for-rewinding-.txt
+raw_file: raw/2026-01-30_github-nicobailonpi-rewind-hook-pi-agent-hook-for-rewinding-.txt
 tldr: A Pi agent extension that uses git refs to create automatic checkpoints during coding sessions, allowing developers
   to rewind file states (via `/branch`) while optionally preserving conversation history.
 key_quote: Creates automatic checkpoints using git refs, allowing you to restore files to previous states while optionally

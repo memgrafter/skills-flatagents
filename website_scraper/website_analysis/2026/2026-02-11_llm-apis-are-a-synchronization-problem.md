@@ -3,7 +3,7 @@ url: https://lucumr.pocoo.org/2025/11/22/llm-apis/
 title: LLM APIs are a Synchronization Problem
 scraped_at: '2026-02-11T10:30:27.743060+00:00'
 word_count: 1530
-raw_file: 2026-02-11_llm-apis-are-a-synchronization-problem.txt
+raw_file: raw/2026-02-11_llm-apis-are-a-synchronization-problem.txt
 tldr: Current LLM APIs incorrectly abstract what's fundamentally a distributed state synchronization problem, with hidden
   server-side state (KV caches, reasoning tokens, tool definitions) that can't be properly reconciled through message-based
   interfaces.

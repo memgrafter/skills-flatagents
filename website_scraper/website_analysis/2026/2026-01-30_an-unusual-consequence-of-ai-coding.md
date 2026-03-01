@@ -3,7 +3,7 @@ url: https://www.praf.me/ai-coding
 title: An unusual consequence of AI coding
 scraped_at: '2026-01-30T20:34:50.550445+00:00'
 word_count: 450
-raw_file: 2026-01-30_an-unusual-consequence-of-ai-coding.txt
+raw_file: raw/2026-01-30_an-unusual-consequence-of-ai-coding.txt
 tldr: AI coding significantly increases shipping velocity but destroys the "flow state" of manual programming, resulting in
   a higher cognitive load that makes multitasking (like listening to music) impossible.
 key_quote: a 4-hour session of AI coding is more cognitively intense than a 4-hour session of non-AI coding.

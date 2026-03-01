@@ -3,7 +3,7 @@ url: https://github.com/vercel-labs/agent-browser
 title: 'GitHub - vercel-labs/agent-browser: Browser automation CLI for AI agents'
 scraped_at: '2026-02-11T10:46:39.524142+00:00'
 word_count: 3281
-raw_file: 2026-02-11_github-vercel-labsagent-browser-browser-automation-cli-for-a.txt
+raw_file: raw/2026-02-11_github-vercel-labsagent-browser-browser-automation-cli-for-a.txt
 tldr: A CLI tool from Vercel Labs that provides headless browser automation specifically designed for AI agents, featuring
   a fast Rust CLI with Node.js daemon, accessibility-tree snapshots with deterministic element refs, and support for cloud
   browser providers.

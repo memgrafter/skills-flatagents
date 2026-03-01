@@ -3,7 +3,7 @@ url: https://arxiv.org/html/2509.26626v1
 title: Recursive Self-Aggregation Unlocks Deep Thinking in Large Language Models
 scraped_at: '2026-01-30T20:38:30.217773+00:00'
 word_count: 9759
-raw_file: 2026-01-30_recursive-self-aggregation-unlocks-deep-thinking-in-large-la.txt
+raw_file: raw/2026-01-30_recursive-self-aggregation-unlocks-deep-thinking-in-large-la.txt
 tldr: This paper introduces Recursive Self-Aggregation (RSA), a hybrid test-time scaling method that iteratively recombines
   and refines a population of candidate reasoning chains to improve LLM performance, enabling small models like Qwen3-4B to
   rival larger reasoning models like DeepSeek-R1 without external verifiers.

@@ -3,7 +3,7 @@ url: https://github.com/Lassulus/wrappers
 title: 'GitHub - Lassulus/wrappers: A Nix library to create wrapped executables via the module system'
 scraped_at: '2026-02-11T10:06:16.022150+00:00'
 word_count: 1030
-raw_file: 2026-02-11_github-lassuluswrappers-a-nix-library-to-create-wrapped-exec.txt
+raw_file: raw/2026-02-11_github-lassuluswrappers-a-nix-library-to-create-wrapped-exec.txt
 tldr: A Nix library that lets you create wrapped executables with custom flags, environment variables, and runtime dependencies
   using the Nix module system, solving the problem of maintaining separate wrapper configurations across NixOS, home-manager,
   nix-darwin, and devenv.

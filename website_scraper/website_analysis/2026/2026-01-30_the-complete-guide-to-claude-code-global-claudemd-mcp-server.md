@@ -3,7 +3,7 @@ url: https://www.reddit.com/r/ClaudeAI/comments/1qbkk1n/the_complete_guide_to_cl
 title: 'The Complete Guide to Claude Code: Global CLAUDE.md, MCP Servers, Commands, and Why Single-Purpose Chats Matter'
 scraped_at: '2026-01-30T20:36:19.594774+00:00'
 word_count: 2688
-raw_file: 2026-01-30_the-complete-guide-to-claude-code-global-claudemd-mcp-server.txt
+raw_file: raw/2026-01-30_the-complete-guide-to-claude-code-global-claudemd-mcp-server.txt
 tldr: Optimize Claude Code by using a global `~/.claude/CLAUDE.md` to enforce security rules and automate project scaffolding,
   utilizing MCP servers like Context7 for real-time documentation, and adhering to "One Task, One Chat" to prevent context-driven
   performance degradation.

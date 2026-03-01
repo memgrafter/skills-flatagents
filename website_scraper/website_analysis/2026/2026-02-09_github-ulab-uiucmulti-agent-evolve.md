@@ -3,7 +3,7 @@ url: https://github.com/ulab-uiuc/Multi-agent-evolve
 title: GitHub - ulab-uiuc/Multi-agent-evolve
 scraped_at: '2026-02-09T06:25:08.174019+00:00'
 word_count: 843
-raw_file: 2026-02-09_github-ulab-uiucmulti-agent-evolve.txt
+raw_file: raw/2026-02-09_github-ulab-uiucmulti-agent-evolve.txt
 tldr: Multi-Agent Evolve is a self-improving framework that enhances LLM reasoning by using a single model acting as Proposer,
   Solver, and Judge, co-evolving through a Task-Relative REINFORCE++ loop without external supervision.
 key_quote: The system forms a continuous self-improving loop that strengthens reasoning without external supervision.

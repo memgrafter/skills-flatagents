@@ -3,7 +3,7 @@ url: https://github.com/octave-commons/promethean
 title: GitHub - octave-commons/promethean
 scraped_at: '2026-02-09T06:13:38.822804+00:00'
 word_count: 1082
-raw_file: 2026-02-09_github-octave-commonspromethean.txt
+raw_file: raw/2026-02-09_github-octave-commonspromethean.txt
 tldr: Promethean is a TypeScript monorepo framework for building embodied AI agents, featuring a modular architecture based
   on message brokers, functional programming principles, and specialized packages for LLM interaction, MCP servers, and Discord
   orchestration.

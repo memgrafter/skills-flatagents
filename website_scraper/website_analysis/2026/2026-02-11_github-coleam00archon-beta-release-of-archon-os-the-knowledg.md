@@ -3,7 +3,7 @@ url: https://github.com/coleam00/Archon
 title: 'GitHub - coleam00/Archon: Beta release of Archon OS - the knowledge and task management backbone for AI coding assistants.'
 scraped_at: '2026-02-11T10:14:30.976073+00:00'
 word_count: 2240
-raw_file: 2026-02-11_github-coleam00archon-beta-release-of-archon-os-the-knowledg.txt
+raw_file: raw/2026-02-11_github-coleam00archon-beta-release-of-archon-os-the-knowledg.txt
 tldr: Archon is an open-source MCP server that gives AI coding assistants (Claude Code, Cursor, Windsurf) access to a custom
   knowledge base with RAG search and task management capabilities.
 key_quote: Archon is the command center for AI coding assistants. For you, it's a sleek interface to manage knowledge, context,

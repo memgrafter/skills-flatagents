@@ -3,7 +3,7 @@ url: https://arxiv.org/html/2506.16406
 title: 'Drag-and-Drop LLMs: Zero-Shot Prompt-to-Weights'
 scraped_at: '2026-02-11T10:11:21.901702+00:00'
 word_count: 8892
-raw_file: 2026-02-11_drag-and-drop-llms-zero-shot-prompt-to-weights.txt
+raw_file: raw/2026-02-11_drag-and-drop-llms-zero-shot-prompt-to-weights.txt
 tldr: DnD is a hyper-network that generates task-specific LoRA weights directly from unlabeled prompts in seconds, eliminating
   gradient-based fine-tuning while achieving up to 30% better performance on unseen benchmarks at 12,000× lower computational
   cost.

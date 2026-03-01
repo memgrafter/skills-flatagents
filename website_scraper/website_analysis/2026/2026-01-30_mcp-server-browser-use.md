@@ -3,7 +3,7 @@ url: https://docs.browser-use.com/customize/integrations/mcp-server
 title: MCP Server - Browser Use
 scraped_at: '2026-01-30T20:36:55.247997+00:00'
 word_count: 928
-raw_file: 2026-01-30_mcp-server-browser-use.txt
+raw_file: raw/2026-01-30_mcp-server-browser-use.txt
 tldr: Documentation connecting the Browser Use automation framework to AI clients via the Model Context Protocol (MCP), detailing
   setup for both a paid cloud-hosted API and a free, self-hosted local server.
 key_quote: 'If you need a local stdio-based MCP server for Claude Desktop, use the free open-source version: uvx browser-use

@@ -3,7 +3,7 @@ url: https://docs.sillytavern.app/usage/core-concepts/chatfilemanagement/
 title: Chat File Management | docs.ST.app
 scraped_at: '2026-02-11T10:07:23.221556+00:00'
 word_count: 456
-raw_file: 2026-02-11_chat-file-management-docsstapp.txt
+raw_file: raw/2026-02-11_chat-file-management-docsstapp.txt
 tldr: SillyTavern documentation explaining how to manage chat files, including solo vs group chats, import/export options,
   and the checkpoint/branch system for forking conversations.
 key_quote: Checkpoints are clones of the current chat, in that they copy all messages from the given chat up to a certain

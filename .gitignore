@@ -17,3 +17,4 @@ local
 # Ephemeral / debug artifacts
 browser-viewer/tmp/
 website_scraper/dumps/
+website_scraper/website_analysis/**/raw/

@@ -3,7 +3,7 @@ url: https://orbstack.dev/pricing
 title: Pricing · OrbStack
 scraped_at: '2026-02-11T10:04:42.412076+00:00'
 word_count: 65
-raw_file: 2026-02-11_pricing-orbstack.txt
+raw_file: raw/2026-02-11_pricing-orbstack.txt
 tldr: OrbStack is free for personal use with a business tier at $8/user/month for commercial use, offering additional enterprise
   features like SAML SSO and priority support.
 key_quote: Always free for personal use

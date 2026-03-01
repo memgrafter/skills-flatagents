@@ -3,7 +3,7 @@ url: https://github.com/numman-ali/openskills
 title: 'GitHub - numman-ali/openskills: Universal skills loader for AI coding agents - npm i -g openskills'
 scraped_at: '2026-02-11T10:13:27.590072+00:00'
 word_count: 813
-raw_file: 2026-02-11_github-numman-aliopenskills-universal-skills-loader-for-ai-c.txt
+raw_file: raw/2026-02-11_github-numman-aliopenskills-universal-skills-loader-for-ai-c.txt
 tldr: OpenSkills is a CLI tool that ports Anthropic's SKILL.md system to any AI coding agent (Cursor, Windsurf, Aider, Codex)
   by generating compatible `<available_skills>` XML blocks in AGENTS.md files.
 key_quote: OpenSkills brings Anthropic's skills system to every AI coding agent — Claude Code, Cursor, Windsurf, Aider, Codex,

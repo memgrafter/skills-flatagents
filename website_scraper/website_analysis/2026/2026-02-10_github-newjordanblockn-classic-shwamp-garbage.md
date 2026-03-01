@@ -3,7 +3,7 @@ url: https://github.com/newjordan/BlockN
 title: 'GitHub - newjordan/BlockN: Classic Shwamp garbage.'
 scraped_at: '2026-02-10T23:35:33.698778+00:00'
 word_count: 199
-raw_file: 2026-02-10_github-newjordanblockn-classic-shwamp-garbage.txt
+raw_file: raw/2026-02-10_github-newjordanblockn-classic-shwamp-garbage.txt
 tldr: BlockN is the production-ready, shareable branch of LegoGen—a procedural classical architecture generator with PyQt5/PyVista
   GUI and headless CLI that exports Greek/Roman column structures to GLB, JSON, and PNG formats.
 key_quote: This repository is the stripped, shareable production branch of LegoGen. It keeps the stable classical generator,

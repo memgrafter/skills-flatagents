@@ -3,7 +3,7 @@ url: https://github.com/cachix/devenv
 title: 'GitHub - cachix/devenv: Fast, Declarative, Reproducible, and Composable Developer Environments using Nix'
 scraped_at: '2026-02-11T10:03:32.246558+00:00'
 word_count: 613
-raw_file: 2026-02-11_github-cachixdevenv-fast-declarative-reproducible-and-compos.txt
+raw_file: raw/2026-02-11_github-cachixdevenv-fast-declarative-reproducible-and-compos.txt
 tldr: devenv.sh is a Nix-based tool that creates declarative, reproducible developer environments with built-in language support,
   services (like Postgres), process management, and direnv integration.
 key_quote: devenv.sh - Fast, Declarative, Reproducible, and Composable Developer Environments

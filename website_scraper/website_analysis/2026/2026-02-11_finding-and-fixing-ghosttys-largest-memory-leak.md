@@ -3,7 +3,7 @@ url: https://news.ycombinator.com/item?id=46568794
 title: Finding and fixing Ghostty's largest memory leak
 scraped_at: '2026-02-11T10:34:51.325887+00:00'
 word_count: 7459
-raw_file: 2026-02-11_finding-and-fixing-ghosttys-largest-memory-leak.txt
+raw_file: raw/2026-02-11_finding-and-fixing-ghosttys-largest-memory-leak.txt
 tldr: Hacker News discussion of Mitchell Hashimoto's blog post about tracking down and fixing a memory leak in Ghostty terminal
   emulator, involving a subtle bug in page-based memory pooling where non-standard sized pages were incorrectly freed.
 key_quote: The specific language feature you want if you insist that you don't want this kind of leak is Linear Types. Rust

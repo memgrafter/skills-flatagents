@@ -3,7 +3,7 @@ url: https://github.com/rawwerks/ypi
 title: 'GitHub - rawwerks/ypi: A recursive coding agent inpired by RLMs'
 scraped_at: '2026-02-12T22:53:02.483505+00:00'
 word_count: 865
-raw_file: 2026-02-12_github-rawwerksypi-a-recursive-coding-agent-inpired-by-rlms.txt
+raw_file: raw/2026-02-12_github-rawwerksypi-a-recursive-coding-agent-inpired-by-rlms.txt
 tldr: ypi is a recursive coding agent built on top of the Pi framework that enables self-delegation via an `rlm_query` function
   and `jj` workspace isolation to decompose complex programming tasks.
 key_quote: Pi already has a bash REPL. We add one function — rlm_query — and a system prompt that teaches Pi to use it recursively.

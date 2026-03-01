@@ -3,7 +3,7 @@ url: https://github.com/SWE-agent/mini-swe-agent?ref=ghuntley.com
 title: GitHub - SWE-agent/mini-swe-agent at ghuntley.com
 scraped_at: '2026-01-30T19:48:59.537728+00:00'
 word_count: 970
-raw_file: 2026-01-30_github-swe-agentmini-swe-agent-at-ghuntleycom.txt
+raw_file: raw/2026-01-30_github-swe-agentmini-swe-agent-at-ghuntleycom.txt
 tldr: A minimalist, 100-line Python coding agent developed by Princeton and Stanford that achieves high SWE-bench scores using
   only bash commands, linear history, and no complex tool-calling interfaces.
 key_quote: Does not have any tools other than bash — it doesn't even use the tool-calling interface of the LMs.

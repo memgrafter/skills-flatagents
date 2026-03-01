@@ -4,7 +4,7 @@ title: 'GitHub - Lanerra/saga: Autonomous, agentic, creative story writing syste
   Knowledge Graphs.'
 scraped_at: '2026-02-11T09:50:42.052528+00:00'
 word_count: 854
-raw_file: 2026-02-11_github-lanerrasaga-autonomous-agentic-creative-story-writing.txt
+raw_file: raw/2026-02-11_github-lanerrasaga-autonomous-agentic-creative-story-writing.txt
 tldr: SAGA is a local-first Python CLI that generates long-form fiction using LangGraph orchestration and Neo4j knowledge
   graphs to maintain narrative consistency across chapters.
 key_quote: SAGA's goal is to help you generate a novel while staying consistent with established story facts.

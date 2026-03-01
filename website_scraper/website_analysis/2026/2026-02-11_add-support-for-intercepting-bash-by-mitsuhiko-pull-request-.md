@@ -3,7 +3,7 @@ url: https://github.com/badlogic/pi-mono/pull/903/files
 title: 'Add support for intercepting bash by mitsuhiko · Pull Request #903 · badlogic/pi-mono'
 scraped_at: '2026-02-11T09:59:36.634146+00:00'
 word_count: 1102
-raw_file: 2026-02-11_add-support-for-intercepting-bash-by-mitsuhiko-pull-request-.txt
+raw_file: raw/2026-02-11_add-support-for-intercepting-bash-by-mitsuhiko-pull-request-.txt
 tldr: A pull request adding a `before_bash_exec` event hook to the pi coding agent extension API, allowing developers to intercept,
   modify, or block bash commands before execution.
 key_quote: 'Fired before a bash command executes (tool calls and user `!`/`!!`). Use it to rewrite commands or override execution

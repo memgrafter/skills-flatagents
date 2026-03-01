@@ -3,7 +3,7 @@ url: https://research.google/blog/towards-a-science-of-scaling-agent-systems-whe
 title: 'Towards a science of scaling agent systems: When and why agent systems work'
 scraped_at: '2026-02-11T09:48:03.489793+00:00'
 word_count: 1032
-raw_file: 2026-02-11_towards-a-science-of-scaling-agent-systems-when-and-why-agen.txt
+raw_file: raw/2026-02-11_towards-a-science-of-scaling-agent-systems-when-and-why-agen.txt
 tldr: Google Research's controlled evaluation of 180 agent configurations reveals that multi-agent systems improve parallelizable
   tasks by up to 80.9% but degrade sequential tasks by 39-70%, challenging the "more agents is better" heuristic.
 key_quote: Through a large-scale controlled evaluation of 180 agent configurations, we derive the first quantitative scaling

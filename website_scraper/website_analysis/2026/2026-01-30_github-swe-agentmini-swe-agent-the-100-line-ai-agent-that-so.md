@@ -3,7 +3,7 @@ url: https://github.com/SWE-agent/mini-swe-agent
 title: "GitHub - SWE-agent/mini-swe-agent: The 100 line AI agent that solves GitHub issues or helps you in your command line. Radically simple, no huge configs, no giant monorepo—but scores >74% on SWE-bench verified!"
 scraped_at: 2026-01-30T17:17:58.114333+00:00
 word_count: 970
-raw_file: 2026-01-30_github-swe-agentmini-swe-agent-the-100-line-ai-agent-that-so.txt
+raw_file: raw/2026-01-30_github-swe-agentmini-swe-agent-the-100-line-ai-agent-that-so.txt
 ---
 
 **Overview**

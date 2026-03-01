@@ -3,7 +3,7 @@ url: https://mariozechner.at/posts/2025-11-30-pi-coding-agent/
 title: What I learned building an opinionated and minimal coding agent
 scraped_at: '2026-02-11T10:25:29.169304+00:00'
 word_count: 6678
-raw_file: 2026-02-11_what-i-learned-building-an-opinionated-and-minimal-coding-ag.txt
+raw_file: raw/2026-02-11_what-i-learned-building-an-opinionated-and-minimal-coding-ag.txt
 tldr: Mario Zechner built "pi," a minimal coding agent harness, after becoming frustrated with Claude Code's complexity, hidden
   context injection, and poor observability—achieving competitive Terminal-Bench 2.0 results with a sub-1000-token system
   prompt and just four tools.

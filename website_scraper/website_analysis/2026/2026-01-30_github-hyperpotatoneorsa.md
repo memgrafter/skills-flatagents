@@ -3,7 +3,7 @@ url: https://github.com/HyperPotatoNeo/RSA
 title: GitHub - HyperPotatoNeo/RSA
 scraped_at: '2026-01-30T20:37:51.991819+00:00'
 word_count: 208
-raw_file: 2026-01-30_github-hyperpotatoneorsa.txt
+raw_file: raw/2026-01-30_github-hyperpotatoneorsa.txt
 tldr: Provides commands and configuration details for evaluating and training RSA models using the `verl` library, including
   benchmark scripts for AIME-25 and HMMT-25, and a full RLOO training setup for Qwen3-4B.
 key_quote: Download aggregation dataset used in our paper (mixture of DeepScaleR + Reasoning Gym tasks with candidates from

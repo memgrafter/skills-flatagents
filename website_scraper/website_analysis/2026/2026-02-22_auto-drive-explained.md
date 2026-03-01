@@ -3,7 +3,7 @@ url: https://www.youtube.com/watch?v=UOASHZPruQk
 title: Auto Drive Explained
 scraped_at: '2026-02-22T21:01:54.797420+00:00'
 word_count: 280
-raw_file: 2026-02-22_auto-drive-explained.txt
+raw_file: raw/2026-02-22_auto-drive-explained.txt
 tldr: A short product demo introducing Code's "Auto Drive" mode, which claims to autonomously execute long-running coding tasks, compare multiple agent approaches, monitor progress with diagnostics, and leverage browser debugging.
 key_quote: Auto Drive completes long running coding tasks autonomously.
 durability: medium

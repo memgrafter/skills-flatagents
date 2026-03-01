@@ -4,7 +4,7 @@ title: 200 lines of markdown just triggered a $285 billion sell-off — here's w
   workflow
 scraped_at: '2026-02-10T23:43:53.991573+00:00'
 word_count: 610
-raw_file: 2026-02-10_200-lines-of-markdown-just-triggered-a-285-billion-sell-off-.txt
+raw_file: raw/2026-02-10_200-lines-of-markdown-just-triggered-a-285-billion-sell-off-.txt
 tldr: A ~200-line open-source markdown file from Anthropic's Claude desktop plugins—handling legal contract review that previously
   required billable paralegal hours—crystallized market fears about AI disruption, contributing to a ~$285 billion single-day
   selloff across software and financial services stocks.

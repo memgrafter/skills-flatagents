@@ -3,7 +3,7 @@ url: https://mariozechner.at/posts/2025-11-22-armin-is-wrong/
 title: Armin is wrong and here's why
 scraped_at: '2026-02-11T10:28:52.951496+00:00'
 word_count: 2185
-raw_file: 2026-02-11_armin-is-wrong-and-heres-why.txt
+raw_file: raw/2026-02-11_armin-is-wrong-and-heres-why.txt
 tldr: Mario Zechner argues against Armin's claim that LLM APIs are a state synchronization problem, contending that the messages
   abstraction reflects the underlying reality and that opaque provider state is simply an API contract, not a local-first
   sync problem.

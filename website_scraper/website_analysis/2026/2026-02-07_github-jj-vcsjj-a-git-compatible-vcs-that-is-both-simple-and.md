@@ -3,7 +3,7 @@ url: https://github.com/jj-vcs/jj
 title: 'GitHub - jj-vcs/jj: A Git-compatible VCS that is both simple and powerful'
 scraped_at: '2026-02-07T06:29:11.447748+00:00'
 word_count: 2191
-raw_file: 2026-02-07_github-jj-vcsjj-a-git-compatible-vcs-that-is-both-simple-and.txt
+raw_file: raw/2026-02-07_github-jj-vcsjj-a-git-compatible-vcs-that-is-both-simple-and.txt
 tldr: Jujutsu (jj) is an experimental, Git-compatible version control system that simplifies workflows by treating the working
   copy as a commit, automatically rebasing descendants, and recording all operations for easy undoing.
 key_quote: Version control has finally entered the 1960s!

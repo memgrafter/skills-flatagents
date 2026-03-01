@@ -3,7 +3,7 @@ url: https://github.com/vegu-ai/talemate
 title: 'GitHub - vegu-ai/talemate: Roleplay with AI with a focus on strong narration, consistent world and game state tracking.'
 scraped_at: '2026-02-11T09:51:46.995518+00:00'
 word_count: 149
-raw_file: 2026-02-11_github-vegu-aitalemate-roleplay-with-ai-with-a-focus-on-stro.txt
+raw_file: raw/2026-02-11_github-vegu-aitalemate-roleplay-with-ai-with-a-focus-on-stro.txt
 tldr: Talemate is a self-hosted AI roleplay platform with multiple specialized agents handling dialogue, narration, world
   state, and memory—designed for long-form, consistent storytelling.
 key_quote: Roleplay with AI with a focus on strong narration, consistent world and game state tracking.

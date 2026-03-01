@@ -3,7 +3,7 @@ url: https://github.com/astrskai/astrsk
 title: 'GitHub - astrskai/astrsk: Pushing the boundaries of AI storytelling'
 scraped_at: '2026-02-11T09:49:33.703297+00:00'
 word_count: 875
-raw_file: 2026-02-11_github-astrskaiastrsk-pushing-the-boundaries-of-ai-storytell.txt
+raw_file: raw/2026-02-11_github-astrskaiastrsk-pushing-the-boundaries-of-ai-storytell.txt
 tldr: Astrsk is a local-first, cross-platform AI storytelling/roleplaying application featuring a visual workflow editor,
   support for 10+ AI providers, and character card imports—available as a PWA or native desktop app.
 key_quote: 100% Local-First - All data stored locally on your device - your stories stay yours

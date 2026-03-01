@@ -3,7 +3,7 @@ url: https://github.com/mpfaffenberger/code_puppy/
 title: 'GitHub - mpfaffenberger/code_puppy: Agentic AI for writing code'
 scraped_at: '2026-01-30T20:37:23.534048+00:00'
 word_count: 2740
-raw_file: 2026-01-30_github-mpfaffenbergercode-puppy-agentic-ai-for-writing-code.txt
+raw_file: raw/2026-01-30_github-mpfaffenbergercode-puppy-agentic-ai-for-writing-code.txt
 tldr: A privacy-focused, CLI-based AI coding agent that competes with IDEs like Cursor and Windsurf by supporting 65+ model
   providers, custom JSON agents, and a "zero telemetry" architecture.
 key_quote: Who needs an IDE when you have 1024 angry puppies?

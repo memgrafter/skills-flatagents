@@ -3,7 +3,7 @@ url: https://github.com/Laszlobeer/Dungeo_ai
 title: 'GitHub - Laszlobeer/-Dungeo_ai-otudated-: this is a dungeon ai run locally that use your llm'
 scraped_at: '2026-01-30T20:01:00.419638+00:00'
 word_count: 248
-raw_file: 2026-01-30_github-laszlobeer-dungeo-ai-otudated-this-is-a-dungeon-ai-ru.txt
+raw_file: raw/2026-01-30_github-laszlobeer-dungeo-ai-otudated-this-is-a-dungeon-ai-ru.txt
 tldr: A local, open-source Python text adventure game using Ollama for offline LLM inference and optional AllTalk TTS, though
   the repository is explicitly marked as "outdated."
 key_quote: If you use it commercially or integrate it into monetized/restricted systems, YOU MUST CREDIT THE ORIGINAL AUTHOR.

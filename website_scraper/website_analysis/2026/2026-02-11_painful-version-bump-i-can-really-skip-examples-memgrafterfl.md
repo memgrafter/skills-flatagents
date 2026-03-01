@@ -3,7 +3,7 @@ url: https://github.com/memgrafter/flatagents/commit/00d2ca6257ad529b2f5a0b6f8d7
 title: painful version bump, i can really skip examples... · memgrafter/flatagents@00d2ca6
 scraped_at: '2026-02-11T10:44:38.170456+00:00'
 word_count: 607
-raw_file: 2026-02-11_painful-version-bump-i-can-really-skip-examples-memgrafterfl.txt
+raw_file: raw/2026-02-11_painful-version-bump-i-can-really-skip-examples-memgrafterfl.txt
 tldr: A large-scale version bump commit across the flatagents repository, updating 105 files with 816 additions and 104 deletions.
 key_quote: painful version bump, i can really skip examples...
 durability: low

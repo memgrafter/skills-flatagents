@@ -3,7 +3,7 @@ url: https://github.com/badlogic/pi-mono/pull/538#issuecomment-3720734306
 title: 'fix(tui): handle batched key release events over SSH by crcatala · Pull Request #538 · badlogic/pi-mono'
 scraped_at: '2026-02-11T10:17:19.428532+00:00'
 word_count: 1025
-raw_file: 2026-02-11_fixtui-handle-batched-key-release-events-over-ssh-by-crcatal.txt
+raw_file: raw/2026-02-11_fixtui-handle-batched-key-release-events-over-ssh-by-crcatal.txt
 tldr: 'A pull request documenting a TUI keyboard input bug over SSH where batched key events caused dropped characters, with
   two solution approaches discussed: regex filtering versus lower-level input splitting.'
 key_quote: Over SSH (and sometimes locally with fast typing), the terminal batches multiple events into a single data chunk...

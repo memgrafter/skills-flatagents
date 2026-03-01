@@ -3,7 +3,7 @@ url: https://github.com/memgrafter/flatagents/tree/main
 title: 'GitHub - memgrafter/flatagents: Flat, declarative agents and state machines for orchestrating LLMs.'
 scraped_at: '2026-02-11T10:45:34.666913+00:00'
 word_count: 1193
-raw_file: 2026-02-11_github-memgrafterflatagents-flat-declarative-agents-and-stat_1.txt
+raw_file: raw/2026-02-11_github-memgrafterflatagents-flat-declarative-agents-and-stat_1.txt
 tldr: A Python library for defining LLM agents and state machines declaratively in YAML, with built-in support for retries,
   parallel execution, distributed workers, and checkpointing.
 key_quote: Define LLM agents in YAML. Run them anywhere.

@@ -5,7 +5,7 @@ title: 'GitHub - NoeFabris/opencode-antigravity-auth: Enable Opencode to authent
   Google credentials.'
 scraped_at: '2026-02-11T10:15:48.033121+00:00'
 word_count: 2583
-raw_file: 2026-02-11_github-noefabrisopencode-antigravity-auth-enable-opencode-to.txt
+raw_file: raw/2026-02-11_github-noefabrisopencode-antigravity-auth-enable-opencode-to.txt
 tldr: An unofficial OpenCode plugin that authenticates via Google OAuth to access Claude and Gemini models through Google's
   internal Antigravity IDE infrastructure, with multi-account rotation and dual quota pooling.
 key_quote: Using this plugin may violate Google's Terms of Service. A small number of users have reported their Google accounts

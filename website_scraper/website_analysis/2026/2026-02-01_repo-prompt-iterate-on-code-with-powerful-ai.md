@@ -3,7 +3,7 @@ url: https://repoprompt.com/
 title: Repo Prompt – Iterate on code with powerful AI
 scraped_at: '2026-02-01T02:46:17.359748+00:00'
 word_count: 9
-raw_file: 2026-02-01_repo-prompt-iterate-on-code-with-powerful-ai.txt
+raw_file: raw/2026-02-01_repo-prompt-iterate-on-code-with-powerful-ai.txt
 tldr: The provided content consists only of a browser warning requiring JavaScript, preventing any summary of the actual Repo
   Prompt tool or its features.
 key_quote: You need to enable JavaScript to run this app.

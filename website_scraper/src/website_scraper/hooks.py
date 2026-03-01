@@ -272,10 +272,12 @@ class WebsiteScraperHooks(MachineHooks):
         scraped_at = context["scraped_at"]
         word_count = context["word_count"]
 
-        # Create year directory
+        # Create year directory and raw subdirectory
         year = datetime.now(timezone.utc).strftime("%Y")
         year_dir = data_dir / year
+        raw_dir = year_dir / "raw"
         year_dir.mkdir(parents=True, exist_ok=True)
+        raw_dir.mkdir(parents=True, exist_ok=True)
 
         # Generate filename: YYYY-MM-DD_slug
         date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -283,12 +285,12 @@ class WebsiteScraperHooks(MachineHooks):
         base_name = f"{date_str}_{slug}"
 
         # Ensure unique filename
-        raw_path = year_dir / f"{base_name}.txt"
+        raw_path = raw_dir / f"{base_name}.txt"
         summary_path = year_dir / f"{base_name}.md"
         counter = 1
         while raw_path.exists() or summary_path.exists():
             base_name = f"{date_str}_{slug}_{counter}"
-            raw_path = year_dir / f"{base_name}.txt"
+            raw_path = raw_dir / f"{base_name}.txt"
             summary_path = year_dir / f"{base_name}.md"
             counter += 1
 
@@ -313,7 +315,7 @@ class WebsiteScraperHooks(MachineHooks):
             "title": title,
             "scraped_at": scraped_at,
             "word_count": word_count,
-            "raw_file": raw_path.name,
+            "raw_file": f"raw/{raw_path.name}",
         }
         # Merge LLM-extracted fields
         frontmatter_dict.update(llm_frontmatter)
@@ -383,7 +385,7 @@ Scraped web pages organized by date.
 
         # New entry
         date_str = scraped_at.split("T")[0]
-        entry = f"| {date_str} | {title} | {tldr_short} | [{summary_file}](./{summary_file}) | [{raw_file}](./{raw_file}) | [link]({url}) |\n"
+        entry = f"| {date_str} | {title} | {tldr_short} | [{summary_file}](./{summary_file}) | [{raw_file}](./raw/{raw_file}) | [link]({url}) |\n"
 
         if readme_path.exists():
             content = readme_path.read_text(encoding="utf-8")

@@ -3,7 +3,7 @@ url: https://arxiv.org/abs/2501.19393
 title: 's1: Simple test-time scaling'
 scraped_at: '2026-01-30T20:39:32.198651+00:00'
 word_count: 422
-raw_file: 2026-01-30_s1-simple-test-time-scaling.txt
+raw_file: raw/2026-01-30_s1-simple-test-time-scaling.txt
 tldr: Replicates OpenAI's o1 test-time scaling using a simple "budget forcing" technique that extends model generation by
   appending "Wait" tokens, applied to a Qwen2.5-32B model fine-tuned on 1,000 curated samples (s1K), outperforming o1-preview
   on math benchmarks.

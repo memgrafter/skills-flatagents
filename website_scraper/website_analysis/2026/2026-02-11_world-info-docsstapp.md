@@ -3,7 +3,7 @@ url: https://docs.sillytavern.app/usage/core-concepts/worldinfo/
 title: World Info | docs.ST.app
 scraped_at: '2026-02-11T09:55:47.158119+00:00'
 word_count: 4424
-raw_file: 2026-02-11_world-info-docsstapp.txt
+raw_file: raw/2026-02-11_world-info-docsstapp.txt
 tldr: Comprehensive reference documentation for SillyTavern's World Info system—a keyword-triggered dynamic prompt injection
   mechanism that inserts lore, instructions, or context into AI chats when specified terms appear in messages.
 key_quote: It functions like a dynamic dictionary that only inserts relevant information from World Info entries when keywords

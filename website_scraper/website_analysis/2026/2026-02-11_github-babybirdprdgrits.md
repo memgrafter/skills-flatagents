@@ -3,7 +3,7 @@ url: https://github.com/babybirdprd/grits
 title: GitHub - babybirdprd/grits
 scraped_at: '2026-02-11T10:10:04.727702+00:00'
 word_count: 406
-raw_file: 2026-02-11_github-babybirdprdgrits.txt
+raw_file: raw/2026-02-11_github-babybirdprdgrits.txt
 tldr: Grits is a Git-native, local-first issue tracker (v3.0.0) that doubles as an "Active State Store" for AI agents, enforcing
   separation between research and execution to reduce LLM hallucinations and context drift.
 key_quote: Grits transforms from a passive tracker into an Active State Store (World Model) for agents. It enforces a strict

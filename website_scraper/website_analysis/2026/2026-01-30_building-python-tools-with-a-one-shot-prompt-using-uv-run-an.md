@@ -3,7 +3,7 @@ url: https://simonwillison.net/2024/Dec/19/one-shot-python-tools/
 title: "Building Python tools with a one-shot prompt using uv run and Claude Projects"
 scraped_at: 2026-01-30T17:09:42.741567+00:00
 word_count: 853
-raw_file: 2026-01-30_building-python-tools-with-a-one-shot-prompt-using-uv-run-an.txt
+raw_file: raw/2026-01-30_building-python-tools-with-a-one-shot-prompt-using-uv-run-an.txt
 ---
 
 # Summary of "Building Python tools with a one-shot prompt using uv run and Claude Projects"

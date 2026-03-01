@@ -4,7 +4,7 @@ title: 'GitHub - badrisnarayanan/antigravity-claude-proxy: Proxy that exposes An
   so we can use them in Claude Code and OpenClaw (Clawdbot)'
 scraped_at: '2026-02-11T10:40:26.684298+00:00'
 word_count: 1013
-raw_file: 2026-02-11_github-badrisnarayananantigravity-claude-proxy-proxy-that-ex.txt
+raw_file: raw/2026-02-11_github-badrisnarayananantigravity-claude-proxy-proxy-that-ex.txt
 tldr: A Node.js proxy server that translates Anthropic API requests to Google's Cloud Code backend, enabling free use of Claude
   and Gemini models through Claude Code CLI—with significant account ban risk.
 key_quote: Using this proxy may violate Google's Terms of Service. A small number of users have reported their Google accounts

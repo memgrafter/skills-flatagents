@@ -3,7 +3,7 @@ url: https://vercel.com/blog/agents-md-outperforms-skills-in-our-agent-evals
 title: AGENTS.md outperforms skills in our agent evals - Vercel
 scraped_at: '2026-02-09T06:29:58.499095+00:00'
 word_count: 1418
-raw_file: 2026-02-09_agentsmd-outperforms-skills-in-our-agent-evals-vercel.txt
+raw_file: raw/2026-02-09_agentsmd-outperforms-skills-in-our-agent-evals-vercel.txt
 tldr: Vercel's internal evaluations reveal that embedding a compressed docs index in `AGENTS.md` (achieving 100% pass rate)
   significantly outperforms "skills" (max 79%) for Next.js coding agents because passive context eliminates the agent's need
   to decide when to retrieve information.

@@ -3,7 +3,7 @@ url: https://moonrepo.dev/proto
 title: proto - A multi-language version manager | moonrepo
 scraped_at: '2026-01-30T20:41:04.639575+00:00'
 word_count: 232
-raw_file: 2026-01-30_proto-a-multi-language-version-manager-moonrepo.txt
+raw_file: raw/2026-01-30_proto-a-multi-language-version-manager-moonrepo.txt
 tldr: Proto is a Rust-based, pluggable toolchain manager that unifies the installation and versioning of multiple programming
   languages (Node, Go, Rust) and CLIs into a single, high-performance interface.
 key_quote: Our goal is to unify all of these into a single performant interface. A toolchain manager is the next step in the

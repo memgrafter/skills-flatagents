@@ -3,7 +3,7 @@ url: https://www.reddit.com/r/AI_Agents/comments/1glzob6/tutorial_on_building_ag
 title: Tutorial on building agent with memory using Letta
 scraped_at: '2026-01-30T20:35:18.475935+00:00'
 word_count: 154
-raw_file: 2026-01-30_tutorial-on-building-agent-with-memory-using-letta.txt
+raw_file: raw/2026-01-30_tutorial-on-building-agent-with-memory-using-letta.txt
 tldr: Creators of Letta released a free short course with Andrew Ng covering MemGPT research and the Letta open-source framework,
   which distinguishes itself by persisting all agent state (messages, tools, memory) in a database for "agents-as-a-service."
 key_quote: Unlike other frameworks, Letta is very focused on persistence and having 'agents-as-a-service'. This means that

@@ -3,7 +3,7 @@ url: https://github.com/Schniz/fnm
 title: 'GitHub - Schniz/fnm: 🚀 Fast and simple Node.js version manager, built in Rust'
 scraped_at: '2026-01-30T20:40:37.095927+00:00'
 word_count: 747
-raw_file: 2026-01-30_github-schnizfnm-fast-and-simple-nodejs-version-manager-buil.txt
+raw_file: raw/2026-01-30_github-schnizfnm-fast-and-simple-nodejs-version-manager-buil.txt
 tldr: fnm is a cross-platform Node.js version manager written in Rust, designed for speed and ease of use, supporting `.nvmrc`/`.node-version`
   files and offering installation via package managers or a single binary.
 key_quote: 🚀 Fast and simple Node.js version manager, built in Rust

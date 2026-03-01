@@ -3,7 +3,7 @@ url: https://huggingface.co/zai-org/GLM-4.6V
 title: zai-org/GLM-4.6V · Hugging Face
 scraped_at: '2026-02-11T09:58:22.834882+00:00'
 word_count: 998
-raw_file: 2026-02-11_zai-orgglm-46v-hugging-face.txt
+raw_file: raw/2026-02-11_zai-orgglm-46v-hugging-face.txt
 tldr: GLM-4.6V is a 106B-parameter multimodal foundation model with native function calling, 128K context window, and state-of-the-art
   visual understanding—accompanied by a 9B lightweight variant (GLM-4.6V-Flash) for local deployment.
 key_quote: Crucially, we integrate native Function Calling capabilities for the first time. This effectively bridges the gap

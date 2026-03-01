@@ -3,7 +3,7 @@ url: https://mariozechner.at/posts/2025-10-05-jailjs/
 title: 'Infinite Footguns: Writing a JavaScript Interpreter in JavaScript'
 scraped_at: '2026-02-11T10:20:25.187509+00:00'
 word_count: 2470
-raw_file: 2026-02-11_infinite-footguns-writing-a-javascript-interpreter-in-javasc.txt
+raw_file: raw/2026-02-11_infinite-footguns-writing-a-javascript-interpreter-in-javasc.txt
 tldr: Mario Zechner built JailJS, a JavaScript interpreter written in JavaScript, to bypass Content Security Policy restrictions
   in browser extensions—solving the CSP problem but acknowledging that creating a truly secure sandbox is nearly impossible.
 key_quote: But ultimately, this is a Sisyphean task, and we are bound to fail gloriously. There's basically an infinite amount

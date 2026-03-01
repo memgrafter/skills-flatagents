@@ -5,7 +5,7 @@ title: 'GitHub - marcosomma/orka-reasoning: Orchestrator Kit for Agentic Reasoni
   answers with transparent traceability.'
 scraped_at: '2026-02-01T00:04:40.004566+00:00'
 word_count: 164
-raw_file: 2026-02-01_github-marcosommaorka-reasoning-orchestrator-kit-for-agentic.txt
+raw_file: raw/2026-02-01_github-marcosommaorka-reasoning-orchestrator-kit-for-agentic.txt
 tldr: OrKa is an open-source, local-first, YAML-driven orchestration framework that transforms LLMs into composable agents
   with features like visual workflow building, vector memory, and advanced control flow (fork/join, loops, failover).
 key_quote: OrKA-reasoning is a open-source, local‑first, YAML‑driven system for composing AI workflows.

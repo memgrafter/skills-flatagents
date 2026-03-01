@@ -3,7 +3,7 @@ url: https://news.ycombinator.com/item?id=46710108
 title: 'Ask HN: How are you automating your coding work?'
 scraped_at: '2026-02-09T06:34:32.523411+00:00'
 word_count: 4402
-raw_file: 2026-02-09_ask-hn-how-are-you-automating-your-coding-work.txt
+raw_file: raw/2026-02-09_ask-hn-how-are-you-automating-your-coding-work.txt
 tldr: Experienced developers share practical patterns for AI-assisted coding, emphasizing "codification" (turning prompts
   into executable scripts), staying in the loop on architecture decisions, and knowing when to stop arguing with AI and just
   fix things manually.

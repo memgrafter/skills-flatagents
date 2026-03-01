@@ -4,7 +4,7 @@ title: 'GitHub - OlaProeis/Ferrite: A fast, lightweight text editor for Markdown
   and egui for a native, responsive experience.'
 scraped_at: '2026-02-11T10:38:12.564408+00:00'
 word_count: 2568
-raw_file: 2026-02-11_github-olaproeisferrite-a-fast-lightweight-text-editor-for-m.txt
+raw_file: raw/2026-02-11_github-olaproeisferrite-a-fast-lightweight-text-editor-for-m.txt
 tldr: Ferrite is a native desktop text editor for Markdown, JSON, YAML, and TOML files, built with Rust and egui, notable
   for being 100% AI-generated and featuring a custom editor engine with virtual scrolling that handles 80MB files efficiently.
 key_quote: This project is 100% AI-generated code. All Rust code, documentation, and configuration was written by Claude (Anthropic)

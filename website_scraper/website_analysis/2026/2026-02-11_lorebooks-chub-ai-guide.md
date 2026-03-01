@@ -3,7 +3,7 @@ url: https://docs.chub.ai/docs/advanced-setups/lorebooks
 title: Lorebooks | Chub AI Guide
 scraped_at: '2026-02-11T09:57:13.811530+00:00'
 word_count: 855
-raw_file: 2026-02-11_lorebooks-chub-ai-guide.txt
+raw_file: raw/2026-02-11_lorebooks-chub-ai-guide.txt
 tldr: Lorebooks are keyword-triggered content injection systems for AI roleplay chats that dynamically insert character/setting
   information into prompts only when relevant, conserving token space.
 key_quote: A lorebook is a series of defined keywords that, when activated, insert specific content into the prompt. They

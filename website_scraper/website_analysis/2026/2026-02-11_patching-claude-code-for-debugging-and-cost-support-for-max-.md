@@ -3,7 +3,7 @@ url: https://mariozechner.at/posts/2025-08-06-cc-antidebug/
 title: Patching Claude Code for debugging and /cost support for Max users
 scraped_at: '2026-02-11T10:21:51.000260+00:00'
 word_count: 709
-raw_file: 2026-02-11_patching-claude-code-for-debugging-and-cost-support-for-max-.txt
+raw_file: raw/2026-02-11_patching-claude-code-for-debugging-and-cost-support-for-max-.txt
 tldr: Mario Zechner created `cc-antidebug`, an NPM tool that patches Claude Code to disable its anti-debugging checks and
   restore `/cost` token usage display for Pro/Max plan subscribers.
 key_quote: You have a plan. You don't need to know the numbers. Numbers are bad for you.
