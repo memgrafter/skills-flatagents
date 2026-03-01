@@ -17,6 +17,7 @@ import argparse
 import asyncio
 import json
 import logging
+import os
 import sys
 from pathlib import Path
 
@@ -25,8 +26,16 @@ sys.stdout.reconfigure(line_buffering=True)
 
 # Reduce noise
 logging.getLogger("httpx").setLevel(logging.WARNING)
-logging.getLogger("flatagents").setLevel(logging.WARNING)
 logging.getLogger("codebase_ripper").setLevel(logging.WARNING)
+
+# Respect env log levels, defaulting to quiet CLI-safe behavior.
+# This avoids polluting stdout when callers expect machine-readable output.
+flatagents_level_name = os.getenv("FLATAGENTS_LOG_LEVEL", "ERROR").upper()
+flatagents_level = getattr(logging, flatagents_level_name, logging.ERROR)
+logging.getLogger("flatagents").setLevel(flatagents_level)
+logging.getLogger("flatagents.utils").setLevel(flatagents_level)
+logging.getLogger("LiteLLM").setLevel(getattr(logging, os.getenv("LITELLM_LOG", "ERROR").upper(), logging.ERROR))
+logging.getLogger("litellm").setLevel(getattr(logging, os.getenv("LITELLM_LOG", "ERROR").upper(), logging.ERROR))
 
 from flatagents import FlatMachine
 from .hooks import CodebaseRipperHooks

@@ -26,5 +26,15 @@ fi
 # Add src to Python path
 export PYTHONPATH="$SCRIPT_DIR/src:$PYTHONPATH"
 
+# Stdout hygiene defaults:
+# - Keep stdout reserved for the ripper payload (JSON/context)
+# - Send operational noise to stderr or disable it by default
+#
+# You can override any of these at call-time, e.g.:
+#   FLATAGENTS_METRICS_ENABLED=true OTEL_METRICS_EXPORTER=otlp ./run.sh ...
+export FLATAGENTS_METRICS_ENABLED="${FLATAGENTS_METRICS_ENABLED:-false}"
+export FLATAGENTS_LOG_LEVEL="${FLATAGENTS_LOG_LEVEL:-ERROR}"
+export LITELLM_LOG="${LITELLM_LOG:-ERROR}"
+
 # Run the ripper
 python -m codebase_ripper.main "$@"
