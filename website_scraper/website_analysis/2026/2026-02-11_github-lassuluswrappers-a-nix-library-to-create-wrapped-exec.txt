@@ -1,0 +1,231 @@
+A Nix library to create wrapped executables via the module system.
+Are you annoyed by rewriting modules for every platform? nixos, home-manager, nix-darwin, devenv?
+Then this library is for you!
+Watch this excellent Video by Vimjoyer for an explanation:
+This library provides two main components:
+lib.wrapPackage
+: Low-level function to wrap packages with additional flags, environment variables, and runtime dependencieslib.wrapModule
+: High-level function to create reusable wrapper modules with type-safe configuration optionswrapperModules
+: Pre-built wrapper modules for common packages (mpv, notmuch, etc.)
+{
+inputs.wrappers.url = "github:lassulus/wrappers";
+outputs = { self, nixpkgs, wrappers }: {
+packages.x86_64-linux.default =
+(wrappers.wrapperModules.mpv.apply {
+pkgs = nixpkgs.legacyPackages.x86_64-linux;
+scripts = [ pkgs.mpvScripts.mpris ];
+"mpv.conf".content = ''
+vo=gpu
+hwdec=auto
+'';
+"mpv.input".content = ''
+WHEEL_UP seek 10
+WHEEL_DOWN seek -10
+'';
+}).wrapper;
+};
+}
+{ pkgs, wrappers, ... }:
+wrappers.lib.wrapPackage {
+inherit pkgs;
+package = pkgs.curl;
+runtimeInputs = [ pkgs.jq ];
+env = {
+CURL_CA_BUNDLE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
+};
+flags = {
+"--silent" = true;
+"--connect-timeout" = "30";
+};
+# Or use args directly for more control:
+# args = [ "--silent" "--connect-timeout" "30" ];
+flagSeparator = "="; # Use --flag=value instead of --flag value (default is " ")
+preHook = ''
+echo "Making request..." >&2
+'';
+}
+You can also wrap a specific executable from a package with a custom name:
+wrappers.lib.wrapPackage {
+inherit pkgs;
+package = pkgs.coreutils;
+exePath = "${pkgs.coreutils}/bin/ls";
+binName = "my-ls";
+flags = {
+"--color" = "auto";
+"-l" = true;
+};
+}
+{ wlib, lib }:
+wlib.wrapModule ({ config, wlib, ... }: {
+options = {
+profile = lib.mkOption {
+type = lib.types.enum [ "fast" "quality" ];
+default = "fast";
+description = "Encoding profile to use";
+};
+outputDir = lib.mkOption {
+type = lib.types.str;
+default = "./output";
+description = "Directory for output files";
+};
+};
+config.package = config.pkgs.ffmpeg;
+config.flags = {
+"-preset" = if config.profile == "fast" then "veryfast" else "slow";
+};
+config.env = {
+FFMPEG_OUTPUT_DIR = config.outputDir;
+};
+})
+Arguments:
+pkgs
+: nixpkgs instancepackage
+: Base package to wrapexePath
+: Path to the executable to wrap (default:lib.getExe package
+)binName
+: Name for the wrapped binary (default:baseNameOf exePath
+)runtimeInputs
+: List of packages added to PATH (default:[]
+)env
+: Attribute set of environment variables (default:{}
+)flags
+: Attribute set of command-line flags (default:{}
+)- Value
+true
+: Flag without argument (e.g.,--verbose
+) - Value
+"string"
+: Flag with argument (e.g.,--output "file.txt"
+) - Value
+false
+ornull
+: Flag omitted
+- Value
+flagSeparator
+: Separator between flag name and value when generating args from flags (default:" "
+, can be"="
+)args
+: List of command-line arguments like argv in execve (default: auto-generated fromflags
+)- Example:
+[ "--silent" "--connect-timeout" "30" ]
+- If provided, overrides automatic generation from
+flags
+- Example:
+preHook
+: Shell script executed before the command (default:""
+)passthru
+: Additional attributes for the derivation's passthru (default:{}
+)aliases
+: List of additional symlink names for the executable (default:[]
+)filesToPatch
+: List of file paths (glob patterns) relative to package root to patch for self-references (default:["share/applications/*.desktop"]
+)- Example:
+["bin/*", "lib/*.sh"]
+to replace original package paths with wrapped package paths - Desktop files are patched by default to update Exec= and Icon= paths
+- Example:
+filesToExclude
+: List of file paths (glob patterns) to exclude from the wrapped package (default:[]
+)wrapper
+: Custom wrapper function (optional, overrides default exec wrapper)
+The function:
+- Preserves all outputs from the original package (man pages, completions, etc.)
+- Uses
+lndir
+for symlinking to maintain directory structure - Generates a shell wrapper script with proper escaping
+- Handles multi-output derivations correctly
+Creates a reusable wrapper module with:
+- Type-safe configuration options via the module system
+options
+: Exposed options for documentation generationapply
+: Function to instantiate the wrapper with settings, returning a config object- Access the wrapped package via the
+wrapper
+attribute of the returned config
+- Access the wrapped package via the
+Built-in options (always available):
+pkgs
+: nixpkgs instance (required)package
+: Base package to wrapextraPackages
+: Additional runtime dependenciesflags
+: Command-line flags (attribute set)flagSeparator
+: Separator between flag name and value (default:" "
+)args
+: Command-line arguments list (auto-generated fromflags
+if not provided)env
+: Environment variablespassthru
+: Additional passthru attributesfilesToPatch
+: List of file paths (glob patterns) to patch for self-references (default:["share/applications/*.desktop"]
+)filesToExclude
+: List of file paths (glob patterns) to exclude from the wrapped package (default:[]
+)wrapper
+: The resulting wrapped package (read-only, auto-generated from other options)apply
+: Function to extend the configuration with additional modules (read-only)
+Custom types:
+wlib.types.file
+: File type withcontent
+andpath
+optionscontent
+: File contents as stringpath
+: Derived path usingpkgs.writeText
+The wrapper module system integrates with NixOS module evaluation:
+- Uses
+lib.evalModules
+for configuration evaluation - Supports all standard module features (imports, conditionals, mkIf, etc.)
+- Provides
+config
+for accessing evaluated configuration - Provides
+options
+for introspection and documentation
+The apply
+function allows you to extend an already-applied configuration with additional modules, similar to extendModules
+in NixOS:
+# Apply initial configuration
+initialConfig = wrappers.wrapperModules.mpv.apply {
+pkgs = pkgs;
+scripts = [ pkgs.mpvScripts.mpris ];
+"mpv.conf".content = ''
+vo=gpu
+'';
+};
+# Extend with additional configuration
+extendedConfig = initialConfig.apply {
+scripts = [ pkgs.mpvScripts.thumbnail ];
+"mpv.conf".content = ''
+profile=gpu-hq
+'';
+};
+# Access the wrapper
+package = extendedConfig.wrapper;
+The apply
+function re-evaluates the module with both the original settings and the new module, allowing you to override or add to the existing configuration.
+Wraps mpv with configuration file support and script management:
+(wrappers.wrapperModules.mpv.apply {
+pkgs = pkgs;
+scripts = [ pkgs.mpvScripts.mpris pkgs.mpvScripts.thumbnail ];
+"mpv.conf".content = ''
+vo=gpu
+profile=gpu-hq
+'';
+"mpv.input".content = ''
+RIGHT seek 5
+LEFT seek -5
+'';
+flags = {
+"--save-position-on-quit" = true;
+};
+}).wrapper
+Wraps notmuch with INI-based configuration:
+(wrappers.wrapperModules.notmuch.apply {
+pkgs = pkgs;
+config = {
+database = {
+path = "/home/user/Mail";
+mail_root = "/home/user/Mail";
+};
+user = {
+name = "John Doe";
+primary_email = "john@example.com";
+};
+};
+}).wrapper
+- wrapper-manager by viperML. This project focuses more on a single module system, configuring wrappers and exporting them. This was an inspiration when building this library, but I wanted to have a more granular approach with a single module per package and a collection of community made modules.
+Upstream this schema into nixpkgs with an optional module.nix for every package. NixOS modules could then reuse these wrapper modules for consistent configuration across platforms.

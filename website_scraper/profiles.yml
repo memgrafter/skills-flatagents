@@ -4,20 +4,20 @@ spec_version: "0.8.3"
 data:
   model_profiles:
     default:
-      provider: cerebras
-      name: zai-glm-4.7
+      provider: openrouter/z-ai
+      name: glm-4.7
       temperature: 0.9
       top_p: 0.95
       max_tokens: 150000
     summarizer:
-      provider: cerebras
-      name: zai-glm-4.7
+      provider: openrouter/z-ai
+      name: glm-4.7
       temperature: 0.9
       top_p: 0.95
       max_tokens: 150000
     judge:
-      provider: cerebras
-      name: zai-glm-4.7
+      provider: openrouter/z-ai
+      name: glm-4.7
       temperature: 0.9
       top_p: 0.95
       max_tokens: 150000
@@ -31,4 +31,4 @@ data:
       temperature: 1.0
 
   default: default
-  override: pony-alpha-free
+  override: arcee-free
