@@ -13,3 +13,7 @@ local
 .DS_Store
 
 .coverage
+
+# Ephemeral / debug artifacts
+browser-viewer/tmp/
+website_scraper/dumps/
