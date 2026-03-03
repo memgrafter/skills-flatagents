@@ -3,7 +3,7 @@ url: https://www.youtube.com/watch?v=WjckELpzLOU
 title: Mitchell Hashimoto's new way of writing code
 scraped_at: '2026-03-01T03:53:46.494582+00:00'
 word_count: 25225
-raw_file: 2026-03-01_mitchell-hashimotos-new-way-of-writing-code.txt
+raw_file: raw/2026-03-01_mitchell-hashimotos-new-way-of-writing-code.txt
 tldr: Mitchell Hashimoto shares his AI workflow (always have an agent running), the HashiCorp origin story, honest cloud provider takes, why open source must move to default-deny trust, and why git may not survive the agentic era unchanged.
 key_quote: "I endeavor to always have an agent doing something at all times... if I'm coding, I want an agent planning. If they're coding, I want to be reviewing."
 durability: high
