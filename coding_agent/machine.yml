@@ -8,12 +8,8 @@ spec_version: "0.8.0"
 data:
   name: coding-agent
   
-  # Hooks class for this machine's actions (exploration, review, apply)
-  hooks:
-    module: coding_agent.hooks
-    class: CodingAgentHooks
-    args:
-      working_dir: "."
+  # Hooks registry key for this machine's actions (exploration, review, apply)
+  hooks: "coding-agent"
   
   context:
     # Input from user

@@ -6,9 +6,7 @@ spec_version: "0.8.0"
 data:
   name: file-writer
 
-  hooks:
-    module: shared.file_write_machine
-    class: FileWriteHooks
+  hooks: "file-writer"
 
   context:
     changes: "{{ input.changes | default('') }}"

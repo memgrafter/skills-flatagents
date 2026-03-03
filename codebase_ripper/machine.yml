@@ -8,11 +8,7 @@ spec_version: "0.8.0"
 data:
   name: codebase-ripper
 
-  hooks:
-    file: ./src/codebase_ripper/hooks.py
-    class: CodebaseRipperHooks
-    args:
-      working_dir: "."
+  hooks: "codebase-ripper"
 
   context:
     # Input

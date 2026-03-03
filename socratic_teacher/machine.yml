@@ -4,9 +4,7 @@ spec_version: "0.8.0"
 data:
   name: socratic-teacher
 
-  hooks:
-    module: socratic_teacher.hooks
-    class: SocraticTeacherHooks
+  hooks: "socratic-teacher"
 
   context:
     # Input parameters
@@ -53,7 +51,6 @@ data:
     file_writer: ../file_writer/machine.yml
 
   settings:
-    hooks: socratic_teacher.hooks
     max_steps: 50
 
   states:

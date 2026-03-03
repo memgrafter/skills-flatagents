@@ -36,8 +36,9 @@ data:
     checker: ./agents/checker.yml
     fixer: ./agents/fixer.yml
 
+  hooks: "test-writer"
+
   settings:
-    hooks: test_writer.hooks
     max_steps: 100
 
   states:

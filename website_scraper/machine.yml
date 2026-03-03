@@ -39,9 +39,7 @@ data:
     judge_summary: ./agents/judge_summary.yml
     frontmatter: ./agents/frontmatter.yml
 
-  hooks:
-    file: "./src/website_scraper/hooks.py"
-    class: "WebsiteScraperHooks"
+  hooks: "website-scraper"
 
   states:
     # ========== SCRAPE ==========

@@ -16,8 +16,9 @@ data:
   agents:
     analyzer: ./agents/analyzer.yml
 
+  hooks: "shell-analyzer"
+
   settings:
-    hooks: shell_analyzer.hooks
     max_steps: 10
 
   states:
