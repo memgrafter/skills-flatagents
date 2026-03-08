@@ -1,0 +1,59 @@
+# Copyright (C) 2026 Trent Zock-Robbins
+# SPDX-License-Identifier: Apache-2.0
+# Licensed under the Apache License, Version 2.0
+
+spec: flatmachine
+spec_version: "2.0.0"
+
+data:
+  name: repo-map
+  hooks: "repo-map"
+
+  context:
+    task: "{{ input.task | default('') }}"
+    working_dir: "{{ input.working_dir | default('.') }}"
+    map_tokens: "{{ input.map_tokens | default(2000) }}"
+    max_context_window: "{{ input.max_context_window | default(128000) }}"
+    refresh: "{{ input.refresh | default('auto') }}"
+
+    source_files: []
+    file_count: 0
+    mentioned_fnames: []
+    mentioned_idents: []
+
+    repo_map_text: ""
+    error: ""
+
+  states:
+    start:
+      type: initial
+      transitions:
+        - to: discover
+
+    discover:
+      action: discover_files
+      transitions:
+        - to: parse_mentions
+
+    parse_mentions:
+      action: parse_mentions
+      transitions:
+        - to: build
+
+    build:
+      action: build_repo_map
+      transitions:
+        - to: finalize
+
+    finalize:
+      type: final
+      output:
+        repo_map: "{{ context.repo_map_text }}"
+        file_count: "{{ context.file_count }}"
+        map_tokens: "{{ context.map_tokens }}"
+        refresh: "{{ context.refresh }}"
+        error: "{{ context.error }}"
+
+metadata:
+  description: "Deterministic repo map generation using vendored Aider repo map implementation"
+  tags: ["repo-map", "aider", "deterministic"]

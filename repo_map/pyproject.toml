@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "repo-map-skill"
+version = "0.1.0"
+description = "Standalone repo map skill using vendored Aider repomap"
+requires-python = ">=3.10"
+dependencies = [
+  "flatmachines>=2.0.0,<3.0.0",
+  "diskcache>=5.6.0",
+  "grep-ast>=0.9.0",
+  "pygments>=2.17.0",
+  "tqdm>=4.66.0",
+  "networkx>=3.2.0",
+  "tree-sitter>=0.24.0",
+  "rich>=13.0.0",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["repo_map*", "aider*"]
+
+[tool.setuptools.package-data]
+aider = ["queries/**/*.scm", "queries/**/*.md"]
