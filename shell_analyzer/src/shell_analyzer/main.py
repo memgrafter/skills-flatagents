@@ -7,7 +7,7 @@ import asyncio
 import sys
 from pathlib import Path
 
-from flatagents import FlatMachine
+from flatmachines import FlatMachine
 from shell_analyzer.hooks import ShellAnalyzerHooks
 
 

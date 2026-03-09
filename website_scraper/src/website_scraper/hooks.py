@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
 
-from flatagents import MachineHooks
+from flatmachines import MachineHooks
 
 # Try to import trafilatura, provide helpful error if missing
 try:

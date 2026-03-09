@@ -26,7 +26,7 @@ To upgrade flatagents and dependencies to the latest versions:
 ./install.sh --upgrade
 ```
 
-This ensures you have the latest FlatMachine features (requires flatagents >= 0.1.6).
+This ensures you have the latest FlatAgent/FlatMachine features (requires flatagents >= 2.0.0 and flatmachines >= 2.0.0).
 
 ## Requirements
 

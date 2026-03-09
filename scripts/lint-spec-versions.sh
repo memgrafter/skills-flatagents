@@ -12,12 +12,12 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# Expected version (default 0.7.1)
-EXPECTED_VERSION="${1:-0.7.1}"
+# Expected version (default 2.0.0)
+EXPECTED_VERSION="${1:-2.0.0}"
 
 # Strict semver validation
 if ! [[ "$EXPECTED_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-    echo "Error: Version must be semver format (e.g., 0.7.1), got: $EXPECTED_VERSION"
+    echo "Error: Version must be semver format (e.g., 2.0.0), got: $EXPECTED_VERSION"
     exit 1
 fi
 

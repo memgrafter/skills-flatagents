@@ -6,7 +6,7 @@ import ast
 import re
 from pathlib import Path
 
-from flatagents import MachineHooks
+from flatmachines import MachineHooks
 from shared.diff_utils import apply_search_replace
 
 # Import coverage utilities from existing module

@@ -25,7 +25,7 @@ try:
 except ImportError:
     HAS_TIKTOKEN = False
 
-from flatagents import MachineHooks
+from flatmachines import MachineHooks
 
 logger = logging.getLogger(__name__)
 

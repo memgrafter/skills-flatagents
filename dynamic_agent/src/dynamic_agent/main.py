@@ -16,7 +16,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import logging
-from flatagents import FlatMachine
+from flatmachines import FlatMachine
 from dynamic_agent.hooks import OTFAgentHooks
 
 logger = logging.getLogger(__name__)

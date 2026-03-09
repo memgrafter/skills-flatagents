@@ -7,7 +7,8 @@ import sys
 import os
 from pathlib import Path
 
-from flatagents import FlatMachine
+from flatmachines import FlatMachine
+from .hooks import WebsiteScraperHooks
 
 
 DEFAULT_DATA_DIR = "~/code/skills-flatagents/website_scraper/website_analysis"
@@ -22,7 +23,8 @@ async def run(url: str, data_dir: str | None = None):
     data_dir = str(Path(data_dir).expanduser())
 
     machine_file = Path(__file__).parent.parent.parent / "machine.yml"
-    machine = FlatMachine(config_file=str(machine_file))
+    hooks = WebsiteScraperHooks()
+    machine = FlatMachine(config_file=str(machine_file), hooks=hooks)
 
     result = await machine.execute(input={"url": url, "data_dir": data_dir})
 

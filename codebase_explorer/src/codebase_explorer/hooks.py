@@ -13,6 +13,7 @@ Provides shell execution and state management for codebase exploration:
 
 import subprocess
 import json
+import ast
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 import logging
@@ -23,7 +24,7 @@ try:
 except ImportError:
     HAS_TIKTOKEN = False
 
-from flatagents import MachineHooks
+from flatmachines import MachineHooks
 
 logger = logging.getLogger(__name__)
 
@@ -83,8 +84,34 @@ class CodebaseExplorerHooks(MachineHooks):
 
         return total
 
+    def _normalize_context_types(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Normalize common scalar/list values that may arrive as strings."""
+        for key in ("iteration", "max_iterations", "token_budget", "frozen_token_count"):
+            value = context.get(key)
+            if isinstance(value, str):
+                try:
+                    context[key] = int(value)
+                except ValueError:
+                    pass
+
+        for key in ("frozen_imports", "frozen_signatures", "frozen_segments", "pending_removals", "stashed_items"):
+            value = context.get(key)
+            if isinstance(value, str):
+                parsed = None
+                try:
+                    parsed = json.loads(value)
+                except Exception:
+                    try:
+                        parsed = ast.literal_eval(value)
+                    except Exception:
+                        parsed = None
+                if isinstance(parsed, list):
+                    context[key] = parsed
+        return context
+
     def on_state_enter(self, state_name: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """Log state transitions for progress visibility."""
+        context = self._normalize_context_types(context)
         iteration = context.get("iteration", 0)
 
         # Track API calls for agent states
@@ -140,7 +167,7 @@ class CodebaseExplorerHooks(MachineHooks):
             self._log(f"done {iteration} iterations {tokens} tokens {self.api_call_count} calls")
         return context
 
-    def on_state_exit(self, state_name: str, context: Dict[str, Any], output: Any = None) -> Dict[str, Any]:
+    def on_state_exit(self, state_name: str, context: Dict[str, Any], output: Any = None) -> Any:
         """Fix list types after extraction."""
         if state_name == "extract":
             # Ensure frozen fields are lists, not strings
@@ -149,15 +176,19 @@ class CodebaseExplorerHooks(MachineHooks):
                 if val is None:
                     context[field] = []
                 elif isinstance(val, str):
-                    # Try to parse as JSON, otherwise make empty list
+                    # Try to parse as JSON/Python list repr, otherwise empty list
+                    parsed = None
                     try:
                         parsed = json.loads(val)
-                        context[field] = parsed if isinstance(parsed, list) else []
-                    except:
-                        context[field] = []
+                    except Exception:
+                        try:
+                            parsed = ast.literal_eval(val)
+                        except Exception:
+                            parsed = None
+                    context[field] = parsed if isinstance(parsed, list) else []
                 elif not isinstance(val, list):
                     context[field] = []
-        return context
+        return output
 
     def on_action(self, action_name: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """Route action to appropriate handler."""

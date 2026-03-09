@@ -13,7 +13,7 @@ logging.getLogger("flatagents.flatagent").setLevel(logging.WARNING)
 logging.getLogger("litellm").setLevel(logging.ERROR)
 logging.getLogger("LiteLLM").setLevel(logging.ERROR)
 
-from flatagents import FlatMachine
+from flatmachines import FlatMachine
 from socratic_teacher.hooks import SocraticTeacherHooks
 
 

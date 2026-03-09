@@ -2,7 +2,7 @@ import asyncio
 import sys
 from pathlib import Path
 
-from flatagents import FlatMachine
+from flatmachines import FlatMachine
 
 
 async def run(query: str):

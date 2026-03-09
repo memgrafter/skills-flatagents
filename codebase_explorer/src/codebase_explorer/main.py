@@ -25,7 +25,7 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("flatagents").setLevel(logging.WARNING)
 logging.getLogger("codebase_explorer").setLevel(logging.WARNING)
 
-from flatagents import FlatMachine
+from flatmachines import FlatMachine
 from .hooks import CodebaseExplorerHooks
 
 # Hard cap on API calls to prevent runaway costs

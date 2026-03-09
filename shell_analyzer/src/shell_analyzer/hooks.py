@@ -4,7 +4,7 @@ Shell Analyzer Hooks - Handle command execution and citation validation.
 
 import re
 import subprocess
-from flatagents import MachineHooks
+from flatmachines import MachineHooks
 
 
 class ShellAnalyzerHooks(MachineHooks):

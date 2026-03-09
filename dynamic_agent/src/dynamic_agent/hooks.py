@@ -10,7 +10,8 @@ import json
 import asyncio
 from typing import Any, Dict
 import logging
-from flatagents import MachineHooks, FlatAgent
+from flatmachines import MachineHooks
+from flatagents import FlatAgent
 
 # Allow nested event loops for running async code from sync hooks
 import nest_asyncio
@@ -190,7 +191,7 @@ class OTFAgentHooks(MachineHooks):
         
         agent_config = {
             "spec": "flatagent",
-            "spec_version": "0.7.1",
+            "spec_version": "2.0.0",
             "data": {
                 "name": name,
                 "model": {

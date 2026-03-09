@@ -9,7 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, List
 
-from flatagents import MachineHooks
+from flatmachines import MachineHooks
 
 
 def build_operations(changes_raw: Any) -> List[Dict[str, Any]]:

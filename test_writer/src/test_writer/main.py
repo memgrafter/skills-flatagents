@@ -14,7 +14,7 @@ import asyncio
 import sys
 from pathlib import Path
 
-from flatagents import FlatMachine
+from flatmachines import FlatMachine
 from test_writer.hooks import TestWriterHooks
 
 

@@ -3,7 +3,7 @@ import os
 import re
 import sys
 from datetime import datetime
-from flatagents import MachineHooks
+from flatmachines import MachineHooks
 from socratic_teacher.session_store import JSONLSessionStore
 
 # Turn off litellm logging

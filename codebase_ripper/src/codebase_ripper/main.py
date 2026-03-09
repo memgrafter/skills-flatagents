@@ -37,7 +37,7 @@ logging.getLogger("flatagents.utils").setLevel(flatagents_level)
 logging.getLogger("LiteLLM").setLevel(getattr(logging, os.getenv("LITELLM_LOG", "ERROR").upper(), logging.ERROR))
 logging.getLogger("litellm").setLevel(getattr(logging, os.getenv("LITELLM_LOG", "ERROR").upper(), logging.ERROR))
 
-from flatagents import FlatMachine
+from flatmachines import FlatMachine
 from .hooks import CodebaseRipperHooks
 
 

@@ -22,7 +22,7 @@ from typing import Any, Dict, Optional
 warnings.filterwarnings('ignore', message='.*Pydantic serializer warnings.*')
 warnings.filterwarnings('ignore', category=UserWarning, module='pydantic')
 
-from flatagents import FlatMachine, setup_logging, get_logger
+from flatmachines import FlatMachine, setup_logging, get_logger
 from .hooks import CodingAgentHooks
 from .claude_hooks import ClaudeCodingAgentHooks
 

@@ -10,7 +10,7 @@ import subprocess
 from pathlib import Path
 from typing import Any, Dict
 
-from flatagents import MachineHooks
+from flatmachines import MachineHooks
 
 from shared.file_write_machine import FileWriteMachine
 
