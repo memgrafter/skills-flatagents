@@ -1,6 +1,6 @@
 ---
 name: website-scraper
-description: Turn a URL into a durable knowledge artifact: searchable markdown summary + local raw text archive, so you can recall it later without revisiting the web.
+description: "Turn a URL into a durable knowledge artifact: searchable markdown summary + local raw text archive, so you can recall it later without revisiting the web."
 ---
 
 # Website Scraper

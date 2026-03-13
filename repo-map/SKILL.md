@@ -1,6 +1,6 @@
 ---
 name: repo-map
-description: Fast, deterministic repository orientation: get a compact map of important files and symbols before deep code reading.
+description: "Fast, deterministic repository orientation: get a compact map of important files and symbols before deep code reading."
 ---
 
 Use this skill when you need quick repo-level context and want a reliable “where to look next” map.
