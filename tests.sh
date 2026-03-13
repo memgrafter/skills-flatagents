@@ -13,7 +13,7 @@ for dir in "${src_dirs[@]}"; do
   pythonpath="${pythonpath}:${dir}"
 done
 
-example_dir="$REPO_ROOT/test_writer/example"
+example_dir="$REPO_ROOT/test-writer/example"
 if [[ -d "$example_dir" ]]; then
   pythonpath="${pythonpath}:${example_dir}"
 fi

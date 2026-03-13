@@ -1,0 +1,29 @@
+Lightspeed interface
+Download, install, and run tools with lightspeed, thanks to our Rust based foundation.
+Universal toolchain
+Manage multiple languages, dependency managers, or CLIs through a single interface.
+Version detection
+Detects a version at runtime from a language's ecosystem for maximum compatibility.
+Granular configuration
+Configure tools and their versions per directory, per project, or per user.
+Pluggable architecture
+Extend the toolchain with custom plugins, enabling new and non-standard tools.
+Environment aware
+Support environment specific tools, their versions, and environment variables.
+Get started
+Install proto for Linux, macOS, or WSL:
+bash <(curl -fsSL https://moonrepo.dev/install/proto.sh)
+Or Windows (full instructions):
+irm https://moonrepo.dev/install/proto.ps1 | iex
+Install a tool
+proto install node 18
+Run the tool
+node ./main.mjs
+# Or with proto
+proto run node -- ./main.mjs
+Supported tools
+... with 0 more proto plugins, and over 800 asdf plugins...
+Why another version manager?
+To start, proto powers moon's toolchain and integrated developer environment. We believed that the toolchain would be extremely beneficial for developers as a whole, and so we extracted proto out into a standalone Rust CLI and Rust crates that moon inherits.
+Furthermore, we believe that requiring multiple ad-hoc version managers for all your languages, each with different workflows, CLI commands, and configuration files, is a poor developer experience.
+Our goal is to unify all of these into a single performant interface. A toolchain manager is the next step in the version manager evolution.

@@ -1,0 +1,17 @@
+OrKA-reasoning is a open-source, local‑first, YAML‑driven system for composing AI workflows. Define agents and control‑flow in configuration, run them with a single command, and keep everything observable and reproducible.
+Think of it as a streamlined, open-source experimental framework with a strong focus on:
+- YAML‑first workflows: declarative configs over code > see YAML Configuration
+- Visual builder and runner (drag‑and‑drop) > see OrKa UI
+- Built‑in memory with vector search and decay > see Memory System
+- Local and cloud LLM support with cost controls > see Backends
+- Rich control flow (router, fork/join, loop, failover, plan validation) > see Agents & Nodes
+- Path discovery with GraphScout (beta) > see GraphScout
+- Structured JSON inputs for complex data > see JSON Inputs
+- Observability and tracing > see Observability
+- Testing guidance and examples > see Testing Guide
+- Quickstart: docs/quickstart.md
+- Documentation index: docs/index.md
+- Examples: examples/
+- Issues & feature requests: https://github.com/marcosomma/orka-reasoning/issues
+- Contributing guide: CONTRIBUTING.md
+Apache 2.0 — see LICENSE

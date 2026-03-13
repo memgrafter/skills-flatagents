@@ -1,0 +1,36 @@
+OpenSource AI Dungeon Adventure is a free and open-source interactive text adventure project with AI-generated storytelling and optional AllTalk TTS narration support.
+Created with ❤️ for all ages, this project lets you explore, role-play, and create your own story-driven adventure using AI.
+🛑 Notice: This software is free for personal and educational use only. If you use it commercially or integrate it into monetized/restricted systems, YOU MUST CREDIT THE ORIGINAL AUTHOR.
+- 🐍 Python
+3.10+
+- 📦 pip (Python package installer)
+- 🦙 Ollama (for local AI model inference)
+- 🧠 NVIDIA CUDA Toolkit (for GPU acceleration)
+- 🧰 git (optional but helpful)
+- 🎤 (optional) AllTalk TTS for narrated voice output
+git clone https://github.com/Laszlobeer/Dungeo_ai.git
+cd Dungeo_ai
+python -m venv Dungeo_ai
+source Dungeo_ai/bin/activate # On Windows: Dungeo_ai\Scripts\activate
+conda create -n dungeo_ai python=3.10 -y
+conda activate dungeo_ai
+pip install -r requirements.txt
+💡 If you get errors from
+requirements.txt
+, try installing manually:
+pip requests sounddevice numpy soundfile
+python main.py
+/? or /help - Show help message
+/censored - Toggle NSFW/SFW mode
+/redo - Regenerate last AI response
+/save - Save the story to adventure.txt
+/load - Load adventure from adventure.txt
+/change - Switch to another Ollama model
+/exit - Exit the game
+🆓 MIT License — Free to use, modify, and distribute.
+If you:
+- Use this commercially 🏢
+- Integrate into a monetized app 💵
+- Publicly modify/fork it
+👉 You MUST give credit to the original author.
+This project is based on OpenSource AI Tool by [Laszlo](https://github.com/Laszlobeer/Dungeo_ai)

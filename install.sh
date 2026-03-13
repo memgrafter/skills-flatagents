@@ -139,7 +139,7 @@ echo ""
 echo "Configuration:"
 echo "  1. Set API key for your LLM provider (e.g., ANTHROPIC_API_KEY, OPENAI_API_KEY, etc.)"
 echo "  2. Edit agents/*.yml files in each skill to configure provider/model"
-echo "  3. For search_refiner: Also set EXA_API_KEY for web search"
+echo "  3. For search-refiner: Also set EXA_API_KEY for web search"
 echo ""
 
 if [[ -n "$SKILL_FILTER" ]]; then

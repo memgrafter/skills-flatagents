@@ -1,0 +1,246 @@
+"Stealing fire from the gods to grant man the gift of knowledge and wisdom."
+A modular cognitive architecture for building embodied AI agents with reasoning, perception-action loops, and emotionally mediated decision structures.
+Promethean is a comprehensive framework for building AI agents and orchestration systems. It provides:
+- 🧠 Modular Architecture - Independent services that communicate via message brokers
+- ⚡ Functional Programming - Immutable data, pure functions, no side effects
+- 🔧 TypeScript Monorepo - 70+ packages managed with Nx, AVA testing, and ESM modules
+- 📋 Document-Driven Development - All work tracked through kanban tasks
+- 🤖 AI-First Design - Built from the ground up for AI agent development
+git clone https://github.com/PrometheanAI/promethean.git
+cd promethean
+# Enable pnpm 9 via Corepack (required)
+corepack enable && corepack prepare pnpm@9 --activate
+# Install dependencies and start development
+pnpm install
+pnpm dev:all
+For containerized development:
+docker compose up
+┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+│ Discord UI │ │ Web Frontend │ │ CLI Tools │
+└─────────┬───────┘ └─────────┬───────┘ └─────────┬───────┘
+│ │ │
+▼ ▼ ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│ Message Broker Service │
+│ (WebSocket pub/sub + task queues) │
+└─────────────────────┬───────────────────────────────────────────┘
+│
+┌─────────┴─────────┐
+│ │
+▼ ▼
+┌─────────────────┐ ┌─────────────────┐
+│ LLM Service │ │ MCP Server │
+│ (text gen) │ │ (tools & auth) │
+└─────────────────┘ └─────────────────┘
+Package: @promethean-os/kanban
+Task management and workflow automation designed for AI-assisted development.
+# Find existing work
+pnpm kanban search "authentication"
+# Create new task
+pnpm kanban create "Implement OAuth flow" --priority=P1 --labels="auth,security"
+# Move work through process
+pnpm kanban update-status <uuid> in_progress
+pnpm kanban update-status <uuid> done
+# Interactive dashboard
+pnpm kanban ui
+Features: CRUD operations, process automation, web UI, AI-friendly commands
+Package: broker-service
+WebSocket-based pub/sub communication backbone with task queue support.
+// Subscribe to topics
+ws.send(
+JSON.stringify({
+action: 'subscribe',
+topic: 'agent.events',
+}),
+);
+// Publish messages
+ws.send(
+JSON.stringify({
+action: 'publish',
+message: { type: 'user.input', payload: 'Hello' },
+}),
+);
+Features: Topic routing, Redis persistence, task queues, normalized events
+Package: @promethean-os/llm
+Text generation service with pluggable providers (Ollama, HuggingFace).
+# Start service
+./run.sh
+# Generate text
+curl -X POST http://localhost:3000/generate \
+-H "Content-Type: application/json" \
+-d '{"prompt":"Explain quantum computing","context":"physics"}'
+Features: Multiple providers, HTTP/WebSocket endpoints, streaming support
+Package: @promethean-os/mcp
+Model Context Protocol server with composable tools and enterprise-grade security.
+{
+"transport": "http",
+"tools": ["github_request", "files_search", "kanban_get_board"],
+"endpoints": {
+"github": { "tools": ["github_request", "github_graphql"] }
+}
+}
+Features: RBAC security, tool composition, HTTP/stdio transports, GitHub integration
+Package: @promethean-os/cephalon
+Production Discord agent runner with ENSO chat agents and evaluation guardrails.
+import { createEnsoChatAgent } from '@promethean-os/cephalon';
+const agent = createEnsoChatAgent({ room: 'duck:smoke' });
+await agent.connect();
+// Send chat message
+await agent.sendText('human', 'Check system status');
+// Call tools with guardrails
+await agent.callTool({
+provider: 'native',
+name: 'duck.ping',
+args: { echo: 'health-check' },
+});
+Features: Discord integration, voice capture, evaluation guardrails, ENSO protocol
+Package: @promethean-os/promethean-cli
+Unified interface for all workspace packages and scripts.
+# Discover available commands
+pnpm exec promethean --help
+# Run package scripts with short aliases
+pnpm exec prom packages lint
+pnpm exec prom kanban search "bug"
+pnpm exec prom llm start
+Features: Script discovery, package management, short aliases, error recovery
+The workspace contains 70+ specialized packages organized by category:
+@promethean-os/broker
+- Message pub/sub and task queues@promethean-os/persistence
+- Data storage and caching layers@promethean-os/security
+- Authentication and authorization@promethean-os/monitoring
+- Health checks and metrics
+@promethean-os/agent
+- Agent framework and ECS@promethean-os/llm
+- Text generation service@promethean-os/embedding
+- Vector embeddings and similarity@promethean-os/intention
+- Goal planning and execution
+@promethean-os/compiler
+- TypeScript compilation pipeline@promethean-os/test-utils
+- Testing utilities and fixtures@promethean-os/codemods
+- Automated code transformations@promethean-os/buildfix
+- Iterative build error resolution
+@promethean-os/markdown
+- Document processing and parsing@promethean-os/stream
+- Reactive data streams@promethean-os/fs
+- File system operations@promethean-os/event
+- Event sourcing and handling
+@promethean-os/http
+- HTTP server and client utilities@promethean-os/ws
+- WebSocket connections@promethean-os/frontend-service
+- Static asset serving@promethean-os/ui-components
+- Reusable web components
+View complete package catalog →
+- pnpm required - npm is blocked and will fail with clear error messages
+- Workspace structure - All packages use
+@promethean-os/<package>*
+via "workspace:*" - No relative imports outside package roots
+Submodule packages: The following packages now live in their own
+github.com/riatzukiza/<name>
+repositories and are mounted into this workspace as git submodules:packages/apply-patch
+,packages/autocommit
+,packages/auth-service
+,packages/kanban
+,packages/logger
+,packages/mcp
+,packages/naming
+,packages/persistence
+, andpackages/utils
+. Rungit submodule update --init packages/<name>
+after cloning to fetch their content, and use the upstream repo for issue tracking or standalone development.
+# Split by type for faster feedback
+pnpm test:unit # Unit tests (fastest)
+pnpm test:integration # Integration tests
+pnpm test:e2e # End-to-end tests
+pnpm lint:diff # Only changed files (development)
+pnpm lint # Full repository (CI/pre-commit)
+Start shared infrastructure with PM2:
+# Start core services
+pm2 start system/daemons/ecosystem.config.js
+# Regenerate config after adding/removing services
+pnpm gen:ecosystem
+# Start individual agents
+pm2 start agents/duck/ecosystem.config.js
+Install PM2 globally: pnpm add -g pm2
+This repository doubles as an Obsidian vault. Enable the kanban plugin:
+cp -r docs/vault-config/.obsidian docs/.obsidian
+- Architecture:
+docs/architecture/
+- System design and roadmaps - Process:
+docs/agile/process.md
+- Workflow and methodology - Environment:
+docs/environment-variables.md
+- Configuration options - Nx Workspace:
+docs/nx-workspace.md
+- Build tooling commands
+The kanban system is designed for AI assistants:
+- No directory navigation needed - commands work from anywhere
+- Automatic path resolution - system finds config and files
+- Task search capabilities - find existing work before creating new tasks
+See AGENTS.md
+for detailed AI-specific guidelines.
+Complex workflows are defined in pipelines.json
+. Key pipelines:
+- symdocs - Generate package documentation and dependency graphs
+- simtasks - Create task backlogs from code analysis
+- codemods - Automated code transformations
+- buildfix - Iterate on TypeScript build failures
+- test-gap - Identify code without test coverage
+- riatzukiza/agent-os-protocol
+- riatzukiza/ai-learning
+- riatzukiza/apply-patch
+- riatzukiza/auth-service
+- riatzukiza/autocommit
+- riatzukiza/build-monitoring
+- riatzukiza/cli
+- riatzukiza/clj-hacks-tools
+- riatzukiza/compliance-monitor
+- riatzukiza/dlq
+- riatzukiza/ds
+- riatzukiza/eidolon-field
+- riatzukiza/enso-agent-communication
+- riatzukiza/http
+- riatzukiza/kanban
+- riatzukiza/logger
+- riatzukiza/math-utils
+- riatzukiza/mcp
+- riatzukiza/mcp-dev-ui-frontend
+- riatzukiza/migrations
+- riatzukiza/naming
+- riatzukiza/obsidian-export
+- riatzukiza/omni-tools
+- riatzukiza/opencode-hub
+- riatzukiza/persistence
+- riatzukiza/platform
+- riatzukiza/plugin-hooks
+- riatzukiza/report-forge
+- riatzukiza/security
+- riatzukiza/shadow-conf
+- riatzukiza/snapshots
+- riatzukiza/test-classifier
+- riatzukiza/test-utils
+- riatzukiza/utils
+- riatzukiza/worker
+Promethean Framework is released under the GNU General Public License v3.
+Getting Started:
+- 🚀 New to Promethean? Start with the Quick Start section above
+- 📦 Need a specific component? Browse the Package Ecosystem
+- 🔧 Developing locally? Follow the Development Workflow
+- 🤖 AI Assistant? See
+AGENTS.md
+for specialized guidelines - ❓ Need help? Check individual package READMEs or
+docs/agile/process.md
+This section is auto-generated by scripts/package-doc-matrix.ts. Do not edit manually.
+- @promethean-os/autocommit —
+orgs/riatzukiza/promethean/packages/autocommit
+- @promethean-os/kanban —
+orgs/riatzukiza/promethean/packages/kanban
+- @promethean-os/persistence —
+orgs/riatzukiza/promethean/packages/persistence
+- @promethean-os/shadow-conf —
+orgs/riatzukiza/promethean/packages/shadow-conf
+- @promethean-os/test-utils —
+orgs/riatzukiza/promethean/packages/test-utils
+- @promethean-os/utils —
+orgs/riatzukiza/promethean/packages/utils
+None (external-only).
+Last updated: 2025-11-16T11:25:38.889Z

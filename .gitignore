@@ -20,5 +20,4 @@ website_scraper/dumps/
 website_scraper/website_analysis/**/raw/
 
 # Aider repo map cache artifacts
-.aider.tags.cache.v4/cache.db
-repo_map/.aider.tags.cache.v4/cache.db
+.aider.tags.cache.v4

@@ -8,9 +8,9 @@ LLM/machine readers: use MACHINES.md as a primary reference, it is more comprehe
 
 All skills use FlatAgents, returning limited context to the caller to preserve the context window.
 
-- **search_refiner** - Search the web with Exa MCP and refine results to 500 tokens
-- **shell_analyzer** - Run shell commands and analyze output with validated summaries. Use for build logs, test output, or any command with substantial output. Preserves context by returning concise summaries with grep-validated citations.
-- **test_writer** - Generate tests for a Python file or project
+- **search-refiner** - Search the web with Exa MCP and refine results to 500 tokens
+- **shell-analyzer** - Run shell commands and analyze output with validated summaries. Use for build logs, test output, or any command with substantial output. Preserves context by returning concise summaries with grep-validated citations.
+- **test-writer** - Generate tests for a Python file or project
 
 ## Install
 
@@ -53,19 +53,19 @@ data:
 - `cerebras` - Requires `CEREBRAS_API_KEY` (models: zai-glm-4.7, etc.)
 - See [FlatAgents docs](https://github.com/memgrafter/flatagents) for full provider list
 
-**search_refiner** also requires `EXA_API_KEY` for web search via Exa MCP.
+**search-refiner** also requires `EXA_API_KEY` for web search via Exa MCP.
 
 ## Usage
 
 ```bash
 # Search and refine web results
-./search_refiner/run.sh "your search query"
+./search-refiner/run.sh "your search query"
 
 # Analyze shell command output
-./shell_analyzer/run.sh "pytest -v"
+./shell-analyzer/run.sh "pytest -v"
 
 # Generate tests to reach coverage target
-./test_writer/run.sh path/to/file.py --target=80
+./test-writer/run.sh path/to/file.py --target=80
 ```
 
 Each skill's agents are pre-configured with Cerebras (fast, cheap) but you can change to any provider by editing the `agents/*.yml` files.

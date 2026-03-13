@@ -1,0 +1,124 @@
+A Pi agent extension that enables rewinding file changes during coding sessions. Creates automatic checkpoints using git refs, allowing you to restore files to previous states while optionally preserving conversation history.
+- Pi agent v0.35.0+ (unified extensions system)
+- Node.js (for installation)
+- Git repository (checkpoints are stored as git refs)
+pi install npm:pi-rewind-hook
+This will:
+- Create
+~/.pi/agent/extensions/rewind/
+- Download the extension files
+- Add the extension to your
+~/.pi/agent/settings.json
+- Migrate any existing hooks config to extensions (if upgrading from v1.2.0)
+- Clean up old
+hooks/rewind
+directory (if present)
+Using curl:
+curl -fsSL https://raw.githubusercontent.com/nicobailon/pi-rewind-hook/main/install.js | node
+Or clone the repo and configure manually:
+git clone https://github.com/nicobailon/pi-rewind-hook ~/.pi/agent/extensions/rewind
+Then add to ~/.pi/agent/settings.json
+:
+{
+"extensions": ["~/.pi/agent/extensions/rewind/index.ts"]
+}
+Windows: The npx
+command works in PowerShell, Command Prompt, and WSL. If you prefer curl on Windows without WSL:
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/nicobailon/pi-rewind-hook/main/install.js" -OutFile install.js; node install.js; Remove-Item install.js
+If you're upgrading from pi-rewind-hook v1.2.0 (which used the hooks system), simply run npx pi-rewind-hook
+again. The installer will:
+- Move the extension from
+hooks/rewind
+toextensions/rewind
+- Migrate your settings.json from
+hooks
+toextensions
+- Clean up the old hooks directory
+Note: v1.3.0+ requires pi v0.35.0 or later. If you're on an older version of pi, stay on pi-rewind-hook v1.2.0.
+You can configure the extension by adding settings to ~/.pi/agent/settings.json
+:
+{
+"extensions": ["~/.pi/agent/extensions/rewind/index.ts"],
+"rewind": {
+"silentCheckpoints": true
+}
+}
+rewind.silentCheckpoints
+(boolean, default:false
+): When set totrue
+, disables checkpoint status messages. The footer checkpoint count (◆ X checkpoints
+) and checkpoint saved notifications (Checkpoint X saved
+) will not be displayed.
+The extension creates git refs at two points:
+- Session start - When pi starts, creates a "resume checkpoint" of the current file state
+- Each turn - Before the agent processes each message, creates a checkpoint
+Checkpoints are stored as git refs under refs/pi-checkpoints/
+and are scoped per-session (so multiple pi sessions in the same repo don't interfere with each other). Each session maintains its own 100-checkpoint limit.
+To rewind via /branch
+:
+- Type
+/branch
+in pi - Select a message to branch from
+- Choose a restore option
+To rewind via tree navigation:
+- Press
+Tab
+to open the session tree - Navigate to a different node
+- Choose a restore option
+For messages from the current session:
+| Option | Files | Conversation |
+|---|---|---|
+| Restore all (files + conversation) | Restored | Reset to that point |
+| Conversation only (keep current files) | Unchanged | Reset to that point |
+| Code only (restore files, keep conversation) | Restored | Unchanged |
+| Undo last file rewind | Restored to before last rewind | Unchanged |
+For messages from before the current session (uses resume checkpoint):
+| Option | Files | Conversation |
+|---|---|---|
+| Restore to session start (files + conversation) | Restored to session start | Reset to that point |
+| Conversation only (keep current files) | Unchanged | Reset to that point |
+| Restore to session start (files only, keep conversation) | Restored to session start | Unchanged |
+| Undo last file rewind | Restored to before last rewind | Unchanged |
+When you resume a session (pi --resume
+), the extension creates a resume checkpoint. If you branch to a message from before the current session, you can restore files to the state when you resumed (not per-message granularity, but a safety net).
+You: refactor the auth module to use JWT
+Agent: [makes changes you don't like]
+You: /branch
+→ Select "refactor the auth module to use JWT"
+→ Select "Code only (restore files, keep conversation)"
+Result: Files restored, conversation intact. Try a different approach.
+You: /branch
+→ Select an earlier message
+→ Select "Restore all (files + conversation)"
+Result: Both files and conversation reset to that point.
+pi --resume # resume old session
+Agent: [immediately breaks something]
+You: /branch
+→ Select any old message
+→ Select "Restore to session start (files only, keep conversation)"
+Result: Files restored to state when you resumed.
+List all checkpoint refs:
+git for-each-ref refs/pi-checkpoints/
+Checkpoint ref format: checkpoint-{sessionId}-{timestamp}-{entryId}
+Manually restore to a checkpoint (copy ref name from list above):
+git checkout refs/pi-checkpoints/checkpoint-abc12345-...-... -- .
+Delete all checkpoints:
+git for-each-ref --format='%(refname)' refs/pi-checkpoints/ | xargs -n1 git update-ref -d
+-
+Remove the extension directory:
+rm -rf ~/.pi/agent/extensions/rewind
+On Windows (PowerShell):
+Remove-Item -Recurse -Force ~/.pi/agent/extensions/rewind
+-
+Remove the extension from
+~/.pi/agent/settings.json
+(delete the line withrewind/index.ts
+from theextensions
+array) -
+Optionally, clean up git refs in each repo where you used the extension:
+git for-each-ref --format='%(refname)' refs/pi-checkpoints/ | xargs -n1 git update-ref -d
+- Only works in git repositories
+- Checkpoints are scoped per-session (multiple sessions in the same repo don't share checkpoints)
+- Resumed sessions only have a single resume checkpoint for pre-session messages
+- Tracks working directory changes only (not staged/committed changes)
+- Each session has its own 100-checkpoint limit (pruning doesn't affect other sessions)

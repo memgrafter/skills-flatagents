@@ -5,7 +5,7 @@
 
   Phase 1: Copy & Simplify Structure
 
-  1. Copy ~/code/skills-flatagents/coding_agent to new location (e.g.,
+  1. Copy ~/code/skills-flatagents/coding-agent to new location (e.g.,
   ~/code/skills-flatagents/pkm_agent)
   2. Keep only essential files:
     - machine.yml (simplified)
@@ -18,7 +18,7 @@
   - Remove approval states (review_plan, review_result)
   - Remove reviewer agent
   - Simplify flow: explore → plan → execute → done
-  - Point machines.explorer to ~/.flatmachines/skills/codebase_explorer/machine.yml
+  - Point machines.explorer to ~/.flatmachines/skills/codebase-explorer/machine.yml
   - Remove checkpoint/resume complexity
 
   Phase 3: Create PKM-specific agent prompt

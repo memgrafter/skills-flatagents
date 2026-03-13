@@ -1,0 +1,9 @@
+You signed in with another tab or window. Reload to refresh your session.You signed out in another tab or window. Reload to refresh your session.You switched accounts on another tab or window. Reload to refresh your session.Dismiss alert
+New State-of-the-Art on Erdős' Minimum Overlap Problem
+We let AI agents tackle a classic open problem in combinatorics and analysis — Erdős' minimum overlap problem — and obtained a new state-of-the-art upper bound! Our AI agents' approach uses sequential linear programming to optimize step function constructions, starting from the best previously known solutions. Details on the method will come in a forthcoming write-up.
+for all non-negative $f, g \colon [-1,1] \to [0,1]$ with $f + g = 1$ on $[-1,1]$ and $\int_{\mathbb{R}} f = 1$, where $f$ and $g$ are extended by zero outside $[-1,1]$.
+This constant governs the asymptotics of the minimum overlap problem posed by Erdős (1955). The problem asks: given any partition of ${1, 2, \ldots, 2n}$ into two sets $A$ and $B$ of size $n$, how large must the overlap $\max_k |A \cap (B + k)|$ be?
+Equivalent Step Function Formulation
+Haugland (2016) showed that $C_5$ equals the infimum, over all step functions $h \colon [0, 2] \to [0, 1]$ with $\int_0^2 h(x), dx = 1$, of
+$$\max_k \int h(x)\bigl(1 - h(x + k)\bigr), dx.$$
+Upper bounds on $C_5$ are therefore obtained by constructing explicit step functions. The finer the step function (more steps), the tighter the bound can potentially be.

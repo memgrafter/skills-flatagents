@@ -1,0 +1,138 @@
+https://api.browser-use.com/mcp
+This is an HTTP-based MCP server designed for cloud integrations and remote access. If you need a local stdio-based MCP server for Claude Desktop, use the free open-source version: uvx browser-use --mcp
+Quick Setup
+1. Get API Key
+Get your API key from the Browser Use Dashboard2. Connect Your AI
+- Claude Code
+- Claude Desktop
+- Cursor
+- Windsurf
+- ChatGPT
+Available Tools
+The MCP server provides three tools:browser_task
+Creates and runs a browser automation task.
+- task (required): What you want the browser to do
+- max_steps (optional): Max actions to take (1-10, default: 8)
+- profile_id (optional): UUID of the cloud profile to use for persistent authentication
+list_browser_profiles
+Lists all available cloud browser profiles for the authenticated project. Profiles store persistent authentication (cookies, sessions) for websites requiring login.
+monitor_task
+Checks the current status and progress of a browser automation task. Returns immediately with a snapshot of the task state.
+- task_id (required): UUID of the task to monitor (returned by browser_task)
+Example Usage
+Once connected, ask your AI to perform web tasks:“Search Google for the latest iPhone reviews and summarize the top 3 results”
+“Go to Hacker News and get me the titles of the top 5 posts”
+“Fill out the contact form on example.com with my information”The AI will use the browser tools automatically to complete these tasks.
+Smart Features
+Cloud Profiles for Authentication
+Use cloud browser profiles to maintain persistent login sessions across tasks. Profiles store cookies and authentication state for:- Social media (X/Twitter, LinkedIn, Facebook)
+- Email (Gmail, Outlook)
+- Online banking and shopping sites
+- Any website requiring login
+list_browser_profiles
+, then pass the profile_id
+to browser_task
+.
+Real-time Task Monitoring
+Usemonitor_task
+to check task progress while it’s running. The tool returns immediately with the current status, latest step details, and agent reasoning. Call it repeatedly to track progress live.
+Conversational Progress Summaries
+When you monitor tasks, the AI automatically interprets step data into natural language updates, explaining what the browser has completed and what it’s currently working on.Troubleshooting
+Connection issues?- Verify your API key is correct
+- Check you’re using the right headers
+- Check the live_url to see progress
+- Increase max_steps for complex tasks (max: 10)
+- Use clearer, more specific instructions
+Local Self-Hosted Alternative
+For users who want a free, self-hosted option, browser-use can run as a local MCP server on your machine. This requires your own OpenAI or Anthropic API keys but provides direct, low-level control over browser automation.Quick Start
+The local MCP server runs as a stdio-based process on your machine. This is the free, open-source option but requires your own LLM API keys.Start MCP Server Manually
+Claude Desktop Integration
+The most common use case is integrating with Claude Desktop. Add this configuration to your Claude Desktop config file: macOS:~/Library/Application Support/Claude/claude_desktop_config.json
+%APPDATA%\Claude\claude_desktop_config.json
+macOS/Linux PATH Issue: Claude Desktop may not find
+uvx
+in your PATH. Use the full path to uvx
+instead:- Run
+which uvx
+in your terminal to find the location (usually/Users/username/.local/bin/uvx
+or~/.local/bin/uvx
+) - Replace
+"command": "uvx"
+with the full path, e.g.,"command": "/Users/your-username/.local/bin/uvx"
+- Replace
+your-username
+with your actual username
+--from browser-use[cli]
+flag installs the CLI extras needed for MCP server support.Environment Variables
+You can configure browser-use through environment variables:OPENAI_API_KEY
+- Your OpenAI API key (required)ANTHROPIC_API_KEY
+- Your Anthropic API key (alternative to OpenAI)BROWSER_USE_HEADLESS
+- Set tofalse
+to show browser windowBROWSER_USE_DISABLE_SECURITY
+- Set totrue
+to disable browser security features
+Available Tools
+The local MCP server exposes these low-level browser automation tools for direct control:Autonomous Agent Tools
+retry_with_browser_use_agent
+- Run a complete browser automation task with an AI agent (use as last resort when direct control fails)
+Direct Browser Control
+browser_navigate
+- Navigate to a URLbrowser_click
+- Click on an element by indexbrowser_type
+- Type text into an elementbrowser_get_state
+- Get current page state and interactive elementsbrowser_scroll
+- Scroll the pagebrowser_go_back
+- Go back in browser history
+Tab Management
+browser_list_tabs
+- List all open browser tabsbrowser_switch_tab
+- Switch to a specific tabbrowser_close_tab
+- Close a tab
+Content Extraction
+browser_extract_content
+- Extract structured content from the current page
+Session Management
+browser_list_sessions
+- List all active browser sessions with detailsbrowser_close_session
+- Close a specific browser session by IDbrowser_close_all
+- Close all active browser sessions
+Example Usage
+Once configured with Claude Desktop, you can ask Claude to perform browser automation tasks:Programmatic Usage
+You can also connect to the MCP server programmatically:Troubleshooting
+Common Issues
+“CLI addon is not installed” Error Make sure you’re using--from 'browser-use[cli]'
+in your uvx command:
+uvx
+in its PATH. Use the full path in your config:
+- Run
+which uvx
+in terminal to find the location - Update your config to use the full path (e.g.,
+/Users/your-username/.local/bin/uvx
+)
+- Check that you have Chrome/Chromium installed
+- Try setting
+BROWSER_USE_HEADLESS=false
+to see browser window - Ensure no other browser instances are using the same profile
+- Verify your
+OPENAI_API_KEY
+is set correctly - Check API key permissions and billing status
+- Try using
+ANTHROPIC_API_KEY
+as an alternative
+- Restart Claude Desktop after config changes
+- Check the config file syntax is valid JSON
+- Verify the file path is correct for your OS
+- Check logs at
+~/Library/Logs/Claude/
+(macOS) or%APPDATA%\Claude\Logs\
+(Windows)
+Debug Mode
+Enable debug logging by setting:Security Considerations
+- The MCP server has access to your browser and file system
+- Only connect trusted MCP clients
+- Be cautious with sensitive websites and data
+- Consider running in a sandboxed environment for untrusted automation
+Next Steps
+- Explore the examples directory for more usage patterns
+- Check out MCP documentation to learn more about the protocol
+- Join our Discord for support and discussions

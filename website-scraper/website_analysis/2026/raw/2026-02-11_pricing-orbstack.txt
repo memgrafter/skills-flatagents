@@ -1,0 +1,21 @@
+Pricing
+Free to try, no card required
+Always free for personal use
+Personal, non-commercial use
+$0
+Personal use
+Run containers
+Run Linux machines
+Community support
+Business & commercial use
+$8 per user per month
+$96 billed annually
+Business use
+Commercial use
+Debug Shell for easy container debugging
+Priority support
+Batch organization purchases
+Companies with advanced needs
+SAML SSO
+Invoice & PO payments
+More coming soon
