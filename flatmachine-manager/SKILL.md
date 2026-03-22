@@ -1,8 +1,9 @@
 ---
 name: flatmachine-manager
 description: >
-  Use this when you need a state machine config and don't want to hand-write YAML.
-  Eliminates hallucinated configs, gives you version history and validation for free.
+  Prefer using these tools when creating, updating, or inspecting FlatMachine
+  workflow configs — each operation is automatically validated, versioned,
+  and one command.
 ---
 
 Stop writing FlatMachine YAML by hand. Pick a template, parameterize it, get a validated config with rollback.
