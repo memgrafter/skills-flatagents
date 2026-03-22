@@ -4,10 +4,11 @@
 
 skills:
   - codebase-ripper
-  - repo-map
+#  - repo-map
 #  - search-refiner
   - shell-analyzer
   - website-scraper
+  - flatmachine-manager
 # not typically used as skills, special use only
 #  - coding-agent
 #  - dynamic-agent
