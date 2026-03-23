@@ -1,0 +1,128 @@
+"""
+Doctor — check environment health and recommend fixes.
+
+Read-only diagnostics. Does not modify anything.
+"""
+
+from __future__ import annotations
+
+import os
+import sqlite3
+import sys
+from pathlib import Path
+from typing import List, Tuple
+
+
+# (status, message, fix)
+Check = Tuple[str, str, str]  # "ok" | "warn" | "error"
+
+
+def _check_venv(repo_dir: str) -> Check:
+    venv = os.path.join(repo_dir, "python", ".venv")
+    if os.path.isdir(venv):
+        python = os.path.join(venv, "bin", "python")
+        if os.path.isfile(python):
+            return ("ok", f"venv exists: {venv}", "")
+        return ("error", f"venv dir exists but no python binary: {venv}", f"cd {repo_dir}/python && bash run.sh")
+    return ("error", f"venv not found: {venv}", f"cd {repo_dir}/python && bash run.sh")
+
+
+def _check_package(repo_dir: str) -> Check:
+    python = os.path.join(repo_dir, "python", ".venv", "bin", "python")
+    if not os.path.isfile(python):
+        return ("error", "Cannot check package — venv missing", "Fix venv first")
+    ret = os.system(f'"{python}" -c "import flatmachine_manager" 2>/dev/null')
+    if ret == 0:
+        return ("ok", "flatmachine_manager package installed", "")
+    return ("error", "flatmachine_manager not installed in venv",
+            f"uv pip install --python {python} -e {repo_dir}/python")
+
+
+def _check_schema_db(skill_dir: str) -> Check:
+    schema = os.path.join(skill_dir, "machine_manager_schema.sqlite")
+    if os.path.isfile(schema):
+        size = os.path.getsize(schema)
+        return ("ok", f"Schema DB exists: {schema} ({size} bytes)", "")
+    return ("error", f"Schema DB missing: {schema}",
+            "Regenerate with the build script or restore from backup")
+
+
+def _check_registry_db(db_path: str, schema_path: str) -> Check:
+    if not os.path.isfile(db_path):
+        return ("warn", f"Registry DB not found: {db_path}",
+                f"cp {schema_path} {db_path}")
+    try:
+        conn = sqlite3.connect(db_path, timeout=5.0)
+        conn.row_factory = sqlite3.Row
+
+        # Check tables exist
+        tables = {r[0] for r in conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table'"
+        ).fetchall()}
+
+        required = {"machine_registry", "machine_versions"}
+        missing = required - tables
+        if missing:
+            conn.close()
+            return ("error", f"Registry DB missing tables: {', '.join(missing)}",
+                    f"Backup and re-initialize: cp {db_path} {db_path}.bak && cp {schema_path} {db_path}")
+
+        # Check we can read
+        count = conn.execute("SELECT count(*) FROM machine_registry").fetchone()[0]
+        conn.close()
+        return ("ok", f"Registry DB: {db_path} ({count} machines)", "")
+
+    except sqlite3.Error as e:
+        return ("error", f"Registry DB unreadable: {e}",
+                f"Backup and re-initialize: cp {db_path} {db_path}.bak && cp {schema_path} {db_path}")
+
+
+def _check_sqlite_version() -> Check:
+    version = sqlite3.sqlite_version
+    parts = [int(x) for x in version.split(".")]
+    if parts[0] >= 3 and parts[1] >= 35:
+        return ("ok", f"SQLite version: {version}", "")
+    return ("warn", f"SQLite version {version} is old (recommend 3.35+)",
+            "Upgrade system SQLite or Python for better JSON/WAL support")
+
+
+def run_doctor(repo_dir: str, skill_dir: str, db_path: str) -> str:
+    """Run all checks, return formatted report."""
+    schema_path = os.path.join(skill_dir, "machine_manager_schema.sqlite")
+
+    checks: List[Tuple[str, Check]] = [
+        ("SQLite version", _check_sqlite_version()),
+        ("Virtual environment", _check_venv(repo_dir)),
+        ("Python package", _check_package(repo_dir)),
+        ("Schema DB", _check_schema_db(skill_dir)),
+        ("Registry DB", _check_registry_db(db_path, schema_path)),
+    ]
+
+    icons = {"ok": "✓", "warn": "⚠", "error": "✗"}
+    lines = ["## flatmachines doctor", ""]
+
+    errors = 0
+    warnings = 0
+
+    for label, (status, msg, fix) in checks:
+        icon = icons.get(status, "?")
+        lines.append(f"  {icon} **{label}**: {msg}")
+        if fix:
+            lines.append(f"    Fix: `{fix}`")
+        if status == "error":
+            errors += 1
+        elif status == "warn":
+            warnings += 1
+
+    lines.append("")
+    if errors == 0 and warnings == 0:
+        lines.append("All checks passed.")
+    else:
+        parts = []
+        if errors:
+            parts.append(f"{errors} error(s)")
+        if warnings:
+            parts.append(f"{warnings} warning(s)")
+        lines.append(f"{', '.join(parts)} found. See fixes above.")
+
+    return "\n".join(lines)

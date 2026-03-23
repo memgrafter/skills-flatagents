@@ -1,0 +1,290 @@
+spec: flatagent
+spec_version: "2.5.0"
+
+data:
+  name: flatmachine-manager-agent
+
+  model: default
+
+  system: |
+    You are a flatmachine configuration specialist. You create and manage
+    flatmachine state machine configs using the tools provided.
+
+    IMPORTANT CONSTRAINTS:
+    - You NEVER write raw YAML by hand. Use create_machine and update_machine tools.
+    - You NEVER guess model names or providers. Use select_model to choose.
+    - You ALWAYS validate before presenting results to the user. Use validate_machine.
+    - You work from templates, not from scratch.
+
+    BEST PRACTICES YOU ENFORCE:
+    - Default to plain text output (output.content) between LLM stages, not JSON schemas
+    - Use PASS/REPAIR/FAIL enum routing, not parsed JSON, for transitions
+    - Always set on_error handlers on agent states
+    - Always set execution retry with backoff on agent states
+    - Enable persistence (sqlite backend) for machines with >3 states
+    - Keep context mappings explicit and shallow
+    - Never truncate data between stages
+    - Hooks should precompute clean inputs; avoid Jinja-heavy plumbing
+
+    AVAILABLE TEMPLATES:
+    - tool-loop: Agent + tools + human review (like coding agents)
+    - writer-critic: Iterative refinement loop (write → review → improve)
+    - ooda-workflow: Explore → Plan → Execute → Verify with human gates
+    - pipeline: Linear phase-separated processing (prep → expensive → wrap)
+    - signal-wait: Async workflow with external signal/approval gates
+    - distributed-worker: Worker pool pattern (checker → spawner → workers)
+
+    WORKFLOW:
+    1. Understand what the user wants
+    2. Choose appropriate template and model profiles
+    3. Create or update the machine using structured tools
+    4. Validate the result
+    5. Present to user for review
+
+    Current spec_version: "2.5.0"
+
+  user: |
+    {{ input.task }}
+
+  tools:
+    - type: function
+      function:
+        name: list_machines
+        description: >
+          List all registered flatmachines in the registry.
+        parameters:
+          type: object
+          properties:
+            status:
+              type: string
+              description: "Filter by status: active, deprecated, or all (default: active)"
+              enum: ["active", "deprecated", "all"]
+          required: []
+
+    - type: function
+      function:
+        name: get_machine
+        description: >
+          Get a flatmachine definition, its full config YAML, validation status,
+          and version history. Use this to inspect existing machines.
+        parameters:
+          type: object
+          properties:
+            name:
+              type: string
+              description: "Machine name"
+            version:
+              type: integer
+              description: "Specific version number (default: latest)"
+          required: [name]
+
+    - type: function
+      function:
+        name: create_machine
+        description: >
+          Create a new flatmachine from a template and specification. The template
+          provides a valid base structure; you parameterize it with agents, states,
+          and model profiles. Never write raw YAML — use this tool.
+        parameters:
+          type: object
+          properties:
+            name:
+              type: string
+              description: "Machine name (lowercase, hyphens allowed)"
+            template:
+              type: string
+              description: "Base template to use"
+              enum: ["tool-loop", "writer-critic", "ooda-workflow", "pipeline", "signal-wait", "distributed-worker"]
+            description:
+              type: string
+              description: "What this machine does (one sentence)"
+            agents:
+              type: array
+              description: "Agents to configure"
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    description: "Agent name (lowercase, underscores allowed)"
+                  purpose:
+                    type: string
+                    description: "What this agent does (used for system prompt generation)"
+                  model_profile:
+                    type: string
+                    description: "Model profile name from select_model"
+                  temperature:
+                    type: number
+                    description: "Override temperature (optional)"
+                required: [name, purpose]
+            states:
+              type: array
+              description: "Additional or modified states beyond the template defaults"
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    description: "State name"
+                  type:
+                    type: string
+                    description: "State type: initial, final, or omit for normal"
+                    enum: ["initial", "final"]
+                  agent:
+                    type: string
+                    description: "Agent to run in this state"
+                  description:
+                    type: string
+                    description: "What this state does"
+                  transitions_to:
+                    type: array
+                    description: "State names this transitions to"
+                    items:
+                      type: string
+                required: [name]
+            context_fields:
+              type: array
+              description: "Additional context fields beyond template defaults"
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  default_value:
+                    type: string
+                  from_input:
+                    type: boolean
+                    description: "If true, initialized from input.{name}"
+                required: [name]
+          required: [name, template, description]
+
+    - type: function
+      function:
+        name: update_machine
+        description: >
+          Modify an existing flatmachine with a structured change operation.
+          Never edit YAML directly — use this tool for precise, validated mutations.
+        parameters:
+          type: object
+          properties:
+            name:
+              type: string
+              description: "Machine name to update"
+            operation:
+              type: string
+              description: "Type of change"
+              enum: ["add_state", "remove_state", "update_state", "add_agent", "update_agent", "update_context", "update_setting"]
+            params:
+              type: object
+              description: >
+                Operation-specific parameters:
+                - add_state: {state_name, after_state, agent, description, transitions_to: [...]} 
+                - remove_state: {state_name}
+                - update_state: {state_name, field, value}
+                - add_agent: {agent_name, purpose, model_profile, temperature}
+                - update_agent: {agent_name, field, value}
+                - update_context: {key, value_template}
+                - update_setting: {key, value}
+            description:
+              type: string
+              description: "Why this change is being made"
+          required: [name, operation, params]
+
+    - type: function
+      function:
+        name: select_model
+        description: >
+          Choose a model configuration from available profiles. Describe the
+          purpose and constraints; returns a recommended profile with rationale.
+          Never guess provider names — always use this tool.
+        parameters:
+          type: object
+          properties:
+            purpose:
+              type: string
+              description: "What the model will be used for"
+              enum: ["fast", "smart", "cheap", "code", "routing", "creative", "analysis"]
+            constraints:
+              type: string
+              description: "Any additional constraints (optional)"
+          required: [purpose]
+
+    - type: function
+      function:
+        name: validate_machine
+        description: >
+          Run the full validation suite on a machine: JSON Schema validation,
+          Jinja2 template checking, best practices compliance, and structural
+          integrity. Always validate before presenting to the user.
+        parameters:
+          type: object
+          properties:
+            name:
+              type: string
+              description: "Machine name to validate"
+            version:
+              type: integer
+              description: "Specific version (default: latest)"
+          required: [name]
+
+    - type: function
+      function:
+        name: diff_versions
+        description: >
+          Show the difference between two versions of a machine config.
+        parameters:
+          type: object
+          properties:
+            name:
+              type: string
+              description: "Machine name"
+            v1:
+              type: integer
+              description: "First version number"
+            v2:
+              type: integer
+              description: "Second version number"
+          required: [name, v1, v2]
+
+    - type: function
+      function:
+        name: duplicate_machine
+        description: >
+          Duplicate a machine under a new name. Copies the config (or a specific
+          version) and stores it as v1 of the target. Useful for forking a machine
+          to experiment without affecting the original.
+        parameters:
+          type: object
+          properties:
+            source:
+              type: string
+              description: "Source machine name to copy from"
+            target:
+              type: string
+              description: "New machine name"
+            version:
+              type: integer
+              description: "Source version to copy (default: latest)"
+            description:
+              type: string
+              description: "Why this duplicate was created"
+          required: [source, target]
+
+    - type: function
+      function:
+        name: deprecate_machine
+        description: >
+          Mark a machine as deprecated. The machine's config and full version
+          history are preserved for inspection but it no longer appears in
+          default listings. This is a soft delete — nothing is destroyed.
+        parameters:
+          type: object
+          properties:
+            name:
+              type: string
+              description: "Machine name to deprecate"
+          required: [name]
+
+metadata:
+  description: "FlatMachine manager agent with domain-specific CRUD tools"
+  tags: ["tool-use", "flatmachine-management", "crud"]

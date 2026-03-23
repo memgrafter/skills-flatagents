@@ -1,0 +1,16 @@
+[project]
+name = "flatmachine_manager"
+version = "0.1.0"
+description = "FlatMachine CRUD machine — create, read, update, and validate flatmachines via domain-specific tools"
+dependencies = ["flatmachines[flatagents]", "flatagents[litellm]", "pyyaml"]
+requires-python = ">=3.10"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[project.scripts]
+flatmachine-manager = "flatmachine_manager.main:main"
