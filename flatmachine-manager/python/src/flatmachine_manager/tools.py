@@ -183,6 +183,8 @@ async def tool_create_machine(
             is_error=True,
         )
 
+    tools = args.get("tools")
+
     try:
         # Generate config from template
         config_raw = create_from_template(
@@ -192,6 +194,8 @@ async def tool_create_machine(
             agents=agents,
             states=states,
             context_fields=context_fields,
+            tools=tools,
+            db_path=registry._db_path,
         )
 
         # Validate

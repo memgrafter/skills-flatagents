@@ -52,8 +52,8 @@ Common options: `--db <path>` (registry DB), `--json` (machine-parseable output)
   --name "tagline-writer" \
   --template writer-critic \
   --description "Generate and refine product taglines" \
-  --agent "writer:creative taglines:smart" \
-  --agent "critic:score clarity and memorability:fast"
+  --agent "You are a creative copywriter who generates memorable taglines:writer:creative taglines:smart" \
+  --agent "You score tagline clarity and memorability on a 1-10 scale:critic:score clarity and memorability:fast"
 
 # Add a human review gate
 ./skills/flatmachine-manager/run.sh update \
@@ -86,11 +86,23 @@ Common options: `--db <path>` (registry DB), `--json` (machine-parseable output)
 ./skills/flatmachine-manager/run.sh cull-trim --machine-db ./my-machine.sqlite
 ./skills/flatmachine-manager/run.sh cull-purge --machine-db ./my-machine.sqlite --older-than 7
 
+# List available tools (auto-seeded from hooks + agent YAML)
+./skills/flatmachine-manager/run.sh list-tools
+./skills/flatmachine-manager/run.sh list-tools --provider cli-tools
+./skills/flatmachine-manager/run.sh list-tools --include-deprecated
+
+# Hide/restore a tool for new machine creation
+./skills/flatmachine-manager/run.sh deprecate-tool --name bash
+./skills/flatmachine-manager/run.sh undeprecate-tool --name bash
+
 # Health check
 ./skills/flatmachine-manager/run.sh doctor
 ```
 
-Agent shorthand for `create`: `--agent "name:purpose:profile"` (repeatable).
+Agent shorthand for `create`: `--agent "system:name:purpose:profile"` (repeatable, system required).
+System prompt is the first field and cannot be empty. Use `--system "prompt"` when the
+system prompt contains colons. Use `--tools read,bash` to limit which CLI tools are available
+(default: all of read, bash, write, edit).
 
 Update operations for `update --op`: `add_state`, `remove_state`, `update_state`, `add_agent`, `update_agent`, `update_context`, `update_setting`. Params via `--param key=value`.
 

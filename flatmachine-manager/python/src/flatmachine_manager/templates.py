@@ -129,6 +129,88 @@ CLI_TOOL_DEFINITIONS = [
 # Shared helpers
 # ---------------------------------------------------------------------------
 
+def _filter_cli_tools(
+    tool_names: Optional[List[str]],
+    db_path: Optional[str] = None,
+) -> List[Dict]:
+    """Filter tool definitions to only the named tools.
+
+    Uses the ToolRegistry when available to validate that requested tools
+    are active (not deprecated). Falls back to CLI_TOOL_DEFINITIONS if
+    the registry is unavailable.
+
+    Args:
+        tool_names: List of tool names to include, or None for all CLI tools.
+        db_path: Path to the registry DB (must match the CLI's --db).
+
+    Returns:
+        Filtered list of tool definitions.
+
+    Raises:
+        ValueError: If any requested tool is unknown or deprecated.
+    """
+    if tool_names is None:
+        return CLI_TOOL_DEFINITIONS
+
+    if db_path is None:
+        # Fallback: filter CLI_TOOL_DEFINITIONS directly (no registry)
+        available = {t["function"]["name"] for t in CLI_TOOL_DEFINITIONS}
+        unknown = set(tool_names) - available
+        if unknown:
+            raise ValueError(
+                f"Unknown tool(s): {', '.join(sorted(unknown))}. "
+                f"Available: {', '.join(sorted(available))}"
+            )
+        filtered = [t for t in CLI_TOOL_DEFINITIONS if t["function"]["name"] in tool_names]
+        if not filtered:
+            raise ValueError(
+                f"No tools selected. Available: {', '.join(sorted(available))}"
+            )
+        return filtered
+
+    # Registry-backed validation
+    from .tool_registry import ToolRegistry
+
+    tr = ToolRegistry(db_path=db_path)
+    tr.seed_defaults()  # idempotent
+
+    try:
+        unavailable = []
+        deprecated = []
+        schemas = []
+
+        for name in tool_names:
+            entry = tr.get(name)
+            if entry is None:
+                unavailable.append(name)
+            elif entry.status == "deprecated":
+                deprecated.append(name)
+            else:
+                schemas.append(entry.schema)
+
+        if unavailable:
+            active = tr.list_tools()
+            available_names = sorted(e.name for e in active)
+            raise ValueError(
+                f"Unknown tool(s): {', '.join(sorted(unavailable))}. "
+                f"Available: {', '.join(available_names)}"
+            )
+        if deprecated:
+            raise ValueError(
+                f"Deprecated tool(s): {', '.join(sorted(deprecated))}. "
+                "Use 'undeprecate-tool' to restore, or choose a different tool."
+            )
+        if not schemas:
+            active = tr.list_tools()
+            available_names = sorted(e.name for e in active)
+            raise ValueError(
+                f"No tools selected. Available: {', '.join(available_names)}"
+            )
+        return schemas
+    finally:
+        tr.close()
+
+
 def _make_agent_yaml(
     name: str,
     purpose: str,
@@ -137,7 +219,18 @@ def _make_agent_yaml(
     tools: Optional[List[Dict]] = None,
     system: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Generate a flatagent config dict."""
+    """Generate a flatagent config dict.
+
+    Raises:
+        ValueError: If system prompt is empty or not provided.
+    """
+    if not system or not system.strip():
+        raise ValueError(
+            f"Agent '{name}' has no system prompt. "
+            "A system prompt is required — pass it via "
+            "--agent 'system:name:purpose:profile' or --system 'prompt'."
+        )
+
     model: Any
     if temperature is not None:
         model = {"profile": model_profile, "temperature": temperature}
@@ -150,7 +243,7 @@ def _make_agent_yaml(
         "data": {
             "name": name,
             "model": model,
-            "system": system or "",
+            "system": system,
             "user": "{{ input.task }}",
         },
         "metadata": {
@@ -265,11 +358,14 @@ def template_tool_loop(
     agents: Optional[List[Dict]] = None,
     states: Optional[List[Dict]] = None,
     context_fields: Optional[List[Dict]] = None,
+    tools: Optional[List[str]] = None,
+    db_path: Optional[str] = None,
 ) -> str:
     """Agent + tools + human review. Like coding agents."""
+    tool_defs = _filter_cli_tools(tools, db_path=db_path)
     a = _extract_agent(
         (agents[0] if agents else {}),
-        {"name": "worker", "purpose": description, "model_profile": "default", "tools": CLI_TOOL_DEFINITIONS},
+        {"name": "worker", "purpose": description, "model_profile": "default", "tools": tool_defs},
     )
 
     ctx: Dict[str, Any] = {
@@ -334,6 +430,8 @@ def template_writer_critic(
     agents: Optional[List[Dict]] = None,
     states: Optional[List[Dict]] = None,
     context_fields: Optional[List[Dict]] = None,
+    tools: Optional[List[str]] = None,
+    db_path: Optional[str] = None,
 ) -> str:
     """Iterative refinement: write → review → improve until quality threshold."""
     writer = _find_agent(agents, ["writ"], {
@@ -422,14 +520,17 @@ def template_ooda_workflow(
     agents: Optional[List[Dict]] = None,
     states: Optional[List[Dict]] = None,
     context_fields: Optional[List[Dict]] = None,
+    tools: Optional[List[str]] = None,
+    db_path: Optional[str] = None,
 ) -> str:
     """Explore → Plan → Execute → Verify with human gates."""
+    tool_defs = _filter_cli_tools(tools, db_path=db_path)
     planner = _find_agent(agents, ["plan"], {
         "name": "planner", "purpose": "Analyze task and produce implementation plan", "model_profile": "smart",
     })
     executor = _find_agent(agents, ["exec", "cod", "implement"], {
         "name": "executor", "purpose": "Execute the approved plan", "model_profile": "code",
-        "tools": CLI_TOOL_DEFINITIONS,
+        "tools": tool_defs,
     })
     reviewer = _find_agent(agents, ["review", "verif"], {
         "name": "reviewer", "purpose": "Review results for correctness", "model_profile": "fast",
@@ -547,6 +648,8 @@ def template_pipeline(
     agents: Optional[List[Dict]] = None,
     states: Optional[List[Dict]] = None,
     context_fields: Optional[List[Dict]] = None,
+    tools: Optional[List[str]] = None,
+    db_path: Optional[str] = None,
 ) -> str:
     """Linear phase-separated: prep → expensive → wrap."""
     phase_agents = agents if agents else [
@@ -608,6 +711,8 @@ def template_signal_wait(
     agents: Optional[List[Dict]] = None,
     states: Optional[List[Dict]] = None,
     context_fields: Optional[List[Dict]] = None,
+    tools: Optional[List[str]] = None,
+    db_path: Optional[str] = None,
 ) -> str:
     """Async workflow with external signal/approval gates."""
     a = _extract_agent(
@@ -686,6 +791,8 @@ def template_distributed_worker(
     agents: Optional[List[Dict]] = None,
     states: Optional[List[Dict]] = None,
     context_fields: Optional[List[Dict]] = None,
+    tools: Optional[List[str]] = None,
+    db_path: Optional[str] = None,
 ) -> str:
     """Worker pool pattern: checker → spawner → workers."""
     ctx: Dict[str, Any] = {
@@ -767,6 +874,8 @@ def create_from_template(
     agents: Optional[List[Dict]] = None,
     states: Optional[List[Dict]] = None,
     context_fields: Optional[List[Dict]] = None,
+    tools: Optional[List[str]] = None,
+    db_path: Optional[str] = None,
 ) -> str:
     """Create a machine config YAML from a named template."""
     fn = TEMPLATES.get(template_name)
@@ -781,4 +890,6 @@ def create_from_template(
         agents=agents,
         states=states,
         context_fields=context_fields,
+        tools=tools,
+        db_path=db_path,
     )

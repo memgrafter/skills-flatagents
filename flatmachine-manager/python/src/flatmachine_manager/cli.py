@@ -48,13 +48,29 @@ def _default_db() -> str:
 # ---------------------------------------------------------------------------
 
 def _parse_agent(spec: str) -> Dict[str, Any]:
-    """Parse agent shorthand: 'name:purpose:profile' or 'name:purpose'."""
-    parts = spec.split(":", maxsplit=2)
-    agent: Dict[str, Any] = {"name": parts[0].strip()}
-    if len(parts) >= 2:
-        agent["purpose"] = parts[1].strip()
+    """Parse agent shorthand: 'system:name:purpose:profile'.
+
+    System prompt is the first field and is required.  Name is required.
+    Purpose and profile are optional.
+    """
+    parts = spec.split(":", maxsplit=3)
+    if len(parts) < 2:
+        print(
+            "error: agent spec requires at least 'system:name' — got: " + spec,
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    system = parts[0].strip()
+    if not system:
+        print("error: system prompt (first field) cannot be empty", file=sys.stderr)
+        sys.exit(1)
+
+    agent: Dict[str, Any] = {"system": system, "name": parts[1].strip()}
     if len(parts) >= 3:
-        agent["model_profile"] = parts[2].strip()
+        agent["purpose"] = parts[2].strip()
+    if len(parts) >= 4:
+        agent["model_profile"] = parts[3].strip()
     return agent
 
 
@@ -115,7 +131,13 @@ def build_parser() -> argparse.ArgumentParser:
                             "pipeline", "signal-wait", "distributed-worker"])
     p.add_argument("--description", required=True)
     p.add_argument("--agent", action="append", dest="agents", default=[],
-                   help="Agent spec as 'name:purpose:profile' (repeatable)")
+                   help="Agent spec as 'system:name:purpose:profile' (repeatable, system required)")
+    p.add_argument("--system", default=None,
+                   help="System prompt for the first agent (overrides system in --agent shorthand; "
+                        "use when system prompt contains colons)")
+    p.add_argument("--tools", default=None,
+                   help="Comma-separated tool names to include (default: all). "
+                        "Available: read, bash, write, edit")
     p.add_argument("--context-field", action="append", dest="context_fields", default=[],
                    help="Context field as 'name=default' or 'name=@input' (from input)")
 
@@ -179,6 +201,23 @@ def build_parser() -> argparse.ArgumentParser:
                    help="Delete terminated executions older than N days (default: 7)")
     p.add_argument("--dry-run", action="store_true",
                    help="Show what would be deleted without deleting")
+
+    # --- Tool registry commands ---
+
+    # list-tools
+    p = sub.add_parser("list-tools", help="List available tools from the tool registry")
+    p.add_argument("--provider", default=None,
+                   help="Filter by provider (e.g., cli-tools, manager)")
+    p.add_argument("--include-deprecated", action="store_true",
+                   help="Include deprecated tools in output")
+
+    # deprecate-tool
+    p = sub.add_parser("deprecate-tool", help="Hide a tool from new machine creation")
+    p.add_argument("--name", required=True, help="Tool name to deprecate")
+
+    # undeprecate-tool
+    p = sub.add_parser("undeprecate-tool", help="Restore a deprecated tool for new machines")
+    p.add_argument("--name", required=True, help="Tool name to restore")
 
     # doctor
     p = sub.add_parser("doctor", help="Check environment health and recommend fixes")
@@ -294,6 +333,52 @@ def dispatch_cull(args: argparse.Namespace) -> tuple[str, bool]:
         return f"Unknown cull action: {args.action}", True
 
 
+def dispatch_tools(args: argparse.Namespace) -> tuple[str, bool]:
+    """Handle tool registry commands (no LLM, direct SQL)."""
+    from .tool_registry import ToolRegistry
+
+    db_path = args.db or _default_db()
+    tr = ToolRegistry(db_path=db_path)
+    tr.seed_defaults()  # idempotent — ensures catalog is populated
+
+    try:
+        if args.action == "list-tools":
+            entries = tr.list_tools(
+                provider=args.provider,
+                include_deprecated=args.include_deprecated,
+            )
+            if not entries:
+                return "No tools found.", False
+
+            lines = [
+                "| Tool | Provider | Status | Description |",
+                "|------|----------|--------|-------------|",
+            ]
+            for e in entries:
+                desc = e.description[:70].replace("\n", " ").strip()
+                lines.append(f"| {e.name} | {e.provider} | {e.status} | {desc} |")
+            return "\n".join(lines), False
+
+        elif args.action == "deprecate-tool":
+            try:
+                tr.deprecate(args.name)
+                return f"✓ Deprecated tool **{args.name}** — hidden from new machine creation.", False
+            except ValueError as e:
+                return str(e), True
+
+        elif args.action == "undeprecate-tool":
+            try:
+                tr.undeprecate(args.name)
+                return f"✓ Restored tool **{args.name}** — available for new machines.", False
+            except ValueError as e:
+                return str(e), True
+
+        else:
+            return f"Unknown tool action: {args.action}", True
+    finally:
+        tr.close()
+
+
 def dispatch_doctor(args: argparse.Namespace) -> tuple[str, bool]:
     """Run environment health checks."""
     from .doctor import run_doctor
@@ -326,6 +411,20 @@ async def dispatch(args: argparse.Namespace) -> tuple[str, bool]:
         elif args.action == "create":
             agents = [_parse_agent(s) for s in args.agents] if args.agents else None
 
+            # --system flag overrides system prompt on first agent
+            if args.system:
+                if not args.system.strip():
+                    return "error: --system cannot be empty", True
+                if agents:
+                    agents[0]["system"] = args.system
+                else:
+                    agents = [{"system": args.system, "name": "worker"}]
+
+            # --tools flag: comma-separated tool names
+            tools = None
+            if args.tools:
+                tools = [t.strip() for t in args.tools.split(",")]
+
             context_fields = None
             if args.context_fields:
                 context_fields = []
@@ -342,6 +441,7 @@ async def dispatch(args: argparse.Namespace) -> tuple[str, bool]:
                 "description": args.description,
                 "agents": agents,
                 "context_fields": context_fields,
+                "tools": tools,
             })
 
         elif args.action == "update":
@@ -429,6 +529,8 @@ def main():
     # Direct commands — synchronous, no registry needed
     if args.action.startswith("cull-"):
         content, is_error = dispatch_cull(args)
+    elif args.action in ("list-tools", "deprecate-tool", "undeprecate-tool"):
+        content, is_error = dispatch_tools(args)
     elif args.action == "doctor":
         content, is_error = dispatch_doctor(args)
     else:
