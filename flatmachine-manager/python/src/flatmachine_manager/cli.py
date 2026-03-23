@@ -188,14 +188,13 @@ def dispatch_doctor(args: argparse.Namespace) -> tuple[str, bool]:
     from .doctor import run_doctor
     import pathlib
 
-    # Resolve paths
+    # cli.py path: <skills-repo>/flatmachine-manager/python/src/flatmachine_manager/cli.py
     db_path = args.db or _default_db()
-    # Walk up from cli.py → flatmachine_manager → src → python → repo
     cli_file = pathlib.Path(__file__).resolve()
-    repo_dir = str(cli_file.parent.parent.parent.parent)
-    skill_dir = str(pathlib.Path(repo_dir) / "skills" / "flatmachine-manager")
+    skill_dir = str(cli_file.parents[3])
+    skills_repo_dir = str(cli_file.parents[4])
 
-    return run_doctor(repo_dir, skill_dir, db_path), False
+    return run_doctor(skills_repo_dir, skill_dir, db_path), False
 
 
 async def dispatch(args: argparse.Namespace) -> tuple[str, bool]:

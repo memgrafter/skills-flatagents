@@ -32,7 +32,7 @@ Environment:
   FLATMACHINE_DB       Override default registry DB path
   FLATMACHINE_MANAGER_SRC
                        Path to flatmachine_manager Python source
-                       (default: ~/code/prototyping/flatmachines_manager/python)
+                       (default: <skill-dir>/python)
 
 Templates:
   tool-loop            Agent + tools + human review (like coding agents)
@@ -82,8 +82,8 @@ SKILL_DIR="$(cd "$(dirname "$REAL_SCRIPT")" && pwd)"
 SKILLS_REPO="$(cd "$SKILL_DIR/.." && pwd)"
 VENV="$SKILLS_REPO/.venv"
 
-# Python source for flatmachine_manager (in prototyping repo by default)
-PYTHON_DIR="${FLATMACHINE_MANAGER_SRC:-$HOME/code/prototyping/flatmachines_manager/python}"
+# Python source for flatmachine_manager (local skill copy by default)
+PYTHON_DIR="${FLATMACHINE_MANAGER_SRC:-$SKILL_DIR/python}"
 
 SCHEMA_DB="$SKILL_DIR/machine_manager_schema.sqlite"
 DEFAULT_DB="${FLATMACHINE_DB:-./machine_manager.db}"
@@ -96,13 +96,24 @@ if [[ ! -d "$VENV" ]]; then
 fi
 
 # --- Bootstrap: package ---
-if ! "$VENV/bin/python" -c "import flatmachine_manager" 2>/dev/null; then
-  if [[ ! -d "$PYTHON_DIR" ]]; then
-    echo "error: flatmachine_manager source not found at $PYTHON_DIR" >&2
-    echo "Set FLATMACHINE_MANAGER_SRC to the correct path" >&2
-    exit 1
-  fi
-  echo "Installing flatmachine_manager into shared venv..." >&2
+if [[ ! -d "$PYTHON_DIR/src/flatmachine_manager" ]]; then
+  echo "error: flatmachine_manager source not found at $PYTHON_DIR" >&2
+  echo "Set FLATMACHINE_MANAGER_SRC to the correct path" >&2
+  exit 1
+fi
+
+EXPECTED_SRC="$(readlink -f "$PYTHON_DIR/src")"
+INSTALLED_FILE="$("$VENV/bin/python" -c 'import flatmachine_manager, pathlib; print(pathlib.Path(flatmachine_manager.__file__).resolve())' 2>/dev/null || true)"
+
+NEEDS_INSTALL=false
+if [[ -z "$INSTALLED_FILE" ]]; then
+  NEEDS_INSTALL=true
+elif [[ "$INSTALLED_FILE" != "$EXPECTED_SRC/"* ]]; then
+  NEEDS_INSTALL=true
+fi
+
+if [[ "$NEEDS_INSTALL" == "true" ]]; then
+  echo "Installing flatmachine_manager into shared venv from $PYTHON_DIR..." >&2
   uv pip install --python "$VENV/bin/python" -e "$PYTHON_DIR" >&2
 fi
 

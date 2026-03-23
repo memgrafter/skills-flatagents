@@ -8,34 +8,59 @@ from __future__ import annotations
 
 import os
 import sqlite3
-import sys
-from pathlib import Path
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 
 # (status, message, fix)
 Check = Tuple[str, str, str]  # "ok" | "warn" | "error"
 
 
-def _check_venv(repo_dir: str) -> Check:
-    venv = os.path.join(repo_dir, "python", ".venv")
-    if os.path.isdir(venv):
-        python = os.path.join(venv, "bin", "python")
+def _venv_python_candidates(skills_repo_dir: str, skill_dir: str) -> List[str]:
+    """Return supported venv python paths (shared first, local fallback)."""
+    return [
+        os.path.join(skills_repo_dir, ".venv", "bin", "python"),
+        os.path.join(skill_dir, "python", ".venv", "bin", "python"),
+    ]
+
+
+def _resolve_venv_python(skills_repo_dir: str, skill_dir: str) -> Optional[str]:
+    for python in _venv_python_candidates(skills_repo_dir, skill_dir):
         if os.path.isfile(python):
-            return ("ok", f"venv exists: {venv}", "")
-        return ("error", f"venv dir exists but no python binary: {venv}", f"cd {repo_dir}/python && bash run.sh")
-    return ("error", f"venv not found: {venv}", f"cd {repo_dir}/python && bash run.sh")
+            return python
+    return None
 
 
-def _check_package(repo_dir: str) -> Check:
-    python = os.path.join(repo_dir, "python", ".venv", "bin", "python")
-    if not os.path.isfile(python):
+def _check_venv(skills_repo_dir: str, skill_dir: str) -> Check:
+    python = _resolve_venv_python(skills_repo_dir, skill_dir)
+    if python:
+        return ("ok", f"venv python found: {python}", "")
+
+    candidates = _venv_python_candidates(skills_repo_dir, skill_dir)
+    fix = (
+        f"Try: cd {skills_repo_dir} && ./install.sh"
+        f" OR cd {skill_dir}/python && bash run.sh"
+    )
+    return (
+        "error",
+        f"venv python not found (checked: {', '.join(candidates)})",
+        fix,
+    )
+
+
+def _check_package(skills_repo_dir: str, skill_dir: str) -> Check:
+    python = _resolve_venv_python(skills_repo_dir, skill_dir)
+    if not python:
         return ("error", "Cannot check package — venv missing", "Fix venv first")
+
     ret = os.system(f'"{python}" -c "import flatmachine_manager" 2>/dev/null')
     if ret == 0:
-        return ("ok", "flatmachine_manager package installed", "")
-    return ("error", "flatmachine_manager not installed in venv",
-            f"uv pip install --python {python} -e {repo_dir}/python")
+        return ("ok", f"flatmachine_manager package installed ({python})", "")
+
+    return (
+        "error",
+        "flatmachine_manager not installed in venv",
+        f"uv pip install --python {python} -e {skill_dir}/python",
+    )
 
 
 def _check_schema_db(skill_dir: str) -> Check:
@@ -43,29 +68,36 @@ def _check_schema_db(skill_dir: str) -> Check:
     if os.path.isfile(schema):
         size = os.path.getsize(schema)
         return ("ok", f"Schema DB exists: {schema} ({size} bytes)", "")
-    return ("error", f"Schema DB missing: {schema}",
-            "Regenerate with the build script or restore from backup")
+    return (
+        "error",
+        f"Schema DB missing: {schema}",
+        "Regenerate with the build script or restore from backup",
+    )
 
 
 def _check_registry_db(db_path: str, schema_path: str) -> Check:
     if not os.path.isfile(db_path):
-        return ("warn", f"Registry DB not found: {db_path}",
-                f"cp {schema_path} {db_path}")
+        return ("warn", f"Registry DB not found: {db_path}", f"cp {schema_path} {db_path}")
+
     try:
         conn = sqlite3.connect(db_path, timeout=5.0)
         conn.row_factory = sqlite3.Row
 
         # Check tables exist
-        tables = {r[0] for r in conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table'"
-        ).fetchall()}
+        tables = {
+            r[0]
+            for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+        }
 
         required = {"machine_registry", "machine_versions"}
         missing = required - tables
         if missing:
             conn.close()
-            return ("error", f"Registry DB missing tables: {', '.join(missing)}",
-                    f"Backup and re-initialize: cp {db_path} {db_path}.bak && cp {schema_path} {db_path}")
+            return (
+                "error",
+                f"Registry DB missing tables: {', '.join(missing)}",
+                f"Backup and re-initialize: cp {db_path} {db_path}.bak && cp {schema_path} {db_path}",
+            )
 
         # Check we can read
         count = conn.execute("SELECT count(*) FROM machine_registry").fetchone()[0]
@@ -73,8 +105,11 @@ def _check_registry_db(db_path: str, schema_path: str) -> Check:
         return ("ok", f"Registry DB: {db_path} ({count} machines)", "")
 
     except sqlite3.Error as e:
-        return ("error", f"Registry DB unreadable: {e}",
-                f"Backup and re-initialize: cp {db_path} {db_path}.bak && cp {schema_path} {db_path}")
+        return (
+            "error",
+            f"Registry DB unreadable: {e}",
+            f"Backup and re-initialize: cp {db_path} {db_path}.bak && cp {schema_path} {db_path}",
+        )
 
 
 def _check_sqlite_version() -> Check:
@@ -82,18 +117,21 @@ def _check_sqlite_version() -> Check:
     parts = [int(x) for x in version.split(".")]
     if parts[0] >= 3 and parts[1] >= 35:
         return ("ok", f"SQLite version: {version}", "")
-    return ("warn", f"SQLite version {version} is old (recommend 3.35+)",
-            "Upgrade system SQLite or Python for better JSON/WAL support")
+    return (
+        "warn",
+        f"SQLite version {version} is old (recommend 3.35+)",
+        "Upgrade system SQLite or Python for better JSON/WAL support",
+    )
 
 
-def run_doctor(repo_dir: str, skill_dir: str, db_path: str) -> str:
+def run_doctor(skills_repo_dir: str, skill_dir: str, db_path: str) -> str:
     """Run all checks, return formatted report."""
     schema_path = os.path.join(skill_dir, "machine_manager_schema.sqlite")
 
     checks: List[Tuple[str, Check]] = [
         ("SQLite version", _check_sqlite_version()),
-        ("Virtual environment", _check_venv(repo_dir)),
-        ("Python package", _check_package(repo_dir)),
+        ("Virtual environment", _check_venv(skills_repo_dir, skill_dir)),
+        ("Python package", _check_package(skills_repo_dir, skill_dir)),
         ("Schema DB", _check_schema_db(skill_dir)),
         ("Registry DB", _check_registry_db(db_path, schema_path)),
     ]
