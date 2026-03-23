@@ -115,8 +115,9 @@ for skill in $SKILLS; do
     fi
 done
 
-# Symlink skills to ~/.flatagents/skills/ (override with FLATAGENTS_SKILLS_DIR)
-SKILLS_DIR="${FLATAGENTS_SKILLS_DIR:-$HOME/.flatagents/skills}"
+# Symlink skills to ~/.agents/skills/ (override with FLATAGENTS_SKILLS_DIR or skills_dir in manifest)
+MANIFEST_SKILLS_DIR=$(grep "^skills_dir:" "$MANIFEST" 2>/dev/null | sed 's/^skills_dir: *//' | sed "s|~|$HOME|" || true)
+SKILLS_DIR="${FLATAGENTS_SKILLS_DIR:-${MANIFEST_SKILLS_DIR:-$HOME/.agents/skills}}"
 mkdir -p "$SKILLS_DIR"
 
 for skill in $SKILLS; do

@@ -1,10 +1,12 @@
 """
-FlatMachines skill CLI — single dispatcher for all 9 actions.
+FlatMachines skill CLI — single dispatcher for all actions.
 
 Usage:
     python -m flatmachine_manager.cli <action> [options]
 
-Actions: list, get, create, update, validate, diff, duplicate, deprecate, select-model
+Actions:
+    start        — Run a machine from the registry
+    list, get, create, update, validate, diff, duplicate, deprecate, select-model
 """
 
 from __future__ import annotations
@@ -12,8 +14,12 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import logging
 import os
+import pathlib
 import sys
+import tempfile
+import warnings
 from typing import Any, Dict, List, Optional
 
 from .registry import MachineRegistry
@@ -76,6 +82,21 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     sub = parser.add_subparsers(dest="action", help="Action to perform")
+
+    # start
+    p = sub.add_parser("start", help="Run a machine from the registry")
+    p.add_argument("--name", required=True,
+                   help="Machine name in the registry")
+    p.add_argument("--input", dest="machine_input", default="{}",
+                   help="JSON input for the machine (default: {})")
+    p.add_argument("--version", type=int, default=None,
+                   help="Specific version to run (default: latest)")
+    p.add_argument("--working-dir", "-w", default=os.getcwd(),
+                   help="Working directory for CLI tools (default: cwd)")
+    p.add_argument("--profiles", default=None,
+                   help="Path to profiles.yml (default: skill config/profiles.yml)")
+    p.add_argument("--auto-approve", action="store_true",
+                   help="Skip human review actions")
 
     # list
     p = sub.add_parser("list", help="List registered machines")
@@ -168,6 +189,96 @@ def build_parser() -> argparse.ArgumentParser:
 # ---------------------------------------------------------------------------
 # Action dispatch
 # ---------------------------------------------------------------------------
+
+def _skill_config_path(name: str) -> str:
+    """Resolve a path relative to the skill's config/ directory."""
+    return str(pathlib.Path(__file__).resolve().parents[3] / "config" / name)
+
+
+async def dispatch_start(args: argparse.Namespace) -> int:
+    """Run a machine from the registry. Returns exit code."""
+    # Suppress noisy warnings during execution
+    warnings.filterwarnings("ignore", message=".*validation.*")
+    warnings.filterwarnings("ignore", message=".*Flatmachine.*")
+    warnings.filterwarnings("ignore", message=".*Flatagent.*")
+
+    # Quiet logging unless LOG_LEVEL is set
+    log_level = os.environ.get("LOG_LEVEL", "WARNING").upper()
+    logging.getLogger().setLevel(log_level)
+    for _name in ("flatagents", "flatmachines", "LiteLLM"):
+        logging.getLogger(_name).setLevel(log_level)
+
+    from flatmachines import FlatMachine
+    from .hooks_registry import build_hooks_registry
+
+    db_path = args.db or _default_db()
+    registry = MachineRegistry(db_path=db_path)
+    tmp_path = None
+
+    try:
+        # Load config from registry
+        if args.version is not None:
+            version = registry.get_version(args.name, args.version)
+        else:
+            version = registry.get_latest(args.name)
+
+        if not version:
+            print(f"error: machine '{args.name}' not found in registry", file=sys.stderr)
+            return 1
+
+        # Write config to temp file (SDK needs file path for agent ref resolution)
+        tmp = tempfile.NamedTemporaryFile(
+            mode="w", suffix=".yml", prefix=f"fm-{args.name}-", delete=False,
+        )
+        tmp.write(version.config_raw)
+        tmp.close()
+        tmp_path = tmp.name
+
+        # Resolve profiles
+        profiles_path = args.profiles or _skill_config_path("profiles.yml")
+        if not os.path.exists(profiles_path):
+            profiles_path = None
+
+        # Build hooks registry
+        working_dir = os.path.abspath(args.working_dir)
+        hooks_registry = build_hooks_registry(
+            registry=registry,
+            working_dir=working_dir,
+            auto_approve=args.auto_approve,
+        )
+
+        # Parse input
+        try:
+            machine_input = json.loads(args.machine_input)
+        except json.JSONDecodeError as e:
+            print(f"error: invalid JSON input: {e}", file=sys.stderr)
+            return 1
+
+        # Create and run machine
+        machine = FlatMachine(
+            config_file=tmp_path,
+            hooks_registry=hooks_registry,
+            profiles_file=profiles_path,
+        )
+
+        result = await machine.execute(input=machine_input)
+
+        # Print result
+        if isinstance(result, dict):
+            print(json.dumps(result, indent=2, default=str))
+        else:
+            print(result)
+
+        return 0
+
+    finally:
+        registry.close()
+        if tmp_path:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+
 
 def dispatch_cull(args: argparse.Namespace) -> tuple[str, bool]:
     """Handle cull-* subcommands directly (no LLM, no registry)."""
@@ -309,6 +420,11 @@ def main():
     if not args.action:
         parser.print_help()
         sys.exit(1)
+
+    # Start command — runs machine, handles its own output
+    if args.action == "start":
+        rc = asyncio.run(dispatch_start(args))
+        sys.exit(rc)
 
     # Direct commands — synchronous, no registry needed
     if args.action.startswith("cull-"):

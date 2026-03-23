@@ -13,6 +13,121 @@ import yaml
 
 SPEC_VERSION = "2.5.0"
 
+# Standard CLI tool schemas (read, bash, write, edit).
+# Matches flatagents/sdk/examples/coding_agent_cli/config/agent.yml.
+CLI_TOOL_DEFINITIONS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "read",
+            "description": (
+                "Read the contents of a file. Output is truncated to 2000 lines "
+                "or 50KB (whichever is hit first). Use offset/limit for large files. "
+                "When you need the full file, continue with offset until complete."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "Path to the file to read (relative or absolute)",
+                    },
+                    "offset": {
+                        "type": "number",
+                        "description": "Line number to start reading from (1-indexed)",
+                    },
+                    "limit": {
+                        "type": "number",
+                        "description": "Maximum number of lines to read",
+                    },
+                },
+                "required": ["path"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "bash",
+            "description": (
+                "Execute a bash command in the current working directory. Returns "
+                "stdout and stderr. Output is truncated to last 2000 lines or 50KB "
+                "(whichever is hit first). Optionally provide a timeout in seconds."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "command": {
+                        "type": "string",
+                        "description": "Bash command to execute",
+                    },
+                    "timeout": {
+                        "type": "number",
+                        "description": "Timeout in seconds (optional, default 30)",
+                    },
+                },
+                "required": ["command"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "write",
+            "description": (
+                "Write content to a file. Creates the file if it doesn't exist, "
+                "overwrites if it does. Automatically creates parent directories."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "Path to the file to write (relative or absolute)",
+                    },
+                    "content": {
+                        "type": "string",
+                        "description": "Content to write to the file",
+                    },
+                },
+                "required": ["path", "content"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "edit",
+            "description": (
+                "Edit a file by replacing exact text. The oldText must match exactly "
+                "(including whitespace). Use this for precise, surgical edits."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "Path to the file to edit (relative or absolute)",
+                    },
+                    "oldText": {
+                        "type": "string",
+                        "description": "Exact text to find and replace (must match exactly)",
+                    },
+                    "newText": {
+                        "type": "string",
+                        "description": "New text to replace the old text with",
+                    },
+                },
+                "required": ["path", "oldText", "newText"],
+            },
+        },
+    },
+]
+
+
+# ---------------------------------------------------------------------------
+# Shared helpers
+# ---------------------------------------------------------------------------
 
 def _make_agent_yaml(
     name: str,
@@ -20,6 +135,7 @@ def _make_agent_yaml(
     model_profile: str = "default",
     temperature: Optional[float] = None,
     tools: Optional[List[Dict]] = None,
+    system: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Generate a flatagent config dict."""
     model: Any
@@ -34,7 +150,7 @@ def _make_agent_yaml(
         "data": {
             "name": name,
             "model": model,
-            "system": f"You are a specialist agent. Your purpose: {purpose}\n\nBe concise and precise in your output.",
+            "system": system or "",
             "user": "{{ input.task }}",
         },
         "metadata": {
@@ -46,11 +162,97 @@ def _make_agent_yaml(
     return agent
 
 
-def _base_context(extra: Optional[Dict[str, str]] = None) -> Dict[str, str]:
-    ctx: Dict[str, str] = {}
-    if extra:
-        ctx.update(extra)
-    return ctx
+def _extract_agent(
+    agent_dict: Dict[str, Any],
+    defaults: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Extract agent fields from a user-provided dict, falling back to defaults.
+
+    Returns dict with: name, purpose, model_profile, system, temperature, tools
+    """
+    return {
+        "name": agent_dict.get("name", defaults.get("name", "agent")),
+        "purpose": agent_dict.get("purpose", defaults.get("purpose", "")),
+        "model_profile": agent_dict.get("model_profile", defaults.get("model_profile", "default")),
+        "system": agent_dict.get("system", defaults.get("system")),
+        "temperature": agent_dict.get("temperature", defaults.get("temperature")),
+        "tools": agent_dict.get("tools", defaults.get("tools")),
+    }
+
+
+def _find_agent(
+    agents: Optional[List[Dict]],
+    match_substrings: List[str],
+    defaults: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Find an agent from the list whose name contains one of the substrings.
+
+    Falls back to defaults if no match or agents is None.
+    Always returns a dict with all standard agent fields.
+    """
+    if agents:
+        for a in agents:
+            n = a.get("name", "").lower()
+            for sub in match_substrings:
+                if sub in n:
+                    return _extract_agent(a, defaults)
+    return _extract_agent({}, defaults)
+
+
+def _apply_context_fields(
+    ctx: Dict[str, Any],
+    context_fields: Optional[List[Dict]],
+) -> None:
+    """Merge user-specified context fields into the context dict (mutates ctx)."""
+    if not context_fields:
+        return
+    for cf in context_fields:
+        cname = cf["name"]
+        if cf.get("from_input"):
+            ctx[cname] = "{{ input." + cname + " }}"
+        else:
+            ctx[cname] = cf.get("default_value", "")
+
+
+_DEFAULT_EXECUTION = {"type": "retry", "backoffs": [2, 8, 16], "jitter": 0.1}
+
+_ERROR_STATE = {
+    "type": "final",
+    "output": {"error": "{{ context.last_error }}"},
+}
+
+
+def _build_machine(
+    name: str,
+    description: str,
+    *,
+    context: Dict[str, Any],
+    agents: Dict[str, Any],
+    states: Dict[str, Any],
+    hooks: Any,
+    tags: List[str],
+) -> str:
+    """Build a complete machine config dict and return as YAML string."""
+    machine = {
+        "spec": "flatmachine",
+        "spec_version": SPEC_VERSION,
+        "data": {
+            "name": name,
+            "context": context,
+            "agents": agents,
+            "states": states,
+            "persistence": {"enabled": True, "backend": "sqlite"},
+            "hooks": hooks,
+        },
+        "metadata": {
+            "description": description,
+            "tags": tags,
+        },
+    }
+    # Omit agents key if empty (distributed-worker has none)
+    if not agents:
+        del machine["data"]["agents"]
+    return yaml.dump(machine, default_flow_style=False, sort_keys=False)
 
 
 # ---------------------------------------------------------------------------
@@ -65,90 +267,61 @@ def template_tool_loop(
     context_fields: Optional[List[Dict]] = None,
 ) -> str:
     """Agent + tools + human review. Like coding agents."""
-    agent_name = "worker"
-    agent_purpose = description
-    agent_profile = "default"
+    a = _extract_agent(
+        (agents[0] if agents else {}),
+        {"name": "worker", "purpose": description, "model_profile": "default", "tools": CLI_TOOL_DEFINITIONS},
+    )
 
-    if agents and len(agents) > 0:
-        a = agents[0]
-        agent_name = a.get("name", "worker")
-        agent_purpose = a.get("purpose", description)
-        agent_profile = a.get("model_profile", "default")
-
-    ctx = {
+    ctx: Dict[str, Any] = {
         "task": "{{ input.task }}",
         "working_dir": "{{ input.working_dir | default('.') }}",
         "human_approved": False,
     }
-    if context_fields:
-        for cf in context_fields:
-            cname = cf["name"]
-            if cf.get("from_input"):
-                ctx[cname] = "{{ input." + cname + " }}"
-            else:
-                ctx[cname] = cf.get("default_value", "")
+    _apply_context_fields(ctx, context_fields)
 
-    machine = {
-        "spec": "flatmachine",
-        "spec_version": SPEC_VERSION,
-        "data": {
-            "name": name,
-            "context": ctx,
-            "agents": {
-                agent_name: _make_agent_yaml(agent_name, agent_purpose, agent_profile),
-            },
-            "states": {
-                "start": {
-                    "type": "initial",
-                    "transitions": [{"to": "work"}],
-                },
-                "work": {
-                    "agent": agent_name,
-                    "tool_loop": {
-                        "max_turns": 20,
-                        "max_tool_calls": 80,
-                        "max_cost": 2.0,
-                        "tool_timeout": 60,
-                        "total_timeout": 600,
-                    },
-                    "execution": {
-                        "type": "retry",
-                        "backoffs": [2, 8, 16],
-                        "jitter": 0.1,
-                    },
-                    "on_error": "error_state",
-                    "input": {"task": "{{ context.task }}"},
-                    "output_to_context": {"result": "{{ output.content }}"},
-                    "transitions": [{"to": "human_review"}],
-                },
-                "human_review": {
-                    "action": "human_review",
-                    "transitions": [
-                        {"condition": "context.human_approved == true", "to": "done"},
-                        {"to": "work"},
-                    ],
-                },
-                "error_state": {
-                    "type": "final",
-                    "output": {
-                        "error": "{{ context.last_error }}",
-                        "error_type": "{{ context.last_error_type }}",
-                    },
-                },
-                "done": {
-                    "type": "final",
-                    "output": {"result": "{{ context.result }}"},
-                },
-            },
-            "persistence": {"enabled": True, "backend": "sqlite"},
+    return _build_machine(
+        name, description,
+        context=ctx,
+        agents={
+            a["name"]: _make_agent_yaml(a["name"], a["purpose"], a["model_profile"],
+                                        system=a["system"], tools=a["tools"]),
         },
-        "metadata": {
-            "description": description,
-            "tags": ["tool-use", "human-in-loop"],
+        states={
+            "start": {
+                "type": "initial",
+                "transitions": [{"to": "work"}],
+            },
+            "work": {
+                "agent": a["name"],
+                "tool_loop": {
+                    "max_turns": 20,
+                    "max_tool_calls": 80,
+                    "max_cost": 2.0,
+                    "tool_timeout": 60,
+                    "total_timeout": 600,
+                },
+                "execution": _DEFAULT_EXECUTION,
+                "on_error": "error_state",
+                "input": {"task": "{{ context.task }}"},
+                "output_to_context": {"result": "{{ output.content }}"},
+                "transitions": [{"to": "human_review"}],
+            },
+            "human_review": {
+                "action": "human_review",
+                "transitions": [
+                    {"condition": "context.human_approved == true", "to": "done"},
+                    {"to": "work"},
+                ],
+            },
+            "error_state": _ERROR_STATE,
+            "done": {
+                "type": "final",
+                "output": {"result": "{{ context.result }}"},
+            },
         },
-    }
-
-    return yaml.dump(machine, default_flow_style=False, sort_keys=False)
+        hooks=["logging", "cli-tools"],
+        tags=["tool-use", "human-in-loop"],
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -163,24 +336,12 @@ def template_writer_critic(
     context_fields: Optional[List[Dict]] = None,
 ) -> str:
     """Iterative refinement: write → review → improve until quality threshold."""
-    writer_name = "writer"
-    critic_name = "critic"
-    writer_purpose = "Generate content based on the task"
-    critic_purpose = "Review and score content quality"
-    writer_profile = "smart"
-    critic_profile = "fast"
-
-    if agents:
-        for a in agents:
-            n = a.get("name", "")
-            if "writ" in n.lower():
-                writer_name = n
-                writer_purpose = a.get("purpose", writer_purpose)
-                writer_profile = a.get("model_profile", writer_profile)
-            elif "critic" in n.lower() or "review" in n.lower():
-                critic_name = n
-                critic_purpose = a.get("purpose", critic_purpose)
-                critic_profile = a.get("model_profile", critic_profile)
+    writer = _find_agent(agents, ["writ"], {
+        "name": "writer", "purpose": "Generate content based on the task", "model_profile": "smart",
+    })
+    critic = _find_agent(agents, ["critic", "review"], {
+        "name": "critic", "purpose": "Review and score content quality", "model_profile": "fast",
+    })
 
     ctx: Dict[str, Any] = {
         "task": "{{ input.task }}",
@@ -190,83 +351,65 @@ def template_writer_critic(
         "max_rounds": 5,
         "quality_threshold": 8,
     }
-    if context_fields:
-        for cf in context_fields:
-            cname = cf["name"]
-            if cf.get("from_input"):
-                ctx[cname] = "{{ input." + cname + " }}"
-            else:
-                ctx[cname] = cf.get("default_value", "")
+    _apply_context_fields(ctx, context_fields)
 
-    machine = {
-        "spec": "flatmachine",
-        "spec_version": SPEC_VERSION,
-        "data": {
-            "name": name,
-            "context": ctx,
-            "agents": {
-                writer_name: _make_agent_yaml(writer_name, writer_purpose, writer_profile),
-                critic_name: _make_agent_yaml(critic_name, critic_purpose, critic_profile),
+    return _build_machine(
+        name, description,
+        context=ctx,
+        agents={
+            writer["name"]: _make_agent_yaml(writer["name"], writer["purpose"], writer["model_profile"], system=writer["system"]),
+            critic["name"]: _make_agent_yaml(critic["name"], critic["purpose"], critic["model_profile"], system=critic["system"]),
+        },
+        states={
+            "start": {
+                "type": "initial",
+                "transitions": [{"to": "write"}],
             },
-            "states": {
-                "start": {
-                    "type": "initial",
-                    "transitions": [{"to": "write"}],
+            "write": {
+                "agent": writer["name"],
+                "execution": _DEFAULT_EXECUTION,
+                "on_error": "error_state",
+                "input": {
+                    "task": "{{ context.task }}",
+                    "previous_content": "{{ context.content }}",
+                    "feedback": "{{ context.feedback | default('') }}",
+                    "round": "{{ context.round }}",
                 },
-                "write": {
-                    "agent": writer_name,
-                    "execution": {"type": "retry", "backoffs": [2, 8, 16], "jitter": 0.1},
-                    "on_error": "error_state",
-                    "input": {
-                        "task": "{{ context.task }}",
-                        "previous_content": "{{ context.content }}",
-                        "feedback": "{{ context.feedback | default('') }}",
-                        "round": "{{ context.round }}",
-                    },
-                    "output_to_context": {"content": "{{ output.content }}"},
-                    "transitions": [{"to": "review"}],
+                "output_to_context": {"content": "{{ output.content }}"},
+                "transitions": [{"to": "review"}],
+            },
+            "review": {
+                "agent": critic["name"],
+                "execution": _DEFAULT_EXECUTION,
+                "on_error": "error_state",
+                "input": {
+                    "content": "{{ context.content }}",
+                    "task": "{{ context.task }}",
                 },
-                "review": {
-                    "agent": critic_name,
-                    "execution": {"type": "retry", "backoffs": [2, 8, 16], "jitter": 0.1},
-                    "on_error": "error_state",
-                    "input": {
-                        "content": "{{ context.content }}",
-                        "task": "{{ context.task }}",
-                    },
-                    "output_to_context": {
-                        "score": "{{ output.score }}",
-                        "feedback": "{{ output.content }}",
-                        "round": "{{ context.round + 1 }}",
-                    },
-                    "transitions": [
-                        {"condition": "context.score >= context.quality_threshold", "to": "done"},
-                        {"condition": "context.round >= context.max_rounds", "to": "done"},
-                        {"to": "write"},
-                    ],
+                "output_to_context": {
+                    "score": "{{ output.score }}",
+                    "feedback": "{{ output.content }}",
+                    "round": "{{ context.round + 1 }}",
                 },
-                "error_state": {
-                    "type": "final",
-                    "output": {"error": "{{ context.last_error }}"},
-                },
-                "done": {
-                    "type": "final",
-                    "output": {
-                        "content": "{{ context.content }}",
-                        "score": "{{ context.score }}",
-                        "rounds": "{{ context.round }}",
-                    },
+                "transitions": [
+                    {"condition": "context.score >= context.quality_threshold", "to": "done"},
+                    {"condition": "context.round >= context.max_rounds", "to": "done"},
+                    {"to": "write"},
+                ],
+            },
+            "error_state": _ERROR_STATE,
+            "done": {
+                "type": "final",
+                "output": {
+                    "content": "{{ context.content }}",
+                    "score": "{{ context.score }}",
+                    "rounds": "{{ context.round }}",
                 },
             },
-            "persistence": {"enabled": True, "backend": "sqlite"},
         },
-        "metadata": {
-            "description": description,
-            "tags": ["writer-critic", "iterative-refinement"],
-        },
-    }
-
-    return yaml.dump(machine, default_flow_style=False, sort_keys=False)
+        hooks="logging",
+        tags=["writer-critic", "iterative-refinement"],
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -281,25 +424,16 @@ def template_ooda_workflow(
     context_fields: Optional[List[Dict]] = None,
 ) -> str:
     """Explore → Plan → Execute → Verify with human gates."""
-    planner_name = "planner"
-    executor_name = "executor"
-    reviewer_name = "reviewer"
-    planner_profile = "smart"
-    executor_profile = "code"
-    reviewer_profile = "fast"
-
-    if agents:
-        for a in agents:
-            n = a.get("name", "").lower()
-            if "plan" in n:
-                planner_name = a["name"]
-                planner_profile = a.get("model_profile", planner_profile)
-            elif "exec" in n or "cod" in n or "implement" in n:
-                executor_name = a["name"]
-                executor_profile = a.get("model_profile", executor_profile)
-            elif "review" in n or "verif" in n:
-                reviewer_name = a["name"]
-                reviewer_profile = a.get("model_profile", reviewer_profile)
+    planner = _find_agent(agents, ["plan"], {
+        "name": "planner", "purpose": "Analyze task and produce implementation plan", "model_profile": "smart",
+    })
+    executor = _find_agent(agents, ["exec", "cod", "implement"], {
+        "name": "executor", "purpose": "Execute the approved plan", "model_profile": "code",
+        "tools": CLI_TOOL_DEFINITIONS,
+    })
+    reviewer = _find_agent(agents, ["review", "verif"], {
+        "name": "reviewer", "purpose": "Review results for correctness", "model_profile": "fast",
+    })
 
     ctx: Dict[str, Any] = {
         "task": "{{ input.task }}",
@@ -311,113 +445,96 @@ def template_ooda_workflow(
         "max_iterations": 5,
         "human_feedback": "",
     }
-    if context_fields:
-        for cf in context_fields:
-            cname = cf["name"]
-            if cf.get("from_input"):
-                ctx[cname] = "{{ input." + cname + " }}"
-            else:
-                ctx[cname] = cf.get("default_value", "")
+    _apply_context_fields(ctx, context_fields)
 
-    machine = {
-        "spec": "flatmachine",
-        "spec_version": SPEC_VERSION,
-        "data": {
-            "name": name,
-            "context": ctx,
-            "agents": {
-                planner_name: _make_agent_yaml(planner_name, "Analyze task and produce implementation plan", planner_profile),
-                executor_name: _make_agent_yaml(executor_name, "Execute the approved plan", executor_profile),
-                reviewer_name: _make_agent_yaml(reviewer_name, "Review results for correctness", reviewer_profile),
+    return _build_machine(
+        name, description,
+        context=ctx,
+        agents={
+            planner["name"]: _make_agent_yaml(planner["name"], planner["purpose"], planner["model_profile"], system=planner["system"]),
+            executor["name"]: _make_agent_yaml(executor["name"], executor["purpose"], executor["model_profile"],
+                                               system=executor["system"], tools=executor.get("tools")),
+            reviewer["name"]: _make_agent_yaml(reviewer["name"], reviewer["purpose"], reviewer["model_profile"], system=reviewer["system"]),
+        },
+        states={
+            "start": {
+                "type": "initial",
+                "transitions": [{"to": "plan"}],
             },
-            "states": {
-                "start": {
-                    "type": "initial",
-                    "transitions": [{"to": "plan"}],
+            "plan": {
+                "agent": planner["name"],
+                "execution": _DEFAULT_EXECUTION,
+                "on_error": "error_state",
+                "input": {
+                    "task": "{{ context.task }}",
+                    "feedback": "{{ context.human_feedback }}",
                 },
-                "plan": {
-                    "agent": planner_name,
-                    "execution": {"type": "retry", "backoffs": [2, 8, 16], "jitter": 0.1},
-                    "on_error": "error_state",
-                    "input": {
-                        "task": "{{ context.task }}",
-                        "feedback": "{{ context.human_feedback }}",
-                    },
-                    "output_to_context": {"plan": "{{ output.content }}"},
-                    "transitions": [{"to": "review_plan"}],
+                "output_to_context": {"plan": "{{ output.content }}"},
+                "transitions": [{"to": "review_plan"}],
+            },
+            "review_plan": {
+                "action": "human_review_plan",
+                "transitions": [
+                    {"condition": "context.plan_approved == true", "to": "execute"},
+                    {"condition": "context.iteration >= context.max_iterations", "to": "max_iterations"},
+                    {"to": "plan"},
+                ],
+            },
+            "execute": {
+                "agent": executor["name"],
+                "execution": _DEFAULT_EXECUTION,
+                "on_error": "error_state",
+                "input": {
+                    "plan": "{{ context.plan }}",
+                    "task": "{{ context.task }}",
                 },
-                "review_plan": {
-                    "action": "human_review_plan",
-                    "transitions": [
-                        {"condition": "context.plan_approved == true", "to": "execute"},
-                        {"condition": "context.iteration >= context.max_iterations", "to": "max_iterations"},
-                        {"to": "plan"},
-                    ],
+                "output_to_context": {"result": "{{ output.content }}"},
+                "transitions": [{"to": "verify"}],
+            },
+            "verify": {
+                "agent": reviewer["name"],
+                "execution": _DEFAULT_EXECUTION,
+                "on_error": "error_state",
+                "input": {
+                    "task": "{{ context.task }}",
+                    "plan": "{{ context.plan }}",
+                    "result": "{{ context.result }}",
                 },
-                "execute": {
-                    "agent": executor_name,
-                    "execution": {"type": "retry", "backoffs": [2, 8, 16], "jitter": 0.1},
-                    "on_error": "error_state",
-                    "input": {
-                        "plan": "{{ context.plan }}",
-                        "task": "{{ context.task }}",
-                    },
-                    "output_to_context": {"result": "{{ output.content }}"},
-                    "transitions": [{"to": "verify"}],
+                "output_to_context": {
+                    "review": "{{ output.content }}",
+                    "iteration": "{{ context.iteration + 1 }}",
                 },
-                "verify": {
-                    "agent": reviewer_name,
-                    "execution": {"type": "retry", "backoffs": [2, 8, 16], "jitter": 0.1},
-                    "on_error": "error_state",
-                    "input": {
-                        "task": "{{ context.task }}",
-                        "plan": "{{ context.plan }}",
-                        "result": "{{ context.result }}",
-                    },
-                    "output_to_context": {
-                        "review": "{{ output.content }}",
-                        "iteration": "{{ context.iteration + 1 }}",
-                    },
-                    "transitions": [{"to": "review_result"}],
-                },
-                "review_result": {
-                    "action": "human_review_result",
-                    "transitions": [
-                        {"condition": "context.result_approved == true", "to": "done"},
-                        {"condition": "context.iteration >= context.max_iterations", "to": "max_iterations"},
-                        {"to": "execute"},
-                    ],
-                },
-                "max_iterations": {
-                    "type": "final",
-                    "output": {
-                        "status": "max_iterations",
-                        "result": "{{ context.result }}",
-                        "iterations": "{{ context.iteration }}",
-                    },
-                },
-                "error_state": {
-                    "type": "final",
-                    "output": {"error": "{{ context.last_error }}"},
-                },
-                "done": {
-                    "type": "final",
-                    "output": {
-                        "status": "completed",
-                        "result": "{{ context.result }}",
-                        "iterations": "{{ context.iteration }}",
-                    },
+                "transitions": [{"to": "review_result"}],
+            },
+            "review_result": {
+                "action": "human_review_result",
+                "transitions": [
+                    {"condition": "context.result_approved == true", "to": "done"},
+                    {"condition": "context.iteration >= context.max_iterations", "to": "max_iterations"},
+                    {"to": "execute"},
+                ],
+            },
+            "max_iterations": {
+                "type": "final",
+                "output": {
+                    "status": "max_iterations",
+                    "result": "{{ context.result }}",
+                    "iterations": "{{ context.iteration }}",
                 },
             },
-            "persistence": {"enabled": True, "backend": "sqlite"},
+            "error_state": _ERROR_STATE,
+            "done": {
+                "type": "final",
+                "output": {
+                    "status": "completed",
+                    "result": "{{ context.result }}",
+                    "iterations": "{{ context.iteration }}",
+                },
+            },
         },
-        "metadata": {
-            "description": description,
-            "tags": ["ooda", "human-in-loop", "plan-execute-verify"],
-        },
-    }
-
-    return yaml.dump(machine, default_flow_style=False, sort_keys=False)
+        hooks=["logging", "cli-tools"],
+        tags=["ooda", "human-in-loop", "plan-execute-verify"],
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -432,76 +549,53 @@ def template_pipeline(
     context_fields: Optional[List[Dict]] = None,
 ) -> str:
     """Linear phase-separated: prep → expensive → wrap."""
-    phase_agents = []
-    if agents:
-        phase_agents = agents
-    else:
-        phase_agents = [
-            {"name": "prep", "purpose": "Prepare and validate input", "model_profile": "fast"},
-            {"name": "process", "purpose": "Main processing step", "model_profile": "smart"},
-            {"name": "wrap", "purpose": "Format and finalize output", "model_profile": "fast"},
-        ]
+    phase_agents = agents if agents else [
+        {"name": "prep", "purpose": "Prepare and validate input", "model_profile": "fast"},
+        {"name": "process", "purpose": "Main processing step", "model_profile": "smart"},
+        {"name": "wrap", "purpose": "Format and finalize output", "model_profile": "fast"},
+    ]
+    phases = [_extract_agent(a, {"name": f"phase_{i}", "purpose": f"Phase {i+1}"})
+              for i, a in enumerate(phase_agents)]
 
     ctx: Dict[str, Any] = {
         "task": "{{ input.task }}",
         "result": "",
     }
-    if context_fields:
-        for cf in context_fields:
-            cname = cf["name"]
-            if cf.get("from_input"):
-                ctx[cname] = "{{ input." + cname + " }}"
-            else:
-                ctx[cname] = cf.get("default_value", "")
+    _apply_context_fields(ctx, context_fields)
 
     agent_configs = {}
     state_configs: Dict[str, Any] = {
-        "start": {"type": "initial", "transitions": [{"to": phase_agents[0]["name"]}]},
+        "start": {"type": "initial", "transitions": [{"to": phases[0]["name"]}]},
     }
 
-    for i, a in enumerate(phase_agents):
-        aname = a["name"]
-        purpose = a.get("purpose", f"Phase {i+1}")
-        profile = a.get("model_profile", "default")
-
-        agent_configs[aname] = _make_agent_yaml(aname, purpose, profile)
-
-        next_state = phase_agents[i + 1]["name"] if i + 1 < len(phase_agents) else "done"
-        state_configs[aname] = {
-            "agent": aname,
-            "execution": {"type": "retry", "backoffs": [2, 8, 16], "jitter": 0.1},
+    for i, p in enumerate(phases):
+        agent_configs[p["name"]] = _make_agent_yaml(
+            p["name"], p["purpose"], p["model_profile"], system=p["system"],
+        )
+        next_state = phases[i + 1]["name"] if i + 1 < len(phases) else "done"
+        state_configs[p["name"]] = {
+            "agent": p["name"],
+            "execution": _DEFAULT_EXECUTION,
             "on_error": "error_state",
             "input": {"task": "{{ context.task }}", "previous": "{{ context.result }}"},
             "output_to_context": {"result": "{{ output.content }}"},
             "transitions": [{"to": next_state}],
         }
 
-    state_configs["error_state"] = {
-        "type": "final",
-        "output": {"error": "{{ context.last_error }}"},
-    }
+    state_configs["error_state"] = _ERROR_STATE
     state_configs["done"] = {
         "type": "final",
         "output": {"result": "{{ context.result }}"},
     }
 
-    machine = {
-        "spec": "flatmachine",
-        "spec_version": SPEC_VERSION,
-        "data": {
-            "name": name,
-            "context": ctx,
-            "agents": agent_configs,
-            "states": state_configs,
-            "persistence": {"enabled": True, "backend": "sqlite"},
-        },
-        "metadata": {
-            "description": description,
-            "tags": ["pipeline", "phase-separated"],
-        },
-    }
-
-    return yaml.dump(machine, default_flow_style=False, sort_keys=False)
+    return _build_machine(
+        name, description,
+        context=ctx,
+        agents=agent_configs,
+        states=state_configs,
+        hooks="logging",
+        tags=["pipeline", "phase-separated"],
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -516,12 +610,10 @@ def template_signal_wait(
     context_fields: Optional[List[Dict]] = None,
 ) -> str:
     """Async workflow with external signal/approval gates."""
-    worker_name = "worker"
-    worker_profile = "default"
-
-    if agents and len(agents) > 0:
-        worker_name = agents[0].get("name", "worker")
-        worker_profile = agents[0].get("model_profile", "default")
+    a = _extract_agent(
+        (agents[0] if agents else {}),
+        {"name": "worker", "purpose": description, "model_profile": "default"},
+    )
 
     ctx: Dict[str, Any] = {
         "task": "{{ input.task }}",
@@ -529,77 +621,59 @@ def template_signal_wait(
         "result": "",
         "approved": False,
     }
-    if context_fields:
-        for cf in context_fields:
-            cname = cf["name"]
-            if cf.get("from_input"):
-                ctx[cname] = "{{ input." + cname + " }}"
-            else:
-                ctx[cname] = cf.get("default_value", "")
+    _apply_context_fields(ctx, context_fields)
 
-    machine = {
-        "spec": "flatmachine",
-        "spec_version": SPEC_VERSION,
-        "data": {
-            "name": name,
-            "context": ctx,
-            "agents": {
-                worker_name: _make_agent_yaml(worker_name, description, worker_profile),
+    return _build_machine(
+        name, description,
+        context=ctx,
+        agents={
+            a["name"]: _make_agent_yaml(a["name"], a["purpose"], a["model_profile"], system=a["system"]),
+        },
+        states={
+            "start": {
+                "type": "initial",
+                "transitions": [{"to": "work"}],
             },
-            "states": {
-                "start": {
-                    "type": "initial",
-                    "transitions": [{"to": "work"}],
+            "work": {
+                "agent": a["name"],
+                "execution": _DEFAULT_EXECUTION,
+                "on_error": "error_state",
+                "input": {"task": "{{ context.task }}"},
+                "output_to_context": {"result": "{{ output.content }}"},
+                "transitions": [{"to": "wait_for_approval"}],
+            },
+            "wait_for_approval": {
+                "wait_for": "approval/{{ context.task_id }}",
+                "timeout": 86400,
+                "output_to_context": {
+                    "approved": "{{ output.approved }}",
+                    "reviewer_feedback": "{{ output.feedback | default('') }}",
                 },
-                "work": {
-                    "agent": worker_name,
-                    "execution": {"type": "retry", "backoffs": [2, 8, 16], "jitter": 0.1},
-                    "on_error": "error_state",
-                    "input": {"task": "{{ context.task }}"},
-                    "output_to_context": {"result": "{{ output.content }}"},
-                    "transitions": [{"to": "wait_for_approval"}],
-                },
-                "wait_for_approval": {
-                    "wait_for": "approval/{{ context.task_id }}",
-                    "timeout": 86400,
-                    "output_to_context": {
-                        "approved": "{{ output.approved }}",
-                        "reviewer_feedback": "{{ output.feedback | default('') }}",
-                    },
-                    "transitions": [
-                        {"condition": "context.approved == true", "to": "done"},
-                        {"to": "rejected"},
-                    ],
-                },
-                "rejected": {
-                    "type": "final",
-                    "output": {
-                        "status": "rejected",
-                        "result": "{{ context.result }}",
-                        "feedback": "{{ context.reviewer_feedback }}",
-                    },
-                },
-                "error_state": {
-                    "type": "final",
-                    "output": {"error": "{{ context.last_error }}"},
-                },
-                "done": {
-                    "type": "final",
-                    "output": {
-                        "status": "approved",
-                        "result": "{{ context.result }}",
-                    },
+                "transitions": [
+                    {"condition": "context.approved == true", "to": "done"},
+                    {"to": "rejected"},
+                ],
+            },
+            "rejected": {
+                "type": "final",
+                "output": {
+                    "status": "rejected",
+                    "result": "{{ context.result }}",
+                    "feedback": "{{ context.reviewer_feedback }}",
                 },
             },
-            "persistence": {"enabled": True, "backend": "sqlite"},
+            "error_state": _ERROR_STATE,
+            "done": {
+                "type": "final",
+                "output": {
+                    "status": "approved",
+                    "result": "{{ context.result }}",
+                },
+            },
         },
-        "metadata": {
-            "description": description,
-            "tags": ["signal-wait", "approval-gate", "async"],
-        },
-    }
-
-    return yaml.dump(machine, default_flow_style=False, sort_keys=False)
+        hooks="logging",
+        tags=["signal-wait", "approval-gate", "async"],
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -620,65 +694,47 @@ def template_distributed_worker(
         "pool_state": {},
         "spawn_plan": {},
     }
-    if context_fields:
-        for cf in context_fields:
-            cname = cf["name"]
-            if cf.get("from_input"):
-                ctx[cname] = "{{ input." + cname + " }}"
-            else:
-                ctx[cname] = cf.get("default_value", "")
+    _apply_context_fields(ctx, context_fields)
 
-    machine = {
-        "spec": "flatmachine",
-        "spec_version": SPEC_VERSION,
-        "data": {
-            "name": name,
-            "context": ctx,
-            "states": {
-                "start": {
-                    "type": "initial",
-                    "transitions": [{"to": "check_pool"}],
-                },
-                "check_pool": {
-                    "action": "get_pool_state",
-                    "on_error": "error_state",
-                    "transitions": [{"to": "calculate_spawn"}],
-                },
-                "calculate_spawn": {
-                    "action": "calculate_spawn",
-                    "on_error": "error_state",
-                    "transitions": [
-                        {"condition": "context.spawn_plan.count > 0", "to": "spawn_workers"},
-                        {"to": "done"},
-                    ],
-                },
-                "spawn_workers": {
-                    "action": "spawn_workers",
-                    "on_error": "error_state",
-                    "transitions": [{"to": "done"}],
-                },
-                "error_state": {
-                    "type": "final",
-                    "output": {"error": "{{ context.last_error }}"},
-                },
-                "done": {
-                    "type": "final",
-                    "output": {
-                        "pool_state": "{{ context.pool_state }}",
-                        "spawn_plan": "{{ context.spawn_plan }}",
-                    },
+    return _build_machine(
+        name, description,
+        context=ctx,
+        agents={},
+        states={
+            "start": {
+                "type": "initial",
+                "transitions": [{"to": "check_pool"}],
+            },
+            "check_pool": {
+                "action": "get_pool_state",
+                "on_error": "error_state",
+                "transitions": [{"to": "calculate_spawn"}],
+            },
+            "calculate_spawn": {
+                "action": "calculate_spawn",
+                "on_error": "error_state",
+                "transitions": [
+                    {"condition": "context.spawn_plan.count > 0", "to": "spawn_workers"},
+                    {"to": "done"},
+                ],
+            },
+            "spawn_workers": {
+                "action": "spawn_workers",
+                "on_error": "error_state",
+                "transitions": [{"to": "done"}],
+            },
+            "error_state": _ERROR_STATE,
+            "done": {
+                "type": "final",
+                "output": {
+                    "pool_state": "{{ context.pool_state }}",
+                    "spawn_plan": "{{ context.spawn_plan }}",
                 },
             },
-            "persistence": {"enabled": True, "backend": "sqlite"},
-            "hooks": "distributed-worker",
         },
-        "metadata": {
-            "description": description,
-            "tags": ["distributed", "worker-pool"],
-        },
-    }
-
-    return yaml.dump(machine, default_flow_style=False, sort_keys=False)
+        hooks=["logging", "distributed-worker"],
+        tags=["distributed", "worker-pool"],
+    )
 
 
 # ---------------------------------------------------------------------------

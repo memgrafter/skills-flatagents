@@ -45,6 +45,10 @@ data:
       output:
         result: "{{ context.result }}"
 
+  hooks:
+    - logging
+    - manager
+
 metadata:
   description: "FlatMachine CRUD manager — create, read, update, and validate flatmachines"
   tags: ["tool-use", "cli", "flatmachine-management", "crud"]

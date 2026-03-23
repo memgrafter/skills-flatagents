@@ -8,7 +8,7 @@ and human review for the CRUD machine.
 from typing import Any, Dict, List
 
 from flatmachines import MachineHooks
-from .tools import FlatMachineToolProvider
+from .tools import ManagerToolProvider
 from .registry import MachineRegistry
 
 
@@ -32,7 +32,7 @@ class ManagerHooks(MachineHooks):
     """Hooks for flatmachine management workflow with per-call display and human review."""
 
     def __init__(self, registry: MachineRegistry, auto_approve: bool = False):
-        self._provider = FlatMachineToolProvider(registry)
+        self._provider = ManagerToolProvider(registry)
         self._auto_approve = auto_approve
 
     def get_tool_provider(self, state_name: str):

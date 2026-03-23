@@ -6,6 +6,9 @@ usage() {
 Usage:
   run.sh <action> [options]
 
+Actions (run):
+  start                Run a machine from the registry
+
 Actions (config management):
   list                 List registered machines (default: active)
   get                  Get a machine config, validation, and version history
@@ -43,6 +46,8 @@ Templates:
   distributed-worker   Worker pool pattern (checker → spawner → workers)
 
 Examples:
+  run.sh start --name my-bot --input '{"task": "hello world"}'
+  run.sh start --name my-bot --input '{"task": "do stuff"}' --working-dir /tmp
   run.sh list
   run.sh create --name my-bot --template tool-loop --description "Code assistant"
   run.sh create --name writer --template writer-critic \
@@ -60,6 +65,11 @@ Examples:
   run.sh cull-trim --machine-db ./my-machine.sqlite --dry-run
   run.sh cull-purge --machine-db ./my-machine.sqlite --older-than 7
   run.sh doctor
+
+Note:
+  The manager machine (python -m flatmachine_manager.main) is not wired
+  into run.sh. The CLI subcommands above are the intended interface when
+  called from an agent — no extra LLM layer needed.
 
 Bootstrap:
   On first run, copies machine_manager_schema.sqlite → machine_manager.db

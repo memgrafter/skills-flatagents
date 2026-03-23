@@ -313,9 +313,10 @@ async def tool_update_machine(
             purpose = params.get("purpose", "")
             profile = params.get("model_profile", "default")
             temp = params.get("temperature")
+            system = params.get("system")
 
             from .templates import _make_agent_yaml
-            agent_config = _make_agent_yaml(agent_name, purpose, profile, temp)
+            agent_config = _make_agent_yaml(agent_name, purpose, profile, temp, system=system)
             data.setdefault("agents", {})[agent_name] = agent_config
 
         elif operation == "update_agent":
@@ -565,7 +566,7 @@ async def tool_deprecate_machine(
 # Tool provider
 # ---------------------------------------------------------------------------
 
-class FlatMachineToolProvider:
+class ManagerToolProvider:
     """Tool provider with domain-specific flatmachine CRUD tools."""
 
     def __init__(self, registry: MachineRegistry):

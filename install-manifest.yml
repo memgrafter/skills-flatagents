@@ -2,6 +2,10 @@
 # Run: ./install.sh to install all skills below
 # Or: ./install.sh --skill=<name> to install specific skill
 
+# Where to symlink skills (default: ~/.agents/skills)
+# Override with FLATAGENTS_SKILLS_DIR env var
+#skills_dir: ~/.agents/skills
+
 skills:
   - codebase-ripper
 #  - repo-map
