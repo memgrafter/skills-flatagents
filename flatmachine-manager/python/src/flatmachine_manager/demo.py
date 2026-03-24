@@ -73,7 +73,6 @@ async def run_demo(db_path: str | None = None):
                                "Each draft should be a single sentence that captures "
                                "the product's essence.",
                     "model_profile": "smart",
-                    "temperature": 0.9,
                 },
                 {
                     "name": "critic",

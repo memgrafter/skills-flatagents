@@ -29,35 +29,35 @@ from .validation import validate_machine_config
 MODEL_CATALOG = {
     "fast": {
         "profile": "fast",
-        "description": "gpt-5.3-codex at temperature 0.6 — good for routing/classification/simple tasks",
+        "description": "gpt-5.3-codex — good for routing, classification, and simple tasks",
         "provider": "openai-codex",
         "model": "gpt-5.3-codex",
         "strengths": ["speed", "balanced"],
-        "weaknesses": ["higher temperature may reduce precision"],
+        "weaknesses": ["less suited for complex reasoning"],
     },
     "smart": {
         "profile": "smart",
-        "description": "gpt-5.3-codex at temperature 0.3 — precise reasoning, analysis, and planning",
+        "description": "gpt-5.3-codex — precise reasoning, analysis, and planning",
         "provider": "openai-codex",
         "model": "gpt-5.3-codex",
         "strengths": ["reasoning", "instruction following", "precision"],
-        "weaknesses": ["less creative at low temperature"],
+        "weaknesses": ["higher cost per call"],
     },
     "code": {
         "profile": "code",
-        "description": "gpt-5.3-codex default — optimized for code generation, editing, and tool use",
+        "description": "gpt-5.3-codex — optimized for code generation, editing, and tool use",
         "provider": "openai-codex",
         "model": "gpt-5.3-codex",
         "strengths": ["code generation", "tool use", "large context"],
-        "weaknesses": ["general purpose default temperature"],
+        "weaknesses": ["general purpose"],
     },
     "cheap": {
         "profile": "cheap",
-        "description": "gpt-5.3-codex at temperature 0.5 — balanced cost/quality for high-volume tasks",
+        "description": "gpt-5.3-codex — balanced cost/quality for high-volume tasks",
         "provider": "openai-codex",
         "model": "gpt-5.3-codex",
         "strengths": ["balanced", "reliable"],
-        "weaknesses": ["same model, just different temperature"],
+        "weaknesses": ["less precise than smart profile"],
     },
 }
 
@@ -316,11 +316,10 @@ async def tool_update_machine(
             agent_name = params.get("agent_name", "")
             purpose = params.get("purpose", "")
             profile = params.get("model_profile", "default")
-            temp = params.get("temperature")
             system = params.get("system")
 
             from .templates import _make_agent_yaml
-            agent_config = _make_agent_yaml(agent_name, purpose, profile, temp, system=system)
+            agent_config = _make_agent_yaml(agent_name, purpose, profile, system=system)
             data.setdefault("agents", {})[agent_name] = agent_config
 
         elif operation == "update_agent":

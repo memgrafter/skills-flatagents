@@ -27,6 +27,7 @@ from typing import Optional
 from flatmachines import HooksRegistry, LoggingHooks, MetricsHooks
 
 from .cli_hooks import CLIToolHooks
+from .git_hooks import GitDiffStagedHooks
 from .hooks import ManagerHooks
 from .registry import MachineRegistry
 
@@ -56,6 +57,9 @@ def build_hooks_registry(
 
     # CLI tools — factory that captures working_dir
     hr.register("cli-tools", lambda: CLIToolHooks(working_dir=working_dir))
+
+    # Git diff staged — superset of cli-tools with git_diff_staged tool
+    hr.register("git-diff-staged", lambda: GitDiffStagedHooks(working_dir=working_dir))
 
     # Manager — factory that captures registry + auto_approve
     if registry is not None:

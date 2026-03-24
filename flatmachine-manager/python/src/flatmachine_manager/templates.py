@@ -215,7 +215,6 @@ def _make_agent_yaml(
     name: str,
     purpose: str,
     model_profile: str = "default",
-    temperature: Optional[float] = None,
     tools: Optional[List[Dict]] = None,
     system: Optional[str] = None,
 ) -> Dict[str, Any]:
@@ -231,11 +230,7 @@ def _make_agent_yaml(
             "--agent 'system:name:purpose:profile' or --system 'prompt'."
         )
 
-    model: Any
-    if temperature is not None:
-        model = {"profile": model_profile, "temperature": temperature}
-    else:
-        model = model_profile
+    model = model_profile
 
     agent: Dict[str, Any] = {
         "spec": "flatagent",
@@ -261,14 +256,13 @@ def _extract_agent(
 ) -> Dict[str, Any]:
     """Extract agent fields from a user-provided dict, falling back to defaults.
 
-    Returns dict with: name, purpose, model_profile, system, temperature, tools
+    Returns dict with: name, purpose, model_profile, system, tools
     """
     return {
         "name": agent_dict.get("name", defaults.get("name", "agent")),
         "purpose": agent_dict.get("purpose", defaults.get("purpose", "")),
         "model_profile": agent_dict.get("model_profile", defaults.get("model_profile", "default")),
         "system": agent_dict.get("system", defaults.get("system")),
-        "temperature": agent_dict.get("temperature", defaults.get("temperature")),
         "tools": agent_dict.get("tools", defaults.get("tools")),
     }
 
