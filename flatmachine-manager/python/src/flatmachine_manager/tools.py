@@ -27,6 +27,14 @@ from .validation import validate_machine_config
 # ---------------------------------------------------------------------------
 
 MODEL_CATALOG = {
+    "default": {
+        "profile": "default",
+        "description": "gpt-5.3-codex — general-purpose default for all tasks",
+        "provider": "openai-codex",
+        "model": "gpt-5.3-codex",
+        "strengths": ["general purpose", "balanced cost and quality"],
+        "weaknesses": ["not optimized for any specific use case"],
+    },
     "fast": {
         "profile": "fast",
         "description": "gpt-5.3-codex — good for routing, classification, and simple tasks",

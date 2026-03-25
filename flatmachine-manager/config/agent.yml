@@ -113,9 +113,6 @@ data:
                   model_profile:
                     type: string
                     description: "Model profile name from select_model"
-                  temperature:
-                    type: number
-                    description: "Override temperature (optional)"
                 required: [name, purpose]
             states:
               type: array
@@ -181,7 +178,7 @@ data:
                 - add_state: {state_name, after_state, agent, description, transitions_to: [...]} 
                 - remove_state: {state_name}
                 - update_state: {state_name, field, value}
-                - add_agent: {agent_name, purpose, model_profile, temperature}
+                - add_agent: {agent_name, purpose, model_profile}
                 - update_agent: {agent_name, field, value}
                 - update_context: {key, value_template}
                 - update_setting: {key, value}
