@@ -7,6 +7,7 @@ Read-only diagnostics. Does not modify anything.
 from __future__ import annotations
 
 import os
+import shlex
 import sqlite3
 from typing import List, Optional, Tuple
 
@@ -64,20 +65,29 @@ def _check_package(skills_repo_dir: str, skill_dir: str) -> Check:
 
 
 def _check_schema_db(skill_dir: str) -> Check:
-    schema = os.path.join(skill_dir, "machine_manager_schema.sqlite")
-    if os.path.isfile(schema):
-        size = os.path.getsize(schema)
-        return ("ok", f"Schema DB exists: {schema} ({size} bytes)", "")
+    """Check that schema.sql exists."""
+    schema_sql = os.path.join(skill_dir, "schema.sql")
+
+    if os.path.isfile(schema_sql):
+        size = os.path.getsize(schema_sql)
+        return ("ok", f"Schema SQL exists: {schema_sql} ({size} bytes)", "")
+
     return (
         "error",
-        f"Schema DB missing: {schema}",
-        "Regenerate with the build script or restore from backup",
+        f"Schema definition missing: {schema_sql}",
+        "Add flatmachine-manager/schema.sql",
     )
+
+
+def _registry_init_fix(schema_path: str, db_path: str) -> str:
+    q_schema = shlex.quote(schema_path)
+    q_db = shlex.quote(db_path)
+    return f"mkdir -p $(dirname {q_db}) && sqlite3 {q_db} < {q_schema}"
 
 
 def _check_registry_db(db_path: str, schema_path: str) -> Check:
     if not os.path.isfile(db_path):
-        return ("warn", f"Registry DB not found: {db_path}", f"cp {schema_path} {db_path}")
+        return ("warn", f"Registry DB not found: {db_path}", _registry_init_fix(schema_path, db_path))
 
     try:
         conn = sqlite3.connect(db_path, timeout=5.0)
@@ -96,7 +106,7 @@ def _check_registry_db(db_path: str, schema_path: str) -> Check:
             return (
                 "error",
                 f"Registry DB missing tables: {', '.join(missing)}",
-                f"Backup and re-initialize: cp {db_path} {db_path}.bak && cp {schema_path} {db_path}",
+                f"Backup and re-initialize: cp {shlex.quote(db_path)} {shlex.quote(db_path)}.bak && {_registry_init_fix(schema_path, db_path)}",
             )
 
         # Check we can read
@@ -108,7 +118,7 @@ def _check_registry_db(db_path: str, schema_path: str) -> Check:
         return (
             "error",
             f"Registry DB unreadable: {e}",
-            f"Backup and re-initialize: cp {db_path} {db_path}.bak && cp {schema_path} {db_path}",
+            f"Backup and re-initialize: cp {shlex.quote(db_path)} {shlex.quote(db_path)}.bak && {_registry_init_fix(schema_path, db_path)}",
         )
 
 
@@ -126,13 +136,13 @@ def _check_sqlite_version() -> Check:
 
 def run_doctor(skills_repo_dir: str, skill_dir: str, db_path: str) -> str:
     """Run all checks, return formatted report."""
-    schema_path = os.path.join(skill_dir, "machine_manager_schema.sqlite")
+    schema_path = os.path.join(skill_dir, "schema.sql")
 
     checks: List[Tuple[str, Check]] = [
         ("SQLite version", _check_sqlite_version()),
         ("Virtual environment", _check_venv(skills_repo_dir, skill_dir)),
         ("Python package", _check_package(skills_repo_dir, skill_dir)),
-        ("Schema DB", _check_schema_db(skill_dir)),
+        ("Schema definition", _check_schema_db(skill_dir)),
         ("Registry DB", _check_registry_db(db_path, schema_path)),
     ]
 

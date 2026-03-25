@@ -21,3 +21,11 @@ website_scraper/website_analysis/**/raw/
 
 # Aider repo map cache artifacts
 .aider.tags.cache.v4
+
+# Databases / journals (never commit)
+*.db
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.db-shm
+*.db-wal

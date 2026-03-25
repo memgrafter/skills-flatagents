@@ -72,7 +72,7 @@ Note:
   called from an agent — no extra LLM layer needed.
 
 Bootstrap:
-  On first run, copies machine_manager_schema.sqlite → machine_manager.db
+  On first run, initializes the registry DB from schema.sql
   and installs the Python package into the venv if needed. Idempotent.
 EOF
 }
@@ -95,7 +95,7 @@ VENV="$SKILLS_REPO/.venv"
 # Python source for flatmachine_manager (local skill copy by default)
 PYTHON_DIR="${FLATMACHINE_MANAGER_SRC:-$SKILL_DIR/python}"
 
-SCHEMA_DB="$SKILL_DIR/machine_manager_schema.sqlite"
+SCHEMA_SQL="$SKILL_DIR/schema.sql"
 DEFAULT_DB="${FLATMACHINE_DB:-./machine_manager.db}"
 
 # --- Bootstrap: venv ---
@@ -142,9 +142,33 @@ done
 
 TARGET_DB="${USER_DB:-$DEFAULT_DB}"
 
-if [[ ! -f "$TARGET_DB" ]] && [[ -f "$SCHEMA_DB" ]]; then
-  echo "Initializing registry: $TARGET_DB (from schema)" >&2
-  cp "$SCHEMA_DB" "$TARGET_DB"
+if [[ ! -f "$TARGET_DB" ]]; then
+  mkdir -p "$(dirname "$TARGET_DB")"
+
+  if [[ ! -f "$SCHEMA_SQL" ]]; then
+    echo "error: schema file not found at $SCHEMA_SQL" >&2
+    exit 1
+  fi
+
+  echo "Initializing registry: $TARGET_DB (from schema.sql)" >&2
+  if command -v sqlite3 >/dev/null 2>&1; then
+    sqlite3 "$TARGET_DB" < "$SCHEMA_SQL"
+  else
+    "$VENV/bin/python" - "$TARGET_DB" "$SCHEMA_SQL" <<'PY'
+import sqlite3
+import sys
+
+db_path = sys.argv[1]
+schema_path = sys.argv[2]
+
+with open(schema_path, "r", encoding="utf-8") as f:
+    sql = f.read()
+
+conn = sqlite3.connect(db_path)
+conn.executescript(sql)
+conn.close()
+PY
+  fi
 fi
 
 # --- Dispatch ---

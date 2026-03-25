@@ -47,7 +47,7 @@
 
 ## doctor enhancements
 
-- [ ] Check schema version compatibility between `machine_manager_schema.sqlite` and active `machine_manager.db`
+- [ ] Check schema version compatibility between `schema.sql` and active `machine_manager.db`
 - [ ] Detect schema drift (columns added/removed) and report specific mismatches
 - [ ] Check for stale leases (execution_leases with expired TTL but not cleaned up)
 - [ ] Check for orphaned checkpoints (executions with no latest pointer)
@@ -58,7 +58,7 @@
 - [ ] `backup` command: copy `machine_manager.db` to `machine_manager.db.<timestamp>.bak`
   - Where do backups go? Same directory? A `backups/` subdir?
   - How many backups to retain before auto-pruning?
-- [ ] `reset` command: backup current DB, then copy `machine_manager_schema.sqlite` to `machine_manager.db`
+- [ ] `reset` command: backup current DB, then re-initialize `machine_manager.db` from `schema.sql`
   - This gives a fresh slate with sample machines
   - Must warn/confirm if the DB has user-created machines
 - [ ] `export` command: dump all user-created machines (not samples) to YAML files for portability
@@ -74,13 +74,12 @@
   - Auto-migrate is convenient but risky if migration is destructive
   - Recommendation: auto-migrate for additive changes (new columns/tables), require explicit for destructive
 
-## schema DB generation
+## schema generation
 
-- [ ] Script to regenerate `machine_manager_schema.sqlite` from current code
+- [ ] Script to regenerate `schema.sql` from current code
   - Should be idempotent and reproducible
   - Run as part of CI/release process
-- [ ] Consider shipping `schema.sql` alongside the `.sqlite` for auditability
-  - `sqlite3 machine_manager_schema.sqlite .dump > schema.sql`
+- [ ] Optionally add sample-data seed SQL (separate from schema) for demos
 
 ## cull improvements
 

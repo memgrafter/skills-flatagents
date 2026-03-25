@@ -116,7 +116,7 @@ Templates: `tool-loop`, `writer-critic`, `ooda-workflow`, `pipeline`, `signal-wa
 
 ## How it works (brief)
 
-1. `run.sh` bootstraps (copies schema DB on first run, installs package if needed) then dispatches to Python CLI
+1. `run.sh` bootstraps (applies `schema.sql` on first run, installs package if needed) then dispatches to Python CLI
 2. All state lives in SQLite — registry, checkpoints, locks, config store — one file per machine
 3. Cull commands operate directly on machine SQLite DBs, no LLM involved
 

@@ -1480,7 +1480,7 @@ class TestDoctor:
     def test_run_doctor_with_real_paths(self):
         skills_repo = str(Path(__file__).resolve().parents[1])
         skill_dir = os.path.join(skills_repo, "flatmachine-manager")
-        db_path = os.path.join(skill_dir, "machine_manager_schema.sqlite")
+        db_path = os.path.join(skill_dir, "schema.sql")
         result = run_doctor(skills_repo, skill_dir, db_path)
         assert "flatmachines doctor" in result
         # At minimum sqlite and schema should be ok
