@@ -18,9 +18,10 @@ import logging
 import os
 import pathlib
 import sys
-import tempfile
 import warnings
 from typing import Any, Dict, List, Optional
+
+import yaml
 
 from .registry import MachineRegistry
 from .tools import (
@@ -252,7 +253,6 @@ async def dispatch_start(args: argparse.Namespace) -> int:
 
     db_path = args.db or _default_db()
     registry = MachineRegistry(db_path=db_path)
-    tmp_path = None
 
     try:
         # Load config from registry
@@ -265,13 +265,27 @@ async def dispatch_start(args: argparse.Namespace) -> int:
             print(f"error: machine '{args.name}' not found in registry", file=sys.stderr)
             return 1
 
-        # Write config to temp file (SDK needs file path for agent ref resolution)
-        tmp = tempfile.NamedTemporaryFile(
-            mode="w", suffix=".yml", prefix=f"fm-{args.name}-", delete=False,
-        )
-        tmp.write(version.config_raw)
-        tmp.close()
-        tmp_path = tmp.name
+        # Always execute embedded config from registry (self-contained, no temp files).
+        if not version.config_embedded:
+            print(
+                f"error: machine '{args.name}' v{version.version} has no embedded config in registry",
+                file=sys.stderr,
+            )
+            print(
+                "recreate or re-save the machine so config_embedded is populated",
+                file=sys.stderr,
+            )
+            return 1
+
+        try:
+            machine_config = yaml.safe_load(version.config_embedded)
+        except Exception as e:
+            print(f"error: failed to parse embedded config: {e}", file=sys.stderr)
+            return 1
+
+        if not isinstance(machine_config, dict):
+            print("error: embedded config is not a YAML object", file=sys.stderr)
+            return 1
 
         # Resolve profiles
         profiles_path = args.profiles or _skill_config_path("profiles.yml")
@@ -295,7 +309,7 @@ async def dispatch_start(args: argparse.Namespace) -> int:
 
         # Create and run machine
         machine = FlatMachine(
-            config_file=tmp_path,
+            config_dict=machine_config,
             hooks_registry=hooks_registry,
             profiles_file=profiles_path,
         )
@@ -312,11 +326,6 @@ async def dispatch_start(args: argparse.Namespace) -> int:
 
     finally:
         registry.close()
-        if tmp_path:
-            try:
-                os.unlink(tmp_path)
-            except OSError:
-                pass
 
 
 def dispatch_cull(args: argparse.Namespace) -> tuple[str, bool]:
