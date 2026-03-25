@@ -17,8 +17,25 @@ from flatmachines import FlatMachine
 from socratic_teacher.hooks import SocraticTeacherHooks
 
 
-async def run(topic: str, level: int, max_rounds: int, working_dir: str):
-    """Run the socratic teaching session."""
+async def run(
+    topic: str,
+    level: int,
+    max_rounds: int,
+    working_dir: str,
+    cwd: str | None = None,
+):
+    """Run the socratic teaching session.
+
+    Args:
+        topic: Learning topic
+        level: Learner level
+        max_rounds: Max teaching rounds
+        working_dir: Working directory for session files
+        cwd: Back-compat alias for working_dir (if provided, overrides working_dir)
+    """
+    if cwd:
+        working_dir = cwd
+
     machine_file = Path(__file__).parent.parent.parent / "machine.yml"
     hooks = SocraticTeacherHooks()
     machine = FlatMachine(config_file=str(machine_file), hooks=hooks)

@@ -215,19 +215,23 @@ def _make_agent_yaml(
     name: str,
     purpose: str,
     model_profile: str = "default",
+    temperature: Optional[float] = None,
     tools: Optional[List[Dict]] = None,
     system: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Generate a flatagent config dict.
 
-    Raises:
-        ValueError: If system prompt is empty or not provided.
+    Notes:
+        - `temperature` is accepted for backward compatibility and ignored.
+        - If system prompt is omitted, a sane default is synthesized from purpose.
     """
+    del temperature  # accepted for backward compatibility
+
     if not system or not system.strip():
-        raise ValueError(
-            f"Agent '{name}' has no system prompt. "
-            "A system prompt is required — pass it via "
-            "--agent 'system:name:purpose:profile' or --system 'prompt'."
+        purpose_text = (purpose or "perform the assigned task").strip()
+        system = (
+            f"You are a specialist agent. Your purpose: {purpose_text}\n\n"
+            "Be concise and precise in your output."
         )
 
     model = model_profile
