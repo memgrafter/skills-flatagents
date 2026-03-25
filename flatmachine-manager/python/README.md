@@ -21,6 +21,8 @@ A **FlatMachine-driven CRUD machine** for creating, reading, updating, and valid
 | `select_model` | Choose a model profile by purpose (fast/smart/code/cheap) |
 | `validate_machine` | Run full validation suite (schema, templates, best practices, structural) |
 | `diff_versions` | Show differences between two versions |
+| `duplicate_machine` | Fork a machine under a new name |
+| `deprecate_machine` | Soft-delete (preserve config + history) |
 
 ## Templates
 
@@ -78,7 +80,7 @@ fm> list machines
 
 ```
 config/
-  agent.yml       — Manager agent with 7 domain-specific tools
+  agent.yml       — Manager agent with 9 domain-specific tools
   machine.yml     — Machine: work (tool_loop) → human_review → done
   profiles.yml    — Model profiles (default, fast, smart, code, cheap)
 
@@ -102,7 +104,7 @@ python/src/flatmachine_manager/
 ┌─────────────────┐
 │      work       │◄──────────┐
 │  (tool loop)    │           │
-│  7 CRUD tools   │           │
+│  9 CRUD tools   │           │
 └────────┬────────┘           │
          │                    │
          ▼                    │

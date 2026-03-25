@@ -52,8 +52,8 @@ Examples:
   run.sh create --name my-bot --template tool-loop --description "Code assistant"
   run.sh create --name writer --template writer-critic \
     --description "Tagline refinement" \
-    --agent "writer:Generate taglines:smart" \
-    --agent "critic:Score 1-10:fast"
+    --agent "You generate taglines:writer:Generate taglines:smart" \
+    --agent "You score 1-10:critic:Score 1-10:fast"
   run.sh update --name writer --op add_state \
     --param state_name=review_gate --param after_state=review
   run.sh validate --name writer
@@ -67,9 +67,10 @@ Examples:
   run.sh doctor
 
 Note:
-  The manager machine (python -m flatmachine_manager.main) is not wired
-  into run.sh. The CLI subcommands above are the intended interface when
-  called from an agent — no extra LLM layer needed.
+  `start` executes the machine config embedded in the registry version
+  (no temporary YAML file path resolution at runtime).
+  The CLI subcommands above are the intended interface when called from
+  an agent — no extra LLM layer needed.
 
 Bootstrap:
   On first run, initializes the registry DB from schema.sql

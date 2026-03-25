@@ -86,7 +86,7 @@ Common options: `--db <path>` (registry DB), `--json` (machine-parseable output)
 ./skills/flatmachine-manager/run.sh cull-trim --machine-db ./my-machine.sqlite
 ./skills/flatmachine-manager/run.sh cull-purge --machine-db ./my-machine.sqlite --older-than 7
 
-# List available tools (auto-seeded from hooks + agent YAML)
+# List available tools (shows alias + current Tool ID)
 ./skills/flatmachine-manager/run.sh list-tools
 ./skills/flatmachine-manager/run.sh list-tools --provider cli-tools
 ./skills/flatmachine-manager/run.sh list-tools --include-deprecated
@@ -117,13 +117,13 @@ Templates: `tool-loop`, `writer-critic`, `ooda-workflow`, `pipeline`, `signal-wa
 ## How it works (brief)
 
 1. `run.sh` bootstraps (applies `schema.sql` on first run, installs package if needed) then dispatches to Python CLI
-2. All state lives in SQLite — registry, checkpoints, locks, config store — one file per machine
-3. Cull commands operate directly on machine SQLite DBs, no LLM involved
+2. `start` executes the machine's **embedded config** from the selected registry version (no temp-file ref resolution)
+3. Tool registry stores immutable tool definitions keyed by Tool ID, with alias names (e.g. `create_machine`) pointing to the current definition
+4. Cull commands operate directly on machine SQLite DBs, no LLM involved
 
-## Running the manager machine (not first-class)
+## Running the manager machine
 
-`python/src/flatmachine_manager/main.py` contains a standalone FlatMachine that wraps the same tools behind an LLM with a human review loop. It is **not wired into `run.sh`** — the CLI subcommands are the intended interface when called from an agent. The manager machine exists for interactive terminal use outside of an agent context, but is not a supported workflow.
-
+`python/src/flatmachine_manager/main.py` still provides an interactive standalone manager machine for terminal use. For agent-driven workflows, use `run.sh` subcommands directly (and `run.sh start` when you want to execute a registry machine).
 ## Cost / benefit summary
 
 - **Cost:** constrained to templates and structured mutations — no freeform YAML editing
