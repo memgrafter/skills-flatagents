@@ -34,7 +34,7 @@ Stop writing FlatMachine YAML by hand. Pick a template, parameterize it, get a v
 ./skills/flatmachine-manager/run.sh <action> [options]
 ```
 
-Common options: `--db <path>` (registry DB), `--json` (machine-parseable output).
+Common options: `--db <path>` (registry DB, default `~/.agents/machine-manager/machine_manager.db`), `--json` (machine-parseable output).
 
 ## Examples
 

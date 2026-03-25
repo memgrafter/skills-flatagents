@@ -27,12 +27,16 @@ Actions (maintenance — no LLM, direct SQL):
   doctor               Check environment health and recommend fixes
 
 Global options:
-  --db <path>          Registry DB path (default: $FLATMACHINE_DB or ./machine_manager.db)
+  --db <path>          Registry DB path
+                       (default: $FLATMACHINE_DB or ~/.agents/machine-manager/machine_manager.db)
   --json               Output as JSON
   -h, --help           Show this help
 
 Environment:
-  FLATMACHINE_DB       Override default registry DB path
+  FLATMACHINE_MANAGER_HOME
+                       Runtime state directory (default: ~/.agents/machine-manager)
+  FLATMACHINE_DB       Override registry DB path directly
+  FLATMACHINE_PROFILES Override profiles.yml path directly
   FLATMACHINE_MANAGER_SRC
                        Path to flatmachine_manager Python source
                        (default: <skill-dir>/python)
@@ -73,8 +77,9 @@ Note:
   an agent — no extra LLM layer needed.
 
 Bootstrap:
-  On first run, initializes the registry DB from schema.sql
-  and installs the Python package into the venv if needed. Idempotent.
+  On first run, seeds runtime profiles at ~/.agents/machine-manager/profiles.yml,
+  initializes the registry DB from schema.sql, and installs the Python package
+  into the venv if needed. Idempotent.
 EOF
 }
 
@@ -97,7 +102,10 @@ VENV="$SKILLS_REPO/.venv"
 PYTHON_DIR="${FLATMACHINE_MANAGER_SRC:-$SKILL_DIR/python}"
 
 SCHEMA_SQL="$SKILL_DIR/schema.sql"
-DEFAULT_DB="${FLATMACHINE_DB:-./machine_manager.db}"
+SKILL_PROFILES="$SKILL_DIR/config/profiles.yml"
+RUNTIME_DIR="${FLATMACHINE_MANAGER_HOME:-$HOME/.agents/machine-manager}"
+DEFAULT_DB="${FLATMACHINE_DB:-$RUNTIME_DIR/machine_manager.db}"
+DEFAULT_PROFILES="${FLATMACHINE_PROFILES:-$RUNTIME_DIR/profiles.yml}"
 
 # --- Bootstrap: venv ---
 if [[ ! -d "$VENV" ]]; then
@@ -126,6 +134,23 @@ fi
 if [[ "$NEEDS_INSTALL" == "true" ]]; then
   echo "Installing flatmachine_manager into shared venv from $PYTHON_DIR..." >&2
   uv pip install --python "$VENV/bin/python" -e "$PYTHON_DIR" >&2
+fi
+
+# --- Bootstrap: runtime dir + profiles ---
+mkdir -p "$RUNTIME_DIR"
+
+if [[ ! -f "$DEFAULT_PROFILES" ]]; then
+  if [[ -f "$SKILL_PROFILES" ]]; then
+    echo "Seeding profiles: $DEFAULT_PROFILES" >&2
+    cp "$SKILL_PROFILES" "$DEFAULT_PROFILES"
+  else
+    echo "warning: bundled profiles missing at $SKILL_PROFILES" >&2
+  fi
+fi
+
+# Ensure CLI defaults resolve to runtime profiles unless explicitly overridden.
+if [[ -z "${FLATMACHINE_PROFILES:-}" ]]; then
+  export FLATMACHINE_PROFILES="$DEFAULT_PROFILES"
 fi
 
 # --- Bootstrap: DB ---

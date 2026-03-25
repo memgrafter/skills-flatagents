@@ -37,10 +37,24 @@ from .tools import (
 )
 
 
+def _runtime_dir() -> str:
+    return os.environ.get(
+        "FLATMACHINE_MANAGER_HOME",
+        os.path.expanduser("~/.agents/machine-manager"),
+    )
+
+
 def _default_db() -> str:
     return os.environ.get(
         "FLATMACHINE_DB",
-        os.path.join(os.getcwd(), "flatmachine_registry.sqlite"),
+        os.path.join(_runtime_dir(), "machine_manager.db"),
+    )
+
+
+def _default_profiles() -> str:
+    return os.environ.get(
+        "FLATMACHINE_PROFILES",
+        os.path.join(_runtime_dir(), "profiles.yml"),
     )
 
 
@@ -91,7 +105,10 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--db", default=None,
-        help=f"Registry DB path (default: $FLATMACHINE_DB or ./flatmachine_registry.sqlite)",
+        help=(
+            "Registry DB path "
+            "(default: $FLATMACHINE_DB or ~/.agents/machine-manager/machine_manager.db)"
+        ),
     )
     parser.add_argument(
         "--json", action="store_true", dest="json_output",
@@ -111,7 +128,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--working-dir", "-w", default=os.getcwd(),
                    help="Working directory for CLI tools (default: cwd)")
     p.add_argument("--profiles", default=None,
-                   help="Path to profiles.yml (default: skill config/profiles.yml)")
+                   help=(
+                       "Path to profiles.yml "
+                       "(default: $FLATMACHINE_PROFILES or ~/.agents/machine-manager/profiles.yml)"
+                   ))
     p.add_argument("--auto-approve", action="store_true",
                    help="Skip human review actions")
 
@@ -287,10 +307,11 @@ async def dispatch_start(args: argparse.Namespace) -> int:
             print("error: embedded config is not a YAML object", file=sys.stderr)
             return 1
 
-        # Resolve profiles
-        profiles_path = args.profiles or _skill_config_path("profiles.yml")
+        # Resolve profiles (runtime default, skill fallback for compatibility)
+        profiles_path = args.profiles or _default_profiles()
         if not os.path.exists(profiles_path):
-            profiles_path = None
+            fallback = _skill_config_path("profiles.yml")
+            profiles_path = fallback if os.path.exists(fallback) else None
 
         # Build hooks registry
         working_dir = os.path.abspath(args.working_dir)

@@ -1,13 +1,22 @@
 # FlatMachines Manager — TODOs
 
+## readiness punchlist (current)
+
+- [ ] Resolve runtime warning noise (`Unhandled action: human_review`) during `start` runs
+- [ ] Keep test gate green in CI (currently green locally)
+- [x] Docs alignment for embedded `start` execution + tool ID alias model
+- [x] Runtime data dir migration defaults to `~/.agents/machine-manager/`
+- [ ] Add doctor check for tool-registry migration health (`tool_aliases` / `tool_definitions`)
+- [ ] Add repeatable DB secret scan script (pre-commit/CI)
+
 ## runtime data directory
 
 - [ ] Move all mutable state out of the skill directory into `~/.agents/machine-manager/`
   - `machine_manager.db` (registry) — currently created in cwd or repo root
   - Any machine `.sqlite` files (checkpoints, leases, configs)
   - Future: logs, backups
-- [ ] `run.sh` should default `--db` to `~/.agents/machine-manager/machine_manager.db`
-- [ ] `run.sh` bootstrap should `mkdir -p ~/.agents/machine-manager/` and copy schema there
+- [x] `run.sh` defaults `--db` to `~/.agents/machine-manager/machine_manager.db`
+- [x] `run.sh` bootstrap creates `~/.agents/machine-manager/`, seeds `profiles.yml`, and initializes DB from `schema.sql`
 - [ ] Skill directory stays read-only after install — no writes to `skills-flatagents/` or `~/.agents/skills/`
 - [ ] `doctor` should check `~/.agents/machine-manager/` exists and is writable
 - [ ] Update SKILL.md examples to reflect the new default path
