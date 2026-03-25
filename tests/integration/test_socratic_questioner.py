@@ -1,4 +1,5 @@
 import asyncio
+import importlib.util
 
 import pytest
 from flatagents.baseagent import AgentResponse
@@ -8,6 +9,12 @@ from socratic_teacher.main import run
 
 @pytest.mark.integration
 def test_socratic_questioner_integration(tmp_path, monkeypatch):
+    if (
+        importlib.util.find_spec("litellm") is None
+        and importlib.util.find_spec("aisuite") is None
+    ):
+        pytest.skip("No LLM backend installed (litellm/aisuite)")
+
     question_text = "What makes a system distributed?"
     hint_text = "Think about nodes and coordination."
 

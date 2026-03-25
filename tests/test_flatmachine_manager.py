@@ -64,7 +64,7 @@ from flatmachine_manager.tools import (
     tool_select_model,
     MODEL_CATALOG,
     PURPOSE_TO_PROFILE,
-    FlatMachineToolProvider,
+    ManagerToolProvider,
 )
 from flatmachine_manager.cull import stats, trim, purge, _has_tables
 from flatmachine_manager.doctor import (
@@ -84,7 +84,7 @@ from flatmachine_manager.cli import build_parser, _parse_agent, _parse_param
 
 def _run(coro):
     """Run an async function synchronously."""
-    return asyncio.get_event_loop().run_until_complete(coro)
+    return asyncio.run(coro)
 
 
 @pytest.fixture
@@ -469,8 +469,7 @@ class TestTemplates:
         agent = _make_agent_yaml("coder", "Write code", "code", temperature=0.2)
         assert agent["spec"] == "flatagent"
         assert agent["data"]["name"] == "coder"
-        assert agent["data"]["model"]["profile"] == "code"
-        assert agent["data"]["model"]["temperature"] == 0.2
+        assert agent["data"]["model"] == "code"
 
     def test_make_agent_yaml_no_temperature(self):
         agent = _make_agent_yaml("coder", "Write code", "smart")
@@ -1002,27 +1001,32 @@ class TestTools:
 
 class TestToolProvider:
     def test_execute_tool_list(self, tmp_db):
-        provider = FlatMachineToolProvider(tmp_db)
+        provider = ManagerToolProvider(tmp_db)
         result = _run(provider.execute_tool("list_machines", "test", {"status": "active"}))
         assert "No machines found" in result.content
 
     def test_execute_tool_unknown(self, tmp_db):
-        provider = FlatMachineToolProvider(tmp_db)
+        provider = ManagerToolProvider(tmp_db)
         result = _run(provider.execute_tool("unknown_tool", "test", {}))
         assert result.is_error
         assert "Unknown tool" in result.content
 
     def test_execute_tool_create(self, tmp_db):
-        provider = FlatMachineToolProvider(tmp_db)
+        provider = ManagerToolProvider(tmp_db)
         result = _run(provider.execute_tool("create_machine", "test", {
             "name": "provider-bot",
             "template": "tool-loop",
             "description": "Provider test",
+            "agents": [{
+                "name": "worker",
+                "purpose": "Provider test",
+                "system": "You are a provider test agent",
+            }],
         }))
         assert not result.is_error
 
     def test_get_tool_definitions(self, tmp_db):
-        provider = FlatMachineToolProvider(tmp_db)
+        provider = ManagerToolProvider(tmp_db)
         defs = provider.get_tool_definitions()
         assert isinstance(defs, list)
 
@@ -1034,16 +1038,25 @@ class TestToolProvider:
 
 class TestCLI:
     def test_parse_agent_full(self):
-        result = _parse_agent("writer:Generate taglines:smart")
-        assert result == {"name": "writer", "purpose": "Generate taglines", "model_profile": "smart"}
+        result = _parse_agent("You write taglines:writer:Generate taglines:smart")
+        assert result == {
+            "system": "You write taglines",
+            "name": "writer",
+            "purpose": "Generate taglines",
+            "model_profile": "smart",
+        }
 
     def test_parse_agent_no_profile(self):
-        result = _parse_agent("worker:Do stuff")
-        assert result == {"name": "worker", "purpose": "Do stuff"}
+        result = _parse_agent("You do stuff:worker:Do stuff")
+        assert result == {
+            "system": "You do stuff",
+            "name": "worker",
+            "purpose": "Do stuff",
+        }
 
     def test_parse_agent_name_only(self):
-        result = _parse_agent("worker")
-        assert result == {"name": "worker"}
+        with pytest.raises(SystemExit):
+            _parse_agent("worker")
 
     def test_parse_param(self):
         k, v = _parse_param("state_name=my_state")
