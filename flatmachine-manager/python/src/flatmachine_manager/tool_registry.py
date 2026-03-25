@@ -1,14 +1,17 @@
 """
-Tool Registry — SQLite-backed, immutable tool catalog.
+Tool Registry — SQLite-backed tool catalog with stable aliases.
 
-Tools are registered once and never modified. Deprecation hides them
-from new machine creation but preserves them for existing machines.
+Design:
+- Tool definitions are immutable and identified by tool_id (schema hash based)
+- Alias names (e.g. "create_machine") are mutable pointers to a current tool_id
+- Existing machines can keep prior embedded schemas; new machines follow current alias
 
-Follows the same layout pattern as MachineRegistry.
+This avoids schema-drift failures when tool schemas evolve over time.
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 import sqlite3
 import textwrap
@@ -22,7 +25,8 @@ import yaml
 
 @dataclass
 class ToolEntry:
-    name: str
+    tool_id: str
+    name: str  # alias name used by models/tool-calling
     description: str
     schema_json: str
     provider: str
@@ -44,8 +48,14 @@ def _normalize_schema(schema: Dict[str, Any]) -> str:
     return json.dumps(schema, sort_keys=True, separators=(",", ":"))
 
 
+def _tool_id(provider: str, name: str, canonical_schema: str) -> str:
+    """Deterministic tool id from provider + alias + canonical schema."""
+    material = f"{provider}:{name}:{canonical_schema}"
+    return hashlib.sha256(material.encode("utf-8")).hexdigest()
+
+
 class ToolRegistry:
-    """SQLite-backed, immutable tool catalog."""
+    """SQLite-backed tool catalog with immutable definitions + mutable aliases."""
 
     def __init__(self, db_path: str = "flatmachine_registry.sqlite"):
         self._db_path = db_path
@@ -56,8 +66,9 @@ class ToolRegistry:
 
     def _ensure_schema(self) -> None:
         self._conn.executescript(textwrap.dedent("""\
-            CREATE TABLE IF NOT EXISTS tool_registry (
-                name         TEXT PRIMARY KEY,
+            CREATE TABLE IF NOT EXISTS tool_definitions (
+                tool_id      TEXT PRIMARY KEY,
+                name         TEXT NOT NULL,
                 description  TEXT NOT NULL DEFAULT '',
                 schema_json  TEXT NOT NULL,
                 provider     TEXT NOT NULL DEFAULT '',
@@ -65,17 +76,69 @@ class ToolRegistry:
                 created_at   TEXT NOT NULL
             );
 
-            CREATE INDEX IF NOT EXISTS idx_tool_provider
-                ON tool_registry(provider);
-            CREATE INDEX IF NOT EXISTS idx_tool_status
-                ON tool_registry(status);
+            CREATE TABLE IF NOT EXISTS tool_aliases (
+                alias        TEXT PRIMARY KEY,
+                tool_id      TEXT NOT NULL REFERENCES tool_definitions(tool_id),
+                created_at   TEXT NOT NULL,
+                updated_at   TEXT NOT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_tool_defs_provider
+                ON tool_definitions(provider);
+            CREATE INDEX IF NOT EXISTS idx_tool_defs_status
+                ON tool_definitions(status);
         """))
+        self._conn.commit()
+        self._migrate_legacy_table_if_needed()
+
+    def _migrate_legacy_table_if_needed(self) -> None:
+        """Migrate legacy tool_registry(name PK) rows into definitions+aliases once."""
+        legacy_exists = self._conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='tool_registry'"
+        ).fetchone() is not None
+        if not legacy_exists:
+            return
+
+        # Already using new layout
+        alias_count = self._conn.execute("SELECT count(*) FROM tool_aliases").fetchone()[0]
+        if alias_count > 0:
+            return
+
+        rows = self._conn.execute(
+            "SELECT name, description, schema_json, provider, status, created_at FROM tool_registry"
+        ).fetchall()
+        if not rows:
+            return
+
+        for name, description, schema_json, provider, status, created_at in rows:
+            try:
+                canonical = _normalize_schema(json.loads(schema_json))
+            except Exception:
+                # Skip malformed legacy rows
+                continue
+
+            tid = _tool_id(provider, name, canonical)
+            self._conn.execute(
+                """INSERT OR IGNORE INTO tool_definitions
+                   (tool_id, name, description, schema_json, provider, status, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (tid, name, description, schema_json, provider, status, created_at),
+            )
+            self._conn.execute(
+                """INSERT INTO tool_aliases (alias, tool_id, created_at, updated_at)
+                   VALUES (?, ?, ?, ?)
+                   ON CONFLICT(alias) DO UPDATE SET
+                     tool_id = excluded.tool_id,
+                     updated_at = excluded.updated_at""",
+                (name, tid, created_at, created_at),
+            )
+
         self._conn.commit()
 
     def close(self) -> None:
         self._conn.close()
 
-    # --- Registration (insert-only) ---
+    # --- Registration ---
 
     def register(
         self,
@@ -84,36 +147,50 @@ class ToolRegistry:
         provider: str,
         description: str = "",
     ) -> ToolEntry:
-        """Register a tool. Immutable — rejects if name exists with different schema.
+        """Register/update alias to the matching immutable definition.
 
-        If the same name+schema already exists, this is a no-op and returns
-        the existing entry. If the name exists with a *different* schema,
-        raises ValueError.
+        Behavior:
+        - Same alias + same schema + same provider => no-op
+        - Same alias + changed schema (or first time) => create/reuse definition, repoint alias
+        - Same alias but different provider => error (prevents ambiguous ownership)
         """
         canonical = _normalize_schema(schema)
         existing = self.get(name)
 
         if existing is not None:
+            if existing.provider != provider:
+                raise ValueError(
+                    f"Tool alias '{name}' is owned by provider '{existing.provider}', "
+                    f"cannot register under provider '{provider}'"
+                )
             if _normalize_schema(existing.schema) == canonical:
                 return existing  # idempotent
-            raise ValueError(
-                f"Tool '{name}' already registered with a different schema. "
-                "Tools are immutable — register under a new name or deprecate the old one."
-            )
 
+        tid = _tool_id(provider, name, canonical)
         now = _utc_now()
-        self._conn.execute(
-            """INSERT INTO tool_registry (name, description, schema_json, provider, status, created_at)
-               VALUES (?, ?, ?, ?, 'active', ?)""",
-            (name, description, json.dumps(schema), provider, now),
-        )
-        self._conn.commit()
+        schema_json = json.dumps(schema)
 
-        return ToolEntry(
-            name=name, description=description,
-            schema_json=json.dumps(schema), provider=provider,
-            status="active", created_at=now,
+        self._conn.execute(
+            """INSERT OR IGNORE INTO tool_definitions
+               (tool_id, name, description, schema_json, provider, status, created_at)
+               VALUES (?, ?, ?, ?, ?, 'active', ?)""",
+            (tid, name, description, schema_json, provider, now),
         )
+
+        self._conn.execute(
+            """INSERT INTO tool_aliases (alias, tool_id, created_at, updated_at)
+               VALUES (?, ?, ?, ?)
+               ON CONFLICT(alias) DO UPDATE SET
+                 tool_id = excluded.tool_id,
+                 updated_at = excluded.updated_at""",
+            (name, tid, now, now),
+        )
+
+        self._conn.commit()
+        entry = self.get(name)
+        if entry is None:
+            raise RuntimeError(f"Failed to register tool alias '{name}'")
+        return entry
 
     def register_batch(
         self,
@@ -138,10 +215,12 @@ class ToolRegistry:
     # --- Lookup ---
 
     def get(self, name: str) -> Optional[ToolEntry]:
-        """Get a tool by name regardless of status."""
+        """Get the current tool definition for an alias name."""
         row = self._conn.execute(
-            "SELECT name, description, schema_json, provider, status, created_at "
-            "FROM tool_registry WHERE name = ?",
+            """SELECT d.tool_id, a.alias, d.description, d.schema_json, d.provider, d.status, d.created_at
+               FROM tool_aliases a
+               JOIN tool_definitions d ON d.tool_id = a.tool_id
+               WHERE a.alias = ?""",
             (name,),
         ).fetchone()
         return self._row_to_entry(row) if row else None
@@ -152,28 +231,34 @@ class ToolRegistry:
         provider: Optional[str] = None,
         include_deprecated: bool = False,
     ) -> List[ToolEntry]:
-        """List tools, optionally filtered by provider."""
+        """List current alias-bound tools, optionally filtered by provider."""
         conditions = []
         params: list = []
 
         if not include_deprecated:
-            conditions.append("status = 'active'")
+            conditions.append("d.status = 'active'")
         if provider is not None:
-            conditions.append("provider = ?")
+            conditions.append("d.provider = ?")
             params.append(provider)
 
         where = (" WHERE " + " AND ".join(conditions)) if conditions else ""
         rows = self._conn.execute(
-            f"SELECT name, description, schema_json, provider, status, created_at "
-            f"FROM tool_registry{where} ORDER BY provider, name",
+            f"""SELECT d.tool_id, a.alias, d.description, d.schema_json, d.provider, d.status, d.created_at
+                 FROM tool_aliases a
+                 JOIN tool_definitions d ON d.tool_id = a.tool_id
+                 {where}
+                 ORDER BY d.provider, a.alias""",
             params,
         ).fetchall()
         return [self._row_to_entry(r) for r in rows]
 
     def is_available(self, name: str) -> bool:
-        """True only if the tool exists and is active."""
+        """True only if alias exists and currently points to an active tool."""
         row = self._conn.execute(
-            "SELECT status FROM tool_registry WHERE name = ?",
+            """SELECT d.status
+               FROM tool_aliases a
+               JOIN tool_definitions d ON d.tool_id = a.tool_id
+               WHERE a.alias = ?""",
             (name,),
         ).fetchone()
         return row is not None and row[0] == "active"
@@ -181,28 +266,28 @@ class ToolRegistry:
     # --- Lifecycle ---
 
     def deprecate(self, name: str) -> None:
-        """Hide tool from new machine creation. Existing machines unaffected."""
+        """Hide current alias-bound tool from new machine creation."""
         entry = self.get(name)
         if entry is None:
             raise ValueError(f"Tool '{name}' not found")
         if entry.status == "deprecated":
             return  # already deprecated
         self._conn.execute(
-            "UPDATE tool_registry SET status = 'deprecated' WHERE name = ?",
-            (name,),
+            "UPDATE tool_definitions SET status = 'deprecated' WHERE tool_id = ?",
+            (entry.tool_id,),
         )
         self._conn.commit()
 
     def undeprecate(self, name: str) -> None:
-        """Restore a deprecated tool so it's available for new machines again."""
+        """Restore a deprecated alias-bound tool."""
         entry = self.get(name)
         if entry is None:
             raise ValueError(f"Tool '{name}' not found")
         if entry.status == "active":
             return  # already active
         self._conn.execute(
-            "UPDATE tool_registry SET status = 'active' WHERE name = ?",
-            (name,),
+            "UPDATE tool_definitions SET status = 'active' WHERE tool_id = ?",
+            (entry.tool_id,),
         )
         self._conn.commit()
 
@@ -237,6 +322,6 @@ class ToolRegistry:
     @staticmethod
     def _row_to_entry(row) -> ToolEntry:
         return ToolEntry(
-            name=row[0], description=row[1], schema_json=row[2],
-            provider=row[3], status=row[4], created_at=row[5],
+            tool_id=row[0], name=row[1], description=row[2], schema_json=row[3],
+            provider=row[4], status=row[5], created_at=row[6],
         )

@@ -360,12 +360,14 @@ def dispatch_tools(args: argparse.Namespace) -> tuple[str, bool]:
                 return "No tools found.", False
 
             lines = [
-                "| Tool | Provider | Status | Description |",
-                "|------|----------|--------|-------------|",
+                "| Tool | Tool ID | Provider | Status | Description |",
+                "|------|---------|----------|--------|-------------|",
             ]
             for e in entries:
                 desc = e.description[:70].replace("\n", " ").strip()
-                lines.append(f"| {e.name} | {e.provider} | {e.status} | {desc} |")
+                lines.append(
+                    f"| {e.name} | {e.tool_id[:12]}… | {e.provider} | {e.status} | {desc} |"
+                )
             return "\n".join(lines), False
 
         elif args.action == "deprecate-tool":

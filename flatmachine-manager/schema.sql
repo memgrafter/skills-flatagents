@@ -32,8 +32,9 @@ CREATE TABLE IF NOT EXISTS machine_versions (
 CREATE INDEX IF NOT EXISTS idx_versions_machine
     ON machine_versions(machine_name, version DESC);
 
-CREATE TABLE IF NOT EXISTS tool_registry (
-    name         TEXT PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS tool_definitions (
+    tool_id      TEXT PRIMARY KEY,
+    name         TEXT NOT NULL,
     description  TEXT NOT NULL DEFAULT '',
     schema_json  TEXT NOT NULL,
     provider     TEXT NOT NULL DEFAULT '',
@@ -41,10 +42,17 @@ CREATE TABLE IF NOT EXISTS tool_registry (
     created_at   TEXT NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_tool_provider
-    ON tool_registry(provider);
+CREATE TABLE IF NOT EXISTS tool_aliases (
+    alias        TEXT PRIMARY KEY,
+    tool_id      TEXT NOT NULL REFERENCES tool_definitions(tool_id),
+    created_at   TEXT NOT NULL,
+    updated_at   TEXT NOT NULL
+);
 
-CREATE INDEX IF NOT EXISTS idx_tool_status
-    ON tool_registry(status);
+CREATE INDEX IF NOT EXISTS idx_tool_defs_provider
+    ON tool_definitions(provider);
+
+CREATE INDEX IF NOT EXISTS idx_tool_defs_status
+    ON tool_definitions(status);
 
 COMMIT;

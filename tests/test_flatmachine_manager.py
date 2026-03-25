@@ -74,6 +74,7 @@ from flatmachine_manager.doctor import (
     _check_registry_db,
     _check_sqlite_version,
 )
+from flatmachine_manager.tool_registry import ToolRegistry
 from flatmachine_manager.cli import build_parser, _parse_agent, _parse_param
 
 
@@ -1485,6 +1486,81 @@ class TestDoctor:
         assert "flatmachines doctor" in result
         # At minimum sqlite and schema should be ok
         assert "✓" in result
+
+
+# ===========================================================================
+# Tool Registry Tests
+# ===========================================================================
+
+
+class TestToolRegistry:
+    def test_alias_rebinds_to_new_tool_id_on_schema_change(self, tmp_path):
+        db_path = str(tmp_path / "tools.sqlite")
+        tr = ToolRegistry(db_path=db_path)
+
+        schema_v1 = {
+            "type": "function",
+            "function": {
+                "name": "create_machine",
+                "description": "v1",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string"},
+                    },
+                    "required": ["name"],
+                },
+            },
+        }
+        schema_v2 = {
+            "type": "function",
+            "function": {
+                "name": "create_machine",
+                "description": "v2",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string"},
+                        "template": {"type": "string"},
+                    },
+                    "required": ["name"],
+                },
+            },
+        }
+
+        e1 = tr.register("create_machine", schema_v1, provider="manager", description="v1")
+        e2 = tr.register("create_machine", schema_v2, provider="manager", description="v2")
+
+        current = tr.get("create_machine")
+        assert current is not None
+        assert e1.tool_id != e2.tool_id
+        assert current.tool_id == e2.tool_id
+
+        count_defs = tr._conn.execute("SELECT count(*) FROM tool_definitions").fetchone()[0]
+        assert count_defs == 2
+        tr.close()
+
+    def test_alias_provider_conflict_rejected(self, tmp_path):
+        db_path = str(tmp_path / "tools.sqlite")
+        tr = ToolRegistry(db_path=db_path)
+
+        schema = {
+            "type": "function",
+            "function": {
+                "name": "read",
+                "description": "Read file",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"path": {"type": "string"}},
+                    "required": ["path"],
+                },
+            },
+        }
+
+        tr.register("read", schema, provider="cli-tools", description="read")
+        with pytest.raises(ValueError):
+            tr.register("read", schema, provider="manager", description="read")
+        tr.close()
 
 
 # ===========================================================================
