@@ -22,7 +22,7 @@ Use this skill to gather codebase context before coding tasks. A staff architect
 ## Usage
 
 ```bash
-$HOME/.flatagents/skills/codebase-explorer/run.sh "<task>" [-d <directory>] [--token-budget N] [--max-iterations N]
+$HOME/.agents/skills/codebase-explorer/run.sh "<task>" [-d <directory>] [--token-budget N] [--max-iterations N]
 ```
 
 ## Examples

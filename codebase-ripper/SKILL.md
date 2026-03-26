@@ -37,7 +37,7 @@ Offload exploration to a cheap model running out-of-band. Instead of polluting y
 ## Usage
 
 ```bash
-$HOME/.flatagents/skills/codebase-ripper/run.sh "<task>" [-d <directory>] [--token-budget N] [--max-iterations N]
+$HOME/.agents/skills/codebase-ripper/run.sh "<task>" [-d <directory>] [--token-budget N] [--max-iterations N]
 ```
 
 ## Examples

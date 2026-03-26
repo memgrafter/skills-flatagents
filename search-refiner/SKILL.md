@@ -6,5 +6,5 @@ description: Search the web and refine results to key findings. Use when the use
 Run immediately with the user's query:
 
 ```bash
-$HOME/.flatagents/skills/search-refiner/run.sh "<query>"
+$HOME/.agents/skills/search-refiner/run.sh "<query>"
 ```

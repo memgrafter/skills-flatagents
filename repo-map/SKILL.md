@@ -28,7 +28,7 @@ Use this skill when you need quick repo-level context and want a reliable “whe
 ## Usage
 
 ```bash
-$HOME/.flatagents/skills/repo-map/run.sh "optional hint" -d <directory> [--map-tokens N] [--json]
+$HOME/.agents/skills/repo-map/run.sh "optional hint" -d <directory> [--map-tokens N] [--json]
 ```
 
 ## Examples
