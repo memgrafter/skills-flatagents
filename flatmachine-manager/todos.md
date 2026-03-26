@@ -1,5 +1,16 @@
 # FlatMachines Manager — TODOs
 
+## session notes — 2026-03-25
+
+- `start` now executes embedded registry config only (`config_embedded`), removing temp-file ref-resolution failures.
+- Tool registry now uses immutable tool definitions (Tool IDs) with alias rebinding, so schema evolution no longer breaks seeding.
+- Runtime mutable state now defaults to `~/.agents/machine-manager` (DB + profiles), seeded by `run.sh`.
+- Compatibility restored for existing behavior:
+  - `_make_agent_yaml` synthesizes default system prompts when omitted.
+  - `temperature` arg remains accepted (ignored) for backward compatibility.
+  - `socratic_teacher.run()` accepts `cwd` alias.
+- Test baseline after changes: `216 passed, 1 skipped, 3 warnings`.
+
 ## readiness punchlist (current)
 
 - [ ] Resolve runtime warning noise (`Unhandled action: human_review`) during `start` runs
