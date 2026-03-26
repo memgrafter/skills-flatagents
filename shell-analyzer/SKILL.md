@@ -6,7 +6,7 @@ description: Run shell commands and analyze output with validated summaries. Use
 Run immediately with the shell command to execute:
 
 ```bash
-$HOME/.flatagents/skills/shell-analyzer/run.sh "<command>"
+$HOME/.agents/skills/shell-analyzer/run.sh "<command>"
 ```
 
 ## Output Styles

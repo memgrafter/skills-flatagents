@@ -18,7 +18,7 @@ An agentic coding assistant with human-in-the-loop review.
 ## Invocation
 
 ```bash
-$HOME/.flatagents/skills/coding-agent/run.sh "<task>" --cwd "<working_directory>" --claude
+$HOME/.agents/skills/coding-agent/run.sh "<task>" --cwd "<working_directory>" --claude
 ```
 
 ---
@@ -51,13 +51,13 @@ When you see exit code 2:
 
 ```bash
 # Approve plan (task retrieved from checkpoint)
-CODING_AGENT_APPROVAL_PLAN=approved $HOME/.flatagents/skills/coding-agent/run.sh --cwd "<dir>" --claude
+CODING_AGENT_APPROVAL_PLAN=approved $HOME/.agents/skills/coding-agent/run.sh --cwd "<dir>" --claude
 
 # Reject plan with feedback
-CODING_AGENT_APPROVAL_PLAN="<user feedback here>" $HOME/.flatagents/skills/coding-agent/run.sh --cwd "<dir>" --claude
+CODING_AGENT_APPROVAL_PLAN="<user feedback here>" $HOME/.agents/skills/coding-agent/run.sh --cwd "<dir>" --claude
 
 # Approve result
-CODING_AGENT_APPROVAL_RESULT=approved $HOME/.flatagents/skills/coding-agent/run.sh --cwd "<dir>" --claude
+CODING_AGENT_APPROVAL_RESULT=approved $HOME/.agents/skills/coding-agent/run.sh --cwd "<dir>" --claude
 ```
 
 ### Environment Variables

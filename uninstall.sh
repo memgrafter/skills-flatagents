@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VENV="$SCRIPT_DIR/.venv"
 MANIFEST="$SCRIPT_DIR/install-manifest.yml"
-SKILLS_DIR="${FLATAGENTS_SKILLS_DIR:-$HOME/.flatagents/skills}"
+SKILLS_DIR="${AGENTS_SKILLS_DIR:-${FLATAGENTS_SKILLS_DIR:-$HOME/.agents/skills}}"
 
 # Parse arguments
 SKILL_FILTER=""

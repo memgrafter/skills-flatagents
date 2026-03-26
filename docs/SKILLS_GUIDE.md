@@ -33,14 +33,14 @@ Simple skills are single-file implementations that are easy to create and unders
 
 #### Basic Skill Structure
 ```yaml
-# .flatagents/skills/explain-with-diagrams.md
+# ~/.agents/skills/explain-with-diagrams.md
 name: Explain Code with Diagrams
 description: Teaches the assistant to explain code using diagrams and analogies
 allowed-tools: []
 ```
 
 #### Creating Your First Skill
-1. Create a `.flatagents/skills/` directory in your project
+1. Create a `~/.agents/skills/` directory for your skills
 2. Create a markdown file with your skill definition
 3. Add YAML metadata at the top (name, description, allowed-tools)
 4. Write instructions for the assistant to follow
@@ -77,7 +77,7 @@ As skills become more complex, organize them using multiple files to maintain cl
 
 #### Structure
 ```
-.flatagents/skills/advanced-skill/
+~/.agents/skills/advanced-skill/
 ├── skill.md           # Main skill definition
 ├── guidelines.md      # Detailed guidelines
 ├── templates/         # Reusable templates

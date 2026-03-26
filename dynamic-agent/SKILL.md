@@ -4,5 +4,5 @@ description: Dynamically generate and execute a specialized agent for any task. 
 ---
 
 ```bash
-$HOME/.flatagents/skills/dynamic-agent/run.sh -y "<task>"
+$HOME/.agents/skills/dynamic-agent/run.sh -y "<task>"
 ```

@@ -17,7 +17,7 @@ How does the digest persist and get accessed?
 | Option | Pros | Cons |
 |--------|------|------|
 | Stdout (ephemeral) | Simple | No reuse, manual paste |
-| File in repo (`.flatagents/codebase-map.md`) | Persists, the assistant can `Read` it | Gets stale, needs regen trigger |
+| File in repo (`.agents/codebase-map.md`) | Persists, the assistant can `Read` it | Gets stale, needs regen trigger |
 | CLAUDE.md injection | Auto-loaded every session | Pollutes instructions, wasteful |
 | MCP resource | Clean tool access | Requires MCP infrastructure |
 | Cache + file watcher | Always fresh | Complex |

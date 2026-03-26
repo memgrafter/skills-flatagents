@@ -6,7 +6,7 @@ description: Write tests to reach a coverage target. Uses 4 agents (analyzer, wr
 Run to generate tests for a Python file or project:
 
 ```bash
-~/.flatagents/skills/test-writer/run.sh "<target>"
+~/.agents/skills/test-writer/run.sh "<target>"
 ```
 
 ## Options

@@ -7,7 +7,7 @@ Add support for global model defaults to eliminate duplication across all 9 agen
 **Configuration Sources (in precedence order):**
 1. Agent config file (full override)
 2. Environment variables (`FLATAGENT_MODEL_*`)
-3. `~/.flatagents/defaults.yml`
+3. `~/.agents/defaults.yml`
 4. Built-in fallbacks
 
 **Override Semantics:** Full replacement - if an agent config has ANY model fields, its entire model section replaces the defaults.
@@ -16,7 +16,7 @@ Add support for global model defaults to eliminate duplication across all 9 agen
 
 ### 1. Create Default Config Schema
 
-**File:** `~/.flatagents/defaults.yml` (created by installer)
+**File:** `~/.agents/defaults.yml` (created by installer)
 
 ```yaml
 # Global defaults for all FlatAgent instances
@@ -52,7 +52,7 @@ Environment variables override the defaults.yml file.
 **New File:** `shared/config_loader.py`
 
 **Key Components:**
-- `load_defaults()` - Load from `~/.flatagents/defaults.yml` and env vars
+- `load_defaults()` - Load from `~/.agents/defaults.yml` and env vars
 - `apply_defaults(agent_config, defaults)` - Merge with full override semantics
 - `FlatAgentWithDefaults` - Wrapper class that auto-applies defaults
 
@@ -60,7 +60,7 @@ Environment variables override the defaults.yml file.
 ```python
 def load_defaults():
     """Returns dict with model defaults from file + env var overrides."""
-    # 1. Load ~/.flatagents/defaults.yml
+    # 1. Load ~/.agents/defaults.yml
     # 2. Override individual fields from FLATAGENT_MODEL_* env vars
     # 3. Type conversion for numbers (int for tokens, float for temp)
 
@@ -77,12 +77,12 @@ def apply_defaults(agent_config, defaults):
 
 Add after venv creation:
 ```bash
-# Create ~/.flatagents directory and defaults if needed
-FLATAGENTS_DIR="$HOME/.flatagents"
-DEFAULTS_FILE="$FLATAGENTS_DIR/defaults.yml"
+# Create ~/.agents directory and defaults if needed
+AGENTS_DIR="$HOME/.agents"
+DEFAULTS_FILE="$AGENTS_DIR/defaults.yml"
 
-if [[ ! -d "$FLATAGENTS_DIR" ]]; then
-    mkdir -p "$FLATAGENTS_DIR"
+if [[ ! -d "$AGENTS_DIR" ]]; then
+    mkdir -p "$AGENTS_DIR"
 fi
 
 if [[ ! -f "$DEFAULTS_FILE" ]]; then
@@ -125,7 +125,7 @@ Only creates if doesn't exist (respects user customization).
 
 **Modified Files:**
 3. `shared/__init__.py` - Export new functions/classes
-4. `install.sh` - Create ~/.flatagents/defaults.yml
+4. `install.sh` - Create ~/.agents/defaults.yml
 5. `search_refiner/src/search_refiner/main.py` - Use wrapper
 6. `shell_analyzer/src/shell_analyzer/main.py` - Use wrapper
 7. `test_writer/src/test_writer/main.py` - Use wrapper
@@ -149,7 +149,7 @@ Only creates if doesn't exist (respects user customization).
    - Export FlatAgentWithDefaults and helpers
 
 4. **Update install.sh**
-   - Create ~/.flatagents/ directory
+   - Create ~/.agents/ directory
    - Generate defaults.yml if not exists
 
 5. **Migrate one skill (shell_analyzer)**
@@ -171,11 +171,11 @@ Only creates if doesn't exist (respects user customization).
 - **Invalid YAML:** Log warning, use built-in defaults
 - **Partial model config in agent:** Even one field triggers full override
 - **Type conversion errors:** Handle gracefully, skip bad env vars
-- **Directory permissions:** Don't block install if can't create ~/.flatagents/
+- **Directory permissions:** Don't block install if can't create ~/.agents/
 
 ## Backward Compatibility
 
 - Existing configs work unchanged (wrapper checks for model section)
-- If ~/.flatagents/defaults.yml doesn't exist, no defaults applied
+- If ~/.agents/defaults.yml doesn't exist, no defaults applied
 - Standard FlatAgent class continues to work normally
 - Zero breaking changes
