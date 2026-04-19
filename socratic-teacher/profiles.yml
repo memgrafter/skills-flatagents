@@ -1,26 +1,58 @@
 spec: flatprofiles
-spec_version: "2.0.0"
+spec_version: "2.5.0"
 
 data:
   model_profiles:
     default:
-      provider: openrouter/z-ai
-      name: glm-4.7
-      temperature: 1.0
+      provider: openai-codex
+      name: gpt-5.4-mini
+      backend: codex
+      base_url: https://chatgpt.com/backend-api
+      oauth:
+        provider: openai-codex
+        auth_file: ~/.agents/flatmachines/auth.json
+        originator: flatagents
+        refresh: true
+        timeout_seconds: 120
+        max_retries: 3
       max_tokens: 10000
     question_generator:
-      provider: openrouter/z-ai
-      name: glm-4.7
-      temperature: 1.0
+      provider: openai-codex
+      name: gpt-5.4-mini
+      backend: codex
+      base_url: https://chatgpt.com/backend-api
+      oauth:
+        provider: openai-codex
+        auth_file: ~/.agents/flatmachines/auth.json
+        originator: flatagents
+        refresh: true
+        timeout_seconds: 120
+        max_retries: 3
       max_tokens: 10000
     response_evaluator:
-      provider: openrouter/z-ai
-      name: glm-4.7
-      temperature: 1.0
+      provider: openai-codex
+      name: gpt-5.4-mini
+      backend: codex
+      base_url: https://chatgpt.com/backend-api
+      oauth:
+        provider: openai-codex
+        auth_file: ~/.agents/flatmachines/auth.json
+        originator: flatagents
+        refresh: true
+        timeout_seconds: 120
+        max_retries: 3
       max_tokens: 10000
     feedback_provider:
-      provider: openrouter/z-ai
-      name: glm-4.7
-      temperature: 1.0
+      provider: openai-codex
+      name: gpt-5.4-mini
+      backend: codex
+      base_url: https://chatgpt.com/backend-api
+      oauth:
+        provider: openai-codex
+        auth_file: ~/.agents/flatmachines/auth.json
+        originator: flatagents
+        refresh: true
+        timeout_seconds: 120
+        max_retries: 3
       max_tokens: 10000
   default: default

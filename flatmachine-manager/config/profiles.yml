@@ -5,12 +5,12 @@ data:
   model_profiles:
     default:
       provider: openai-codex
-      name: gpt-5.3-codex
+      name: gpt-5.4-mini
       backend: codex
       base_url: https://chatgpt.com/backend-api
       oauth:
         provider: openai-codex
-        auth_file: ~/.pi/agent/auth.json
+        auth_file: ~/.agents/flatmachines/auth.json
         originator: flatagents
         refresh: true
         timeout_seconds: 120
@@ -18,12 +18,12 @@ data:
 
     fast:
       provider: openai-codex
-      name: gpt-5.3-codex
+      name: gpt-5.4-mini
       backend: codex
       base_url: https://chatgpt.com/backend-api
       oauth:
         provider: openai-codex
-        auth_file: ~/.pi/agent/auth.json
+        auth_file: ~/.agents/flatmachines/auth.json
         originator: flatagents
         refresh: true
         timeout_seconds: 120
@@ -31,12 +31,12 @@ data:
 
     smart:
       provider: openai-codex
-      name: gpt-5.3-codex
+      name: gpt-5.4-mini
       backend: codex
       base_url: https://chatgpt.com/backend-api
       oauth:
         provider: openai-codex
-        auth_file: ~/.pi/agent/auth.json
+        auth_file: ~/.agents/flatmachines/auth.json
         originator: flatagents
         refresh: true
         timeout_seconds: 120
@@ -44,12 +44,12 @@ data:
 
     code:
       provider: openai-codex
-      name: gpt-5.3-codex
+      name: gpt-5.4-mini
       backend: codex
       base_url: https://chatgpt.com/backend-api
       oauth:
         provider: openai-codex
-        auth_file: ~/.pi/agent/auth.json
+        auth_file: ~/.agents/flatmachines/auth.json
         originator: flatagents
         refresh: true
         timeout_seconds: 120
@@ -57,12 +57,12 @@ data:
 
     cheap:
       provider: openai-codex
-      name: gpt-5.3-codex
+      name: gpt-5.4-mini
       backend: codex
       base_url: https://chatgpt.com/backend-api
       oauth:
         provider: openai-codex
-        auth_file: ~/.pi/agent/auth.json
+        auth_file: ~/.agents/flatmachines/auth.json
         originator: flatagents
         refresh: true
         timeout_seconds: 120

@@ -1,34 +1,74 @@
 spec: flatprofiles
-spec_version: "2.0.0"
+spec_version: "2.5.0"
 
 data:
   model_profiles:
     default:
-      provider: openrouter/z-ai
-      name: glm-4.7
-      temperature: 0.9
+      provider: openai-codex
+      name: gpt-5.4-mini
+      backend: codex
+      base_url: https://chatgpt.com/backend-api
+      oauth:
+        provider: openai-codex
+        auth_file: ~/.agents/flatmachines/auth.json
+        originator: flatagents
+        refresh: true
+        timeout_seconds: 120
+        max_retries: 3
       top_p: 0.95
       max_tokens: 150000
     summarizer:
-      provider: openrouter/z-ai
-      name: glm-4.7
-      temperature: 0.9
+      provider: openai-codex
+      name: gpt-5.4-mini
+      backend: codex
+      base_url: https://chatgpt.com/backend-api
+      oauth:
+        provider: openai-codex
+        auth_file: ~/.agents/flatmachines/auth.json
+        originator: flatagents
+        refresh: true
+        timeout_seconds: 120
+        max_retries: 3
       top_p: 0.95
       max_tokens: 150000
     judge:
-      provider: openrouter/z-ai
-      name: glm-4.7
-      temperature: 0.9
+      provider: openai-codex
+      name: gpt-5.4-mini
+      backend: codex
+      base_url: https://chatgpt.com/backend-api
+      oauth:
+        provider: openai-codex
+        auth_file: ~/.agents/flatmachines/auth.json
+        originator: flatagents
+        refresh: true
+        timeout_seconds: 120
+        max_retries: 3
       top_p: 0.95
       max_tokens: 150000
     arcee-free:
-      name: openrouter/arcee-ai/trinity-large-preview:free # way higher rpm
-      temperature: 1.0
+      provider: openai-codex
+      name: gpt-5.4-mini
+      backend: codex
+      base_url: https://chatgpt.com/backend-api
+      oauth:
+        provider: openai-codex
+        auth_file: ~/.agents/flatmachines/auth.json
+        originator: flatagents
+        refresh: true
+        timeout_seconds: 120
+        max_retries: 3
     pony-alpha-free:
-      # LiteLLM strips one leading provider segment for OpenRouter models.
-      # Use double prefix so OpenRouter receives model id: openrouter/pony-alpha.
-      name: openrouter/openrouter/pony-alpha
-      temperature: 1.0
+      provider: openai-codex
+      name: gpt-5.4-mini
+      backend: codex
+      base_url: https://chatgpt.com/backend-api
+      oauth:
+        provider: openai-codex
+        auth_file: ~/.agents/flatmachines/auth.json
+        originator: flatagents
+        refresh: true
+        timeout_seconds: 120
+        max_retries: 3
 
   default: default
   # override: arcee-free
