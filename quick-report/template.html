@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{TITLE}}</title>
+
+<!-- Vendored KaTeX (math rendering) -->
+<link rel="stylesheet" href="../vendor/katex.min.css">
+
+<style>
+/* ================================================================
+   QUICK-REPORT THEME — light/dark, responsive grid, print-ready
+   ================================================================ */
+
+/* --- Reset & base --- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* Light theme tokens */
+  --bg:          #ffffff;
+  --bg-surface:  #f8f9fa;
+  --bg-code:     #f1f3f5;
+  --fg:          #1a1a2e;
+  --fg-muted:    #6c757d;
+  --fg-heading:  #0f0f23;
+  --accent:      #2563eb;
+  --border:      #dee2e6;
+  --radius:      6px;
+  --shadow:      0 1px 3px rgba(0,0,0,0.08);
+
+  /* Spacing scale */
+  --sp-xs: 0.25rem; --sp-sm: 0.5rem; --sp-md: 1rem;
+  --sp-lg: 1.5rem;  --sp-xl: 2rem;   --sp-2xl: 3rem;
+
+  /* Typography */
+  --font-sans:  system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono:  'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
+  --font-size:  16px;
+  --line-height: 1.65;
+
+  /* Chart palette (categorical, colorblind-safe) */
+  --c1: #2563eb; --c2: #e11d48; --c3: #16a34a; --c4: #d97706;
+  --c5: #7c3aed; --c6: #0891b2; --c7: #be185d; --c8: #4f46e5;
+}
+
+[data-theme="dark"] {
+  --bg:          #0f0f23;
+  --bg-surface:  #1a1a2e;
+  --bg-code:     #16213e;
+  --fg:          #e2e8f0;
+  --fg-muted:    #94a3b8;
+  --fg-heading:  #f1f5f9;
+  --accent:      #60a5fa;
+  --border:      #334155;
+  --shadow:      0 1px 3px rgba(0,0,0,0.3);
+}
+
+html { font-size: var(--font-size); }
+body {
+  font-family: var(--font-sans);
+  line-height: var(--line-height);
+  color: var(--fg);
+  background: var(--bg);
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: var(--sp-lg);
+}
+
+/* --- Typography --- */
+h1, h2, h3, h4 { color: var(--fg-heading); font-weight: 700; line-height: 1.3; }
+h1 { font-size: 2rem;   margin: var(--sp-2xl) 0 var(--sp-md); }
+h2 { font-size: 1.5rem; margin: var(--sp-xl) 0 var(--sp-sm);  border-bottom: 2px solid var(--border); padding-bottom: var(--sp-xs); }
+h3 { font-size: 1.17rem; margin: var(--sp-lg) 0 var(--sp-sm); }
+p, ul, ol { margin-bottom: var(--sp-md); }
+a { color: var(--accent); }
+small, .muted { color: var(--fg-muted); font-size: 0.875rem; }
+
+/* --- Report header --- */
+.report-header {
+  border-bottom: 3px solid var(--accent);
+  padding-bottom: var(--sp-lg);
+  margin-bottom: var(--sp-xl);
+}
+.report-header h1 { margin-top: 0; }
+.report-meta { display: flex; flex-wrap: wrap; gap: var(--sp-md); color: var(--fg-muted); font-size: 0.875rem; }
+
+/* --- Dashboard grid --- */
+.grid { display: grid; gap: var(--sp-lg); margin: var(--sp-lg) 0; }
+.grid-1 { grid-template-columns: 1fr; }
+.grid-2 { grid-template-columns: repeat(2, 1fr); }
+.grid-3 { grid-template-columns: repeat(3, 1fr); }
+.grid-4 { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 768px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
+@media (min-width: 769px) and (max-width: 1024px) { .grid-3, .grid-4 { grid-template-columns: repeat(2, 1fr); } }
+
+/* --- Card / panel --- */
+.card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--sp-lg);
+  box-shadow: var(--shadow);
+}
+.card-title { font-size: 0.875rem; font-weight: 600; color: var(--fg-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: var(--sp-sm); }
+
+/* --- KPI row --- */
+.kpi { text-align: center; padding: var(--sp-lg); }
+.kpi-value { font-size: 2.5rem; font-weight: 800; color: var(--accent); line-height: 1.1; }
+.kpi-label { font-size: 0.8rem; color: var(--fg-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-top: var(--sp-xs); }
+.kpi-delta { font-size: 0.85rem; margin-top: var(--sp-xs); }
+.kpi-delta.up { color: #16a34a; }
+.kpi-delta.down { color: #e11d48; }
+
+/* --- Tables --- */
+table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin: var(--sp-md) 0; }
+thead { background: var(--bg-surface); }
+th { text-align: left; font-weight: 600; padding: var(--sp-sm) var(--sp-md); border-bottom: 2px solid var(--border); white-space: nowrap; }
+td { padding: var(--sp-sm) var(--sp-md); border-bottom: 1px solid var(--border); }
+tbody tr:hover { background: var(--bg-surface); }
+.num { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--font-mono); }
+
+/* --- Code blocks --- */
+pre { background: var(--bg-code); border-radius: var(--radius); padding: var(--sp-md); overflow-x: auto; font-family: var(--font-mono); font-size: 0.85rem; margin: var(--sp-md) 0; }
+code { font-family: var(--font-mono); font-size: 0.85em; }
+:not(pre) > code { background: var(--bg-code); padding: 0.15em 0.35em; border-radius: 3px; }
+
+/* --- Callouts --- */
+.callout { border-left: 4px solid var(--accent); background: var(--bg-surface); padding: var(--sp-md) var(--sp-lg); border-radius: 0 var(--radius) var(--radius) 0; margin: var(--sp-md) 0; }
+.callout.warn { border-left-color: #d97706; }
+.callout.error { border-left-color: #e11d48; }
+.callout.success { border-left-color: #16a34a; }
+
+/* --- Plotly overrides --- */
+.js-plotly-plot .plotly .modebar { opacity: 0; transition: opacity 0.2s; }
+.js-plotly-plot:hover .plotly .modebar { opacity: 1; }
+
+/* --- Mermaid --- */
+.mermaid { margin: var(--sp-md) 0; text-align: center; }
+
+/* --- Theme toggle --- */
+.theme-toggle {
+  position: fixed; top: var(--sp-md); right: var(--sp-md);
+  background: var(--bg-surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: var(--sp-xs) var(--sp-sm);
+  cursor: pointer; font-size: 1.2rem; z-index: 100;
+}
+
+/* --- Print styles --- */
+@media print {
+  body { max-width: 100%; padding: 0; }
+  .theme-toggle, .js-plotly-plot .plotly .modebar { display: none !important; }
+  .card { break-inside: avoid; box-shadow: none; border: 1px solid #ccc; }
+  h2, h3 { break-after: avoid; }
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  @page { margin: 1.5cm; }
+}
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode">🌓</button>
+
+<header class="report-header">
+  <h1>{{TITLE}}</h1>
+  <div class="report-meta">
+    <span>📅 {{DATE}}</span>
+    <span>👤 {{AUTHOR}}</span>
+    <!-- Add more meta fields as needed -->
+  </div>
+  <p>{{DESCRIPTION}}</p>
+</header>
+
+<main>
+
+<!-- ============================================================
+     EXAMPLE: KPI Row
+     ============================================================ -->
+<section>
+  <h2>Key Metrics</h2>
+  <div class="grid grid-4">
+    <div class="card kpi">
+      <div class="kpi-value">$1.2M</div>
+      <div class="kpi-label">Revenue</div>
+      <div class="kpi-delta up">▲ 12.3% vs prior</div>
+    </div>
+    <div class="card kpi">
+      <div class="kpi-value">8,421</div>
+      <div class="kpi-label">Users</div>
+      <div class="kpi-delta up">▲ 5.7%</div>
+    </div>
+    <div class="card kpi">
+      <div class="kpi-value">94.2%</div>
+      <div class="kpi-label">Uptime</div>
+      <div class="kpi-delta down">▼ 0.3%</div>
+    </div>
+    <div class="card kpi">
+      <div class="kpi-value">23ms</div>
+      <div class="kpi-label">Latency (p99)</div>
+      <div class="kpi-delta up">▲ 8.1%</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     EXAMPLE: Charts (Plotly)
+     ============================================================ -->
+<section>
+  <h2>Trend Analysis</h2>
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-title">Revenue Over Time</div>
+      <div id="chart-revenue"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Distribution of Response Times</div>
+      <div id="chart-histogram"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     EXAMPLE: Table
+     ============================================================ -->
+<section>
+  <h2>Summary Table</h2>
+  <div class="card">
+    <table>
+      <thead>
+        <tr><th>Metric</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th><th class="num">YoY Δ</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Revenue ($M)</td><td class="num">1.1</td><td class="num">1.2</td><td class="num">1.4</td><td class="num">1.6</td><td class="num" style="color:#16a34a">+18.2%</td></tr>
+        <tr><td>Customers</td><td class="num">3,200</td><td class="num">3,800</td><td class="num">4,100</td><td class="num">4,600</td><td class="num" style="color:#16a34a">+12.1%</td></tr>
+        <tr><td>Churn Rate</td><td class="num">3.2%</td><td class="num">2.8%</td><td class="num">2.5%</td><td class="num">2.1%</td><td class="num" style="color:#16a34a">−1.1pp</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================================
+     EXAMPLE: Mermaid diagram
+     ============================================================ -->
+<section>
+  <h2>System Architecture</h2>
+  <div class="card">
+    <pre class="mermaid">
+graph LR
+    A[Data Source] --> B[ETL Pipeline]
+    B --> C[(Data Warehouse)]
+    C --> D[Analytics Engine]
+    D --> E[Dashboard]
+    D --> F[Alerts]
+    </pre>
+  </div>
+</section>
+
+<!-- ============================================================
+     EXAMPLE: Math (KaTeX)
+     ============================================================ -->
+<section>
+  <h2>Methodology</h2>
+  <div class="card">
+    <p>The model uses ordinary least squares regression. The cost function is:</p>
+    <p>$$J(\theta) = \frac{1}{2m} \sum_{i=1}^{m} \left( h_\theta(x^{(i)}) - y^{(i)} \right)^2$$</p>
+    <p>Where \(m\) is the number of training examples, \(h_\theta(x)\) is the hypothesis function,
+    and the gradient is computed as \(\nabla_\theta J = \frac{1}{m} X^T (X\theta - y)\).</p>
+  </div>
+</section>
+
+<!-- ============================================================
+     EXAMPLE: Callout
+     ============================================================ -->
+<div class="callout warn">
+  <strong>Note:</strong> Q3 figures are provisional and subject to audit adjustment.
+</div>
+
+</main>
+
+<!-- ================================================================
+     SCRIPTS — vendored, no network required
+     ================================================================ -->
+<script src="../vendor/plotly-basic.min.js"></script>
+<script src="../vendor/mermaid.min.js"></script>
+<script src="../vendor/katex.min.js"></script>
+<script src="../vendor/katex-auto-render.min.js"></script>
+
+<script>
+// --- Theme toggle ---
+function toggleTheme() {
+  const html = document.documentElement;
+  const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
+  // Re-render Plotly charts for theme
+  document.querySelectorAll('.js-plotly-plot').forEach(el => {
+    Plotly.relayout(el, plotlyTheme());
+  });
+}
+// Restore saved theme
+if (localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+
+// --- Plotly theme helper ---
+function plotlyTheme() {
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  return {
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor:  'rgba(0,0,0,0)',
+    font: { color: dark ? '#e2e8f0' : '#1a1a2e', family: 'system-ui, sans-serif' },
+    xaxis: { gridcolor: dark ? '#334155' : '#e5e7eb', zerolinecolor: dark ? '#475569' : '#d1d5db' },
+    yaxis: { gridcolor: dark ? '#334155' : '#e5e7eb', zerolinecolor: dark ? '#475569' : '#d1d5db' },
+  };
+}
+// Categorical color palette (colorblind-safe)
+const PALETTE = ['#2563eb','#e11d48','#16a34a','#d97706','#7c3aed','#0891b2','#be185d','#4f46e5'];
+const plotlyDefaults = { responsive: true, displaylogo: false, modeBarButtonsToRemove: ['lasso2d','select2d'] };
+
+// --- Example: Revenue line chart ---
+Plotly.newPlot('chart-revenue', [{
+  x: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+  y: [88, 95, 102, 98, 110, 115, 121, 130, 125, 138, 142, 155],
+  type: 'scatter', mode: 'lines+markers',
+  line: { color: PALETTE[0], width: 2.5 },
+  marker: { size: 6 },
+  name: 'Revenue ($K)'
+}], { ...plotlyTheme(), margin: { t: 20, r: 20, b: 40, l: 50 }, height: 300 }, plotlyDefaults);
+
+// --- Example: Histogram ---
+const responseData = Array.from({length: 500}, () => Math.exp(Math.random() * 2 + 1));
+Plotly.newPlot('chart-histogram', [{
+  x: responseData,
+  type: 'histogram',
+  marker: { color: PALETTE[1] + 'cc', line: { color: PALETTE[1], width: 1 } },
+  nbinsx: 30,
+  name: 'Response Time (ms)'
+}], { ...plotlyTheme(), margin: { t: 20, r: 20, b: 40, l: 50 }, height: 300, xaxis: { ...plotlyTheme().xaxis, title: 'ms' } }, plotlyDefaults);
+
+// --- Init Mermaid ---
+mermaid.initialize({
+  startOnLoad: true,
+  theme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default',
+  securityLevel: 'loose',
+});
+
+// --- Init KaTeX auto-render ---
+renderMathInElement(document.body, {
+  delimiters: [
+    { left: '$$', right: '$$', display: true },
+    { left: '\\[', right: '\\]', display: true },
+    { left: '\\(', right: '\\)', display: false },
+  ],
+  throwOnError: false,
+});
+</script>
+</body>
+</html>
