@@ -8,11 +8,14 @@
 
 skills:
   - codebase-ripper
-#  - repo-map
-#  - search-refiner
+  - quick-report
   - shell-analyzer
   - website-scraper
   - flatmachine-manager
+  - openai-deep-research-citation-fixer
+# prototype
+#  - repo-map
+#  - search-refiner
 # not typically used as skills, special use only
 #  - coding-agent
 #  - dynamic-agent
