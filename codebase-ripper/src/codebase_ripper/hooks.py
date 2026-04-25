@@ -680,10 +680,21 @@ class CodebaseRipperHooks(MachineHooks):
 
     def _update_iteration_state(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """Update iteration counter and check if we should continue."""
-        iteration = context.get("iteration", 0) + 1
-        max_iterations = context.get("max_iterations", 2)
+        raw_iteration = context.get("iteration", 0)
+        raw_max_iterations = context.get("max_iterations", 2)
+
+        try:
+            iteration = int(raw_iteration) + 1
+        except (TypeError, ValueError):
+            iteration = 1
+
+        try:
+            max_iterations = int(raw_max_iterations)
+        except (TypeError, ValueError):
+            max_iterations = 2
         
         context["iteration"] = iteration
+        context["max_iterations"] = max_iterations
         context["should_continue"] = iteration < max_iterations
         
         self._log(f"iteration {iteration}/{max_iterations}")

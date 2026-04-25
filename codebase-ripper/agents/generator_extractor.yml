@@ -8,7 +8,8 @@ data:
 
   system: |
     Extract shell commands from the given text.
-    Return ONLY a JSON array of command strings.
+    Return ONLY a JSON object with a single key: {"commands": [...]}.
+    The value of "commands" must be an array of command strings.
     Each command should be a valid shell command like "tree -L 2" or "rg pattern".
     Ignore any explanatory text, just extract the commands.
 
@@ -16,7 +17,7 @@ data:
     Text:
     {{ input.text }}
 
-    Respond with JSON array: ["command1", "command2", ...]
+    Respond with JSON object: {"commands": ["command1", "command2", ...]}
 
   output:
     commands:

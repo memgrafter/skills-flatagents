@@ -112,7 +112,7 @@ data:
       input:
         text: "{{ context.raw_commands }}"
       output_to_context:
-        generated_commands: "{{ output.commands }}"
+        generated_commands: output.commands
       transitions:
         - to: validate
 

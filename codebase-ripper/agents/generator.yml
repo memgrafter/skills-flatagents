@@ -43,7 +43,7 @@ data:
     {{ input.initial_context }}
     ```
 
-    {% if input.iteration > 0 %}
+    {% if input.previous_summary %}
     ## Iteration {{ input.iteration }}
     
     ### Previous Context Summary
