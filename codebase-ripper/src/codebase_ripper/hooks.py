@@ -599,28 +599,66 @@ class CodebaseRipperHooks(MachineHooks):
         self._log(f"initial context {len(initial_results)} commands")
         return context
 
+    def _parse_commands_from_text(self, text: str) -> List[str]:
+        """
+        Parse shell commands from plain text LLM output.
+
+        Handles common formatting the model might produce:
+        - One command per line (expected)
+        - Numbered lines ("1. tree -L 2")
+        - Bullet prefixes ("- rg pattern", "* rg pattern")
+        - Backtick wrapping ("`tree -L 2`")
+        - Markdown fenced blocks (```...```)
+        - Blank lines and comments
+        """
+        commands = []
+        in_fence = False
+
+        for line in text.split("\n"):
+            stripped = line.strip()
+
+            # Toggle fenced code blocks
+            if stripped.startswith("```"):
+                in_fence = not in_fence
+                continue
+
+            # Skip empty lines and comment lines
+            if not stripped or stripped.startswith("#"):
+                continue
+
+            # Strip common prefixes: "1. ", "- ", "* ", "> "
+            cleaned = re.sub(r'^[\d]+[.)]\s*', '', stripped)      # "1. cmd" / "1) cmd"
+            cleaned = re.sub(r'^[-*>]\s+', '', cleaned)            # "- cmd" / "* cmd"
+            cleaned = cleaned.strip('`').strip()                    # "`cmd`"
+
+            if not cleaned:
+                continue
+
+            # Must start with a known command name to be a valid command line
+            base = cleaned.split()[0]
+            if base in ALLOWED_COMMANDS:
+                commands.append(cleaned)
+
+        return commands
+
     def _validate_commands(self, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Validate generated commands."""
-        raw_commands = context.get("generated_commands", [])
-        
-        # Handle string input (LLM might return as string)
-        if isinstance(raw_commands, str):
-            try:
-                raw_commands = json.loads(raw_commands)
-            except:
-                # Try line-by-line parsing
-                raw_commands = [
-                    line.strip().lstrip("- ").strip("`")
-                    for line in raw_commands.split("\n")
-                    if line.strip() and not line.strip().startswith("#")
-                ]
+        """
+        Parse and validate commands from raw LLM text output.
+
+        Commands are parsed from context["raw_commands"] (plain text from any
+        adapter) rather than requiring structured JSON from a dedicated extractor.
+        """
+        raw_text = context.get("raw_commands", "")
+
+        # Parse commands from plain text
+        raw_commands = self._parse_commands_from_text(raw_text)
 
         valid, rejected = self.validate_commands(raw_commands)
-        
+
         context["valid_commands"] = valid
         context["rejected_commands"] = rejected
-        
-        self._log(f"validate {len(valid)} valid, {len(rejected)} rejected")
+
+        self._log(f"validate {len(valid)} valid, {len(rejected)} rejected (parsed {len(raw_commands)} from text)")
         return context
 
     def _execute_commands(self, context: Dict[str, Any]) -> Dict[str, Any]:
@@ -692,10 +730,10 @@ class CodebaseRipperHooks(MachineHooks):
             max_iterations = int(raw_max_iterations)
         except (TypeError, ValueError):
             max_iterations = 2
-        
+
         context["iteration"] = iteration
         context["max_iterations"] = max_iterations
         context["should_continue"] = iteration < max_iterations
-        
+
         self._log(f"iteration {iteration}/{max_iterations}")
         return context

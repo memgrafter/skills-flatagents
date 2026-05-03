@@ -1,30 +1,9 @@
-spec: flatagent
-spec_version: "2.0.0"
-
-data:
-  name: generator-extractor
-  model:
-    profile: extractor
-
-  system: |
-    Extract shell commands from the given text.
-    Return ONLY a JSON object with a single key: {"commands": [...]}.
-    The value of "commands" must be an array of command strings.
-    Each command should be a valid shell command like "tree -L 2" or "rg pattern".
-    Ignore any explanatory text, just extract the commands.
-
-  user: |
-    Text:
-    {{ input.text }}
-
-    Respond with JSON object: {"commands": ["command1", "command2", ...]}
-
-  output:
-    commands:
-      type: list
-      description: "List of shell commands"
-      items:
-        type: str
-
-metadata:
-  description: "Extracts commands from generator output"
+# DEPRECATED — This agent has been removed.
+#
+# Command parsing is now done in hooks code (CodebaseRipperHooks._parse_commands_from_text),
+# not by an LLM call. This eliminates a fragile JSON transform layer between model stages
+# and makes the ripper work with any agent adapter (claude-code, codex-cli, pi-agent, etc.)
+#
+# See: docs/BEST_PRACTICES.md §2 "LLM Handoff Simplicity"
+#   "Pass plain text/markdown payloads between LLM stages."
+#   "More transformation layers = more failure points."

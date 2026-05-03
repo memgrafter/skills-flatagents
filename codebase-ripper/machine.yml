@@ -1,9 +1,12 @@
 # Codebase Ripper Machine
 # Shotgun approach: generate many commands, execute all, extract relevant context
 # Supports iterative passes for deeper exploration
+#
+# Adapter-agnostic: agents produce plain text, command parsing is done in hooks.
+# Works with any agent adapter (flatagent, claude-code, codex-cli, pi-agent, etc.)
 
 spec: flatmachine
-spec_version: "2.0.0"
+spec_version: "2.5.0"
 
 data:
   name: codebase-ripper
@@ -28,9 +31,8 @@ data:
     initial_context: ""
     initial_results: []
 
-    # Phase 2: Command generation
+    # Phase 2: Command generation (plain text, parsed in hooks)
     raw_commands: ""
-    generated_commands: []
     valid_commands: []
     rejected_commands: []
 
@@ -58,7 +60,6 @@ data:
 
   agents:
     generator: ./agents/generator.yml
-    generator_extractor: ./agents/generator_extractor.yml
     extractor: ./agents/extractor.yml
 
   states:
@@ -89,6 +90,8 @@ data:
         - to: generate
 
     # ========== PHASE 2: GENERATE COMMANDS ==========
+    # Generator outputs plain text (one command per line).
+    # Command parsing and validation is done in hooks, not by an LLM.
     generate:
       agent: generator
       input:
@@ -104,15 +107,6 @@ data:
         accepted_count: "{{ context.accepted_count }}"
       output_to_context:
         raw_commands: "{{ output.content }}"
-      transitions:
-        - to: extract_commands
-
-    extract_commands:
-      agent: generator_extractor
-      input:
-        text: "{{ context.raw_commands }}"
-      output_to_context:
-        generated_commands: output.commands
       transitions:
         - to: validate
 
@@ -143,7 +137,7 @@ data:
         previous_context: "{{ context.context_output }}"
       output_to_context:
         context_output: "{{ context.context_output }}\n\n---\n\n{{ output.content }}"
-        previous_summary: "{{ output.content | truncate(2000) }}"
+        previous_summary: "{{ output.content }}"
       transitions:
         - to: prepare_iteration
 
