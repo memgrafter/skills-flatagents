@@ -12,10 +12,9 @@ Generate self-contained HTML reports with full interactivity, zero npm/pip insta
 
 After generating a report, tell the user to run the server and give them the clickable link:
 
-```
-Run:  ~/.agents/skills/quick-report-skill/serve.sh
+**Do NOT start the server yourself.** The user already has it running. Just give them the link to the report:
+
 View: http://<this_hostname>:8080/reports/<filename>.html
-```
 
 Replace `<this_hostname>` with the machine's actual hostname (run `hostname` to check). The serve script prints the full URL on startup.
 
