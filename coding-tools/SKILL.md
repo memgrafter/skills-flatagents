@@ -1,17 +1,18 @@
 ---
 name: coding-tools
-description: Use this as the default toolset for coding sessions when you want faster navigation, search, file inspection, and git workflow execution with lower command overhead:
-tools:
-  - fzf
-  - ripgrep
-  - bat
-  - delta
-  - lazygit
-  - starship
-  - zoxide
-  - eza
-  - atuin
-  - yazi
+description: |
+  Use this as the default toolset for coding sessions when you want faster navigation, search, file inspection, and git workflow execution with lower command overhead:
+  tools:
+    - fzf
+    - ripgrep
+    - bat
+    - delta
+    - lazygit
+    - starship
+    - zoxide
+    - eza
+    - atuin
+    - yazi
 ---
 
 # Tools for Coding
